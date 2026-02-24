@@ -417,7 +417,7 @@ body::after{content:'';position:fixed;inset:0;
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-logo">
-    <div class="icon">🧮</div>
+    <div class="icon"><img src="/static/logo.png" style="width:28px;height:28px;object-fit:contain;border-radius:6px"/></div>
     <div>
       <div class="name">MathSphere</div>
       <div class="by">By Anupam Nigam</div>
@@ -568,7 +568,7 @@ function showWelcome(){
       <div class="icon-wrap">
         <div class="orbit-ring"><div class="orbit-dot"></div></div>
         <div class="orbit-ring2"><div class="orbit-dot2"></div></div>
-        <div class="big-icon">🧮</div>
+        <div class="big-icon"><img src="/static/logo.png" style="width:52px;height:52px;object-fit:contain"/></div>
       </div>
       <h1>MathSphere</h1>
       <p>Your AI-powered mathematics companion — step-by-step solutions, exam prep, proofs, quizzes and more. Built by Anupam Nigam.</p>
@@ -1135,7 +1135,7 @@ function addMsg(role,text,isErr=false){
   const div=document.createElement('div');
   div.className=`msg ${role}`;
   div.innerHTML=`
-    <div class="avatar">${role==='user'?'👤':'🧮'}</div>
+    <div class="avatar">${role==='user'?'👤':'<img src="/static/logo.png" style="width:20px;height:20px;object-fit:contain"/>'}</div>
     <div class="bubble${isErr?' error-bubble':''}">${fmt(text)}</div>`;
   chat.appendChild(div);
   chat.scrollTop=chat.scrollHeight;
