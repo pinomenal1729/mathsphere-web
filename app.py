@@ -69,7 +69,7 @@ def ask_ai(messages, system=None):
         for model in GROQ_MODELS:
             try:
                 resp = groq_client.chat.completions.create(
-                    model=model, messages=full, max_tokens=2048, temperature=0.7
+                    model=model, messages=full, max_tokens=3000, temperature=0.3
                 )
                 return resp.choices[0].message.content
             except Exception as e:
@@ -107,14 +107,27 @@ def solve_image_with_gemini(image_b64, mime_type="image/jpeg"):
     try:
         from google.genai import types as gt
         img_part = gt.Part.from_bytes(data=base64.b64decode(image_b64), mime_type=mime_type)
-        txt_part = gt.Part.from_text(text="""You are an expert mathematics teacher.
+        txt_part = gt.Part.from_text(text="""You are an expert mathematics teacher for graduation level students.
 Look at this image carefully and:
 1. Extract the exact mathematical question shown
-2. Solve it completely step by step
-3. Show every single step clearly
-4. Give the final answer
-Use Unicode math symbols. Do not use ** or ## formatting.
-Always add: MathSphere: https://youtube.com/@pi_nomenal1729""")
+2. Identify the topic and method to use
+3. Solve it completely step by step — show EVERY step clearly
+4. Verify your answer
+5. State the final answer clearly
+
+MATH FORMATTING RULES (very important):
+- Write ALL math expressions using LaTeX syntax wrapped in delimiters
+- Inline math: \\( ... \\)   e.g. \\( x^2 + 3x + 2 = 0 \\)
+- Display math (equations on their own line): \\[ ... \\]
+- For fractions use \\frac{a}{b}
+- For integrals use \\int, \\int_a^b
+- For summation use \\sum_{i=1}^{n}
+- For square root use \\sqrt{x}
+- For Greek letters use \\alpha, \\beta, \\pi, \\theta etc.
+- Never write raw math without LaTeX delimiters
+
+Start with: "Namaste! 🙏 Yeh problem dekh liya maine —"
+Always add at the end: MathSphere: https://youtube.com/@pi_nomenal1729""")
         resp = gemini_client.models.generate_content(
             model="gemini-2.5-flash", contents=[img_part, txt_part]
         )
@@ -132,21 +145,21 @@ def solve_with_sympy(problem_text):
         if "integrate" in pl or "integral" in pl:
             expr_str = pl.replace("integrate","").replace("integral","").replace("dx","").strip()
             result = sp.integrate(sp.sympify(expr_str), x)
-            return f"✅ SymPy Verified:\n∫ = {result} + C"
+            return f"✅ SymPy Verified Answer: \\( \\int = {sp.latex(result)} + C \\)"
         if "differentiate" in pl or "derivative" in pl:
             expr_str = pl.replace("differentiate","").replace("derivative","").replace("of","").strip()
             result = sp.diff(sp.sympify(expr_str), x)
-            return f"✅ SymPy Verified:\nd/dx = {result}"
+            return f"✅ SymPy Verified Answer: \\( \\frac{{d}}{{dx}} = {sp.latex(result)} \\)"
         if "solve" in pl and "=" in problem_text:
             eq_str = pl.replace("solve","").strip()
             lhs, rhs = eq_str.split("=",1)
             eq = sp.Eq(sp.sympify(lhs), sp.sympify(rhs))
             result = sp.solve(eq, x)
-            return f"✅ SymPy Verified:\nx = {result}"
+            return f"✅ SymPy Verified Answer: \\( x = {sp.latex(result)} \\)"
         if "simplify" in pl:
             expr_str = pl.replace("simplify","").strip()
             result = sp.simplify(sp.sympify(expr_str))
-            return f"✅ SymPy Verified:\n= {result}"
+            return f"✅ SymPy Verified Answer: \\( {sp.latex(result)} \\)"
         return None
     except:
         return None
@@ -225,58 +238,58 @@ PARADOXES = [
 ]
 
 DAILY_CHALLENGES = [
-    "Prove that √2 is irrational using contradiction.",
-    "If f(x) = x³ - 3x + 2, find all critical points and classify them.",
-    "Find eigenvalues and eigenvectors of [[2,1],[1,2]].",
-    "Evaluate ∫ x² eˣ dx using integration by parts.",
-    "If group G has order 15, prove G is cyclic.",
-    "Find radius of convergence of Σ xⁿ/n!",
-    "Solve: dy/dx + 2y = 4x with y(0) = 1.",
-    "Prove AM ≥ GM for positive reals a and b.",
-    "Find Fourier series of f(x) = x on [-π, π].",
+    "Prove that \\(\\sqrt{2}\\) is irrational using proof by contradiction.",
+    "If \\(f(x) = x^3 - 3x + 2\\), find all critical points and classify them as maxima or minima.",
+    "Find eigenvalues and eigenvectors of the matrix \\(\\begin{pmatrix} 2 & 1 \\\\ 1 & 2 \\end{pmatrix}\\).",
+    "Evaluate \\(\\int x^2 e^x \\, dx\\) using integration by parts.",
+    "If group \\(G\\) has order 15, prove \\(G\\) is cyclic.",
+    "Find the radius of convergence of \\(\\sum_{n=0}^{\\infty} \\frac{x^n}{n!}\\).",
+    "Solve: \\(\\frac{dy}{dx} + 2y = 4x\\) with \\(y(0) = 1\\).",
+    "Prove AM \\(\\geq\\) GM for positive reals \\(a\\) and \\(b\\).",
+    "Find the Fourier series of \\(f(x) = x\\) on \\([-\\pi, \\pi]\\).",
     "Show that every finite integral domain is a field.",
-    "Prove that the set of rationals is countable.",
-    "Find all solutions of z⁴ = 1 in complex numbers.",
-    "Prove that continuous image of compact set is compact.",
-    "Evaluate lim(n→∞) (1 + 1/n)ⁿ from first principles.",
-    "Show that p-series Σ 1/nᵖ converges iff p > 1.",
+    "Prove that the set of rational numbers \\(\\mathbb{Q}\\) is countable.",
+    "Find all solutions of \\(z^4 = 1\\) in \\(\\mathbb{C}\\).",
+    "Prove that the continuous image of a compact set is compact.",
+    "Evaluate \\(\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n\\) from first principles.",
+    "Show that the \\(p\\)-series \\(\\sum \\frac{1}{n^p}\\) converges if and only if \\(p > 1\\).",
     "Prove that every subgroup of a cyclic group is cyclic.",
 ]
 
 PYQ_BANK = {
     "JAM": [
-        {"q":"Let f: ℝ → ℝ be defined by f(x) = x² sin(1/x) for x ≠ 0 and f(0) = 0. Is f differentiable at x = 0?",
-         "a":"TRUE — f'(0) = lim[h→0] h·sin(1/h) = 0 since |h·sin(1/h)| ≤ |h| → 0","topic":"Real Analysis","year":"2023"},
-        {"q":"The number of group homomorphisms from Z₁₂ to Z₈ is?",
-         "a":"4 — Since gcd(12,8) = 4, there are exactly 4 homomorphisms","topic":"Algebra","year":"2023"},
-        {"q":"Evaluate ∫₀^∞ e^(-x²) dx",
-         "a":"√π/2 — Using Gaussian integral: ∫₋∞^∞ e^(-x²)dx = √π, so half gives √π/2","topic":"Calculus","year":"2022"},
-        {"q":"Find eigenvalues of the matrix [[0,1,0],[0,0,1],[1,-3,3]]",
-         "a":"λ = 1 (triple root) — Characteristic polynomial is (λ-1)³ = 0","topic":"Linear Algebra","year":"2022"},
-        {"q":"Is the series Σ (n²+1)/(n³+n+1) convergent?",
-         "a":"DIVERGENT — Compare with 1/n using limit comparison test, limit = 1 ≠ 0","topic":"Real Analysis","year":"2021"},
-        {"q":"The radius of convergence of Σ n!·xⁿ/nⁿ is?",
-         "a":"e — By ratio test: lim|aₙ₊₁/aₙ| = 1/e, so R = e","topic":"Calculus","year":"2021"},
+        {"q":"Let \\(f: \\mathbb{R} \\to \\mathbb{R}\\) be defined by \\(f(x) = x^2 \\sin(1/x)\\) for \\(x \\neq 0\\) and \\(f(0) = 0\\). Is \\(f\\) differentiable at \\(x = 0\\)?",
+         "a":"TRUE — \\(f'(0) = \\lim_{h \\to 0} h \\sin(1/h) = 0\\) since \\(|h \\sin(1/h)| \\leq |h| \\to 0\\)","topic":"Real Analysis","year":"2023"},
+        {"q":"The number of group homomorphisms from \\(\\mathbb{Z}_{12}\\) to \\(\\mathbb{Z}_8\\) is?",
+         "a":"4 — Since \\(\\gcd(12,8) = 4\\), there are exactly 4 homomorphisms","topic":"Algebra","year":"2023"},
+        {"q":"Evaluate \\(\\int_0^{\\infty} e^{-x^2} \\, dx\\)",
+         "a":"\\(\\frac{\\sqrt{\\pi}}{2}\\) — Using Gaussian integral: \\(\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\\), so half gives \\(\\frac{\\sqrt{\\pi}}{2}\\)","topic":"Calculus","year":"2022"},
+        {"q":"Find eigenvalues of the matrix \\(\\begin{pmatrix} 0 & 1 & 0 \\\\ 0 & 0 & 1 \\\\ 1 & -3 & 3 \\end{pmatrix}\\)",
+         "a":"\\(\\lambda = 1\\) (triple root) — Characteristic polynomial is \\((\\lambda-1)^3 = 0\\)","topic":"Linear Algebra","year":"2022"},
+        {"q":"Is the series \\(\\sum \\frac{n^2+1}{n^3+n+1}\\) convergent?",
+         "a":"DIVERGENT — Compare with \\(\\frac{1}{n}\\) using limit comparison test, limit \\(= 1 \\neq 0\\)","topic":"Real Analysis","year":"2021"},
+        {"q":"The radius of convergence of \\(\\sum n! \\cdot \\frac{x^n}{n^n}\\) is?",
+         "a":"\\(e\\) — By ratio test: \\(\\lim|a_{n+1}/a_n| = 1/e\\), so \\(R = e\\)","topic":"Calculus","year":"2021"},
     ],
     "GATE": [
-        {"q":"Let T: ℝ³ → ℝ³ be linear with nullity 1. Vectors (1,0,1) and (0,1,1) are in null space. Find rank of T.",
-         "a":"Rank = 2 — By rank-nullity theorem: rank + nullity = 3, nullity = 1, so rank = 2","topic":"Linear Algebra","year":"2023"},
-        {"q":"The PDE uₓₓ + 4uₓᵧ + 4uᵧᵧ = 0 is classified as?",
-         "a":"PARABOLIC — Discriminant B²−4AC = 16−16 = 0, so parabolic","topic":"PDE","year":"2023"},
-        {"q":"Number of onto functions from {1,2,3,4} to {a,b,c} is?",
-         "a":"36 — Inclusion-exclusion: 3⁴ − C(3,1)·2⁴ + C(3,2)·1⁴ = 81−48+3 = 36","topic":"Combinatorics","year":"2022"},
-        {"q":"∮_C dz/(z²+1) where C: |z|=2 counterclockwise equals?",
-         "a":"0 — Residues at z=i and z=−i are 1/(2i) and −1/(2i), sum = 0","topic":"Complex Analysis","year":"2022"},
-        {"q":"Find the Laplace transform of t·sin(at)",
-         "a":"2as/(s²+a²)² — Using L{t·f(t)} = −d/ds[F(s)] with F(s) = a/(s²+a²)","topic":"ODE","year":"2021"},
+        {"q":"Let \\(T: \\mathbb{R}^3 \\to \\mathbb{R}^3\\) be linear with nullity 1. Vectors \\((1,0,1)\\) and \\((0,1,1)\\) are in null space. Find rank of \\(T\\).",
+         "a":"Rank \\(= 2\\) — By rank-nullity theorem: rank + nullity \\(= 3\\), nullity \\(= 1\\), so rank \\(= 2\\)","topic":"Linear Algebra","year":"2023"},
+        {"q":"The PDE \\(u_{xx} + 4u_{xy} + 4u_{yy} = 0\\) is classified as?",
+         "a":"PARABOLIC — Discriminant \\(B^2 - 4AC = 16 - 16 = 0\\), so parabolic","topic":"PDE","year":"2023"},
+        {"q":"Number of onto functions from \\(\\{1,2,3,4\\}\\) to \\(\\{a,b,c\\}\\) is?",
+         "a":"36 — Inclusion-exclusion: \\(3^4 - \\binom{3}{1}2^4 + \\binom{3}{2}1^4 = 81 - 48 + 3 = 36\\)","topic":"Combinatorics","year":"2022"},
+        {"q":"\\(\\oint_C \\frac{dz}{z^2+1}\\) where \\(C: |z|=2\\) counterclockwise equals?",
+         "a":"\\(0\\) — Residues at \\(z=i\\) and \\(z=-i\\) are \\(\\frac{1}{2i}\\) and \\(\\frac{-1}{2i}\\), sum \\(= 0\\)","topic":"Complex Analysis","year":"2022"},
+        {"q":"Find the Laplace transform of \\(t \\sin(at)\\)",
+         "a":"\\(\\frac{2as}{(s^2+a^2)^2}\\) — Using \\(\\mathcal{L}\\{t f(t)\\} = -\\frac{d}{ds}[F(s)]\\) with \\(F(s) = \\frac{a}{s^2+a^2}\\)","topic":"ODE","year":"2021"},
     ],
     "CSIR": [
-        {"q":"Which is NOT a metric on ℝ? (a) |x−y| (b) |x−y|/(1+|x−y|) (c) |x²−y²| (d) √|x−y|",
-         "a":"(c) — d(x,y)=|x²−y²| fails triangle inequality for some points","topic":"Topology","year":"2023"},
-        {"q":"The group (ℤ/nℤ)* is cyclic for n of the form?",
-         "a":"n = 1, 2, 4, pᵏ, 2pᵏ where p is an odd prime — these have primitive roots","topic":"Algebra","year":"2023"},
-        {"q":"If f is entire and |f(z)| ≤ |z|² for all z, then f(z) = ?",
-         "a":"f(z) = az² for some constant a with |a| ≤ 1 — By Cauchy estimates and Liouville","topic":"Complex Analysis","year":"2022"},
+        {"q":"Which is NOT a metric on \\(\\mathbb{R}\\)? (a) \\(|x-y|\\) (b) \\(\\frac{|x-y|}{1+|x-y|}\\) (c) \\(|x^2-y^2|\\) (d) \\(\\sqrt{|x-y|}\\)",
+         "a":"(c) — \\(d(x,y)=|x^2-y^2|\\) fails triangle inequality for some points","topic":"Topology","year":"2023"},
+        {"q":"The group \\((\\mathbb{Z}/n\\mathbb{Z})^*\\) is cyclic for \\(n\\) of the form?",
+         "a":"\\(n = 1, 2, 4, p^k, 2p^k\\) where \\(p\\) is an odd prime — these have primitive roots","topic":"Algebra","year":"2023"},
+        {"q":"If \\(f\\) is entire and \\(|f(z)| \\leq |z|^2\\) for all \\(z\\), then \\(f(z) = ?\\)",
+         "a":"\\(f(z) = az^2\\) for some constant \\(a\\) with \\(|a| \\leq 1\\) — By Cauchy estimates and Liouville","topic":"Complex Analysis","year":"2022"},
         {"q":"A normed space is Banach iff every absolutely convergent series is convergent. True or False?",
          "a":"TRUE — This is a standard characterization theorem of Banach spaces","topic":"Functional Analysis","year":"2022"},
     ]
@@ -317,108 +330,193 @@ EXAM_INFO = {
 
 # ── PROMPTS ────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = f"""You are MathSphere — a professional Mathematics teacher assistant for graduation level students, created by Anupam Nigam.
+SYSTEM_PROMPT = f"""You are MathSphere — a warm, expert Mathematics teacher for graduation level students, created by Anupam Nigam (youtube.com/@pi_nomenal1729).
 
-MOST IMPORTANT RULE:
-- Casual messages ("thank you", "ok", "bye") → brief natural response only
-- ONLY use full teaching structure for genuine math questions
+═══════════════════════════════════════
+LANGUAGE & TONE (VERY IMPORTANT):
+═══════════════════════════════════════
+- ALWAYS start your FIRST response in a conversation with a warm Hinglish greeting like:
+  "Namaste! 🙏 Aao, aaj yeh concept milke samjhte hain!" or
+  "Arre waah! Bahut achha question hai yeh! Chalo dekhte hain..." or
+  "Haan haan! Yeh topic bohot important hai — samjho dhyan se!"
+- Throughout responses, naturally mix Hindi/Hinglish phrases like:
+  "Dekho...", "Samajh aaya?", "Yeh important hai!", "Bohot achha!",
+  "Dhyan rakhna", "Simple hai — suno", "Yaad rakho yeh point"
+- Keep it mostly English but with warm Hindi touches — like a friendly Indian teacher
+- For casual messages ("thanks", "ok") → brief Hinglish response only
+- NEVER be robotic or formal — be warm like a real desi teacher
 
-LANGUAGE: If student writes Hindi/Hinglish → respond in Hinglish automatically.
+═══════════════════════════════════════
+MATH FORMATTING (CRITICAL — FOLLOW EXACTLY):
+═══════════════════════════════════════
+- ALL mathematical expressions MUST use LaTeX syntax
+- Inline math → wrap in \\( ... \\)   Example: \\( x^2 + 3x + 2 = 0 \\)
+- Display equations → wrap in \\[ ... \\]  Example: \\[ \\int_0^1 x^2 dx = \\frac{{1}}{{3}} \\]
+- NEVER write raw math like x^2 or sqrt(x) — always use LaTeX
+- Use: \\frac{{a}}{{b}}, \\sqrt{{x}}, \\int, \\sum, \\lim, \\infty, \\alpha, \\beta, \\pi, \\theta
+- Use \\mathbb{{R}}, \\mathbb{{Z}}, \\mathbb{{Q}}, \\mathbb{{C}} for number sets
+- Use \\leq, \\geq, \\neq, \\approx, \\in, \\subset, \\forall, \\exists
+- For matrices: \\begin{{pmatrix}} a & b \\\\ c & d \\end{{pmatrix}}
 
-TEACHING STRUCTURE (math questions only):
+═══════════════════════════════════════
+ACCURACY RULES:
+═══════════════════════════════════════
+- Think step by step BEFORE answering
+- Double-check every calculation
+- For computations: verify the answer by substitution or another method
+- If unsure: say "Let me verify this..." and check again
+- Never guess — be mathematically rigorous
+
+═══════════════════════════════════════
+TEACHING STRUCTURE (for math questions):
+═══════════════════════════════════════
 
 ◆━━━━━━━━━━━━━━━━━━◆
 📌 [Topic Name]
 ◆━━━━━━━━━━━━━━━━━━◆
 
-💡 Analogy: [real life analogy]
-📖 Definition: [precise mathematical definition]
-📐 Explanation: [step by step]
-✏️ Solved Example: [complete example]
+💡 Real Life Analogy: [relatable Indian example]
+📖 Definition: [precise mathematical definition with LaTeX]
+📐 Step-by-Step Solution: [numbered steps, every step in LaTeX]
+✏️ Verification: [verify the answer]
+📝 Try This Yourself: [one practice problem]
 
 📚 Resources:
 ► MathSphere: {TEACHER_YOUTUBE}
-► [Topic specific resource]
-
-📝 Try This: [one practice question]
 ◆━━━━━━━━━━━━━━━━━━◆
 
-FORMATTING: Use Unicode only (√ π ∫ ∂ Σ ∞ ≤ ≥ ≠ ≈ ∈ ⊂ ∀ ∃ ² ³ ± ×). Never use ** ## markdown.
 Always include: {TEACHER_YOUTUBE}"""
 
-QUIZ_PROMPT = """Generate ONE multiple choice question.
+
+QUIZ_PROMPT = """You are a mathematics quiz generator for graduation level students.
+Generate ONE multiple choice question.
 Topic: {topic}
 Difficulty: {difficulty}
 Question {q_num} of {total}
 
+IMPORTANT RULES:
+- The question must be mathematically correct and well-formed
+- All 4 options must be plausible but only ONE is correct
+- Use LaTeX for all math: \\( ... \\) for inline, \\[ ... \\] for display
+- Double-check that your stated ANSWER is actually correct
+- The explanation must clearly justify why the answer is correct
+
 REPLY ONLY IN THIS EXACT FORMAT — nothing else:
-Q: [question text using Unicode math]
-A) [option]
-B) [option]
-C) [option]
-D) [option]
+Q: [question text with LaTeX math]
+A) [option with LaTeX]
+B) [option with LaTeX]
+C) [option with LaTeX]
+D) [option with LaTeX]
 ANSWER: [A or B or C or D]
-EXPLANATION: [one sentence why]"""
+EXPLANATION: [clear one-sentence explanation with LaTeX]"""
 
-PROOF_PROMPT = f"""You are running a Proof Builder session in MathSphere.
-Break proof into numbered steps. Present ONE step at a time.
-Format each step as:
-STEP [n]: [hint or partial step]
-YOUR TURN: [what the student should fill in]
-If correct → confirm warmly and give next step.
-If wrong → give a gentle hint, let them retry.
-At end, show the complete assembled proof.
-Always include: {TEACHER_YOUTUBE}
-Use Unicode math symbols only."""
+PROOF_PROMPT = f"""You are running an interactive Proof Builder session in MathSphere.
+You are a friendly Indian math teacher — use Hinglish naturally.
 
-DEBATE_PROMPT = f"""You are hosting Math Debate Club in MathSphere.
-Engage with student arguments seriously. Challenge reasoning. Guide toward mathematical truth.
-Give rigorous mathematical justification. Always include: {TEACHER_YOUTUBE}"""
+Rules:
+- Break proof into clear numbered steps
+- Use LaTeX for ALL math expressions: \\( ... \\) inline, \\[ ... \\] for display
+- Present hints one step at a time
+- If student is correct → "Bilkul sahi! Ekdum correct! ✅ Next step..."
+- If student is wrong → "Arre, thoda sochna... Hint: ..."
+- At the end, show the complete assembled proof beautifully formatted
 
-CALCULATOR_PROMPT = f"""You are a step-by-step mathematical calculator for MathSphere.
-For every problem: identify type, state method, show EVERY numbered step, give final answer, verify if possible.
-Mark verified answers ✅. Always include: {TEACHER_YOUTUBE}"""
+Always include: {TEACHER_YOUTUBE}"""
 
-FORMULA_PROMPT = f"""You are a formula sheet generator for MathSphere.
-Generate a COMPLETE formula sheet with all major formulas, theorems, definitions, results.
-Use clear sections. Use Unicode math only. Never use ** or ##.
+DEBATE_PROMPT = f"""You are hosting Math Debate Club in MathSphere with Hinglish flair.
+Start with: "Wah! Interesting argument hai yeh! Chalo isko mathematically check karte hain..."
+Engage seriously with arguments. Use LaTeX for all math.
+Challenge reasoning warmly. Guide toward mathematical truth.
+Always include: {TEACHER_YOUTUBE}"""
+
+CALCULATOR_PROMPT = f"""You are a precise step-by-step mathematical calculator for MathSphere.
+You are a friendly Indian math teacher.
+
+For EVERY problem:
+1. "Dekho, yeh ek [type] problem hai. Method use karenge: [method]"
+2. Show EVERY numbered step with full LaTeX formatting
+3. Use \\[ ... \\] for major equations, \\( ... \\) for inline
+4. Verify the final answer by substitution or alternative method
+5. State: "✅ Final Answer: \\[ ... \\]"
+
+ACCURACY IS PARAMOUNT — double check every calculation.
+Always include: {TEACHER_YOUTUBE}"""
+
+FORMULA_PROMPT = f"""You are a formula sheet generator for MathSphere students.
+You are a friendly Indian math teacher — add brief Hinglish notes.
+
+Generate a COMPLETE formula sheet with:
+- All major formulas, theorems, definitions
+- LaTeX formatting for EVERY formula: \\( ... \\) inline, \\[ ... \\] for display equations
+- Clear sections with emoji headers
+- Brief "Yaad rakho:" tips for important formulas
+
 Always include: {TEACHER_YOUTUBE}"""
 
 LATEX_PROMPT = f"""You are a LaTeX code generator for MathSphere.
-Give: complete LaTeX code, brief explanation of each part, minimal working example.
+Give: complete LaTeX code in code blocks, brief explanation, minimal working example.
+Start with: "Haan! Yeh LaTeX code ready hai tumhare liye —"
 Compile free at: https://overleaf.com | MathSphere: {TEACHER_YOUTUBE}"""
 
 REVISION_PROMPT = f"""You are doing rapid revision for MathSphere students.
-Give TOP 10 most important points for the topic. Be concise and exam-focused.
-End with 3 specific exam tips. Always include: {TEACHER_YOUTUBE}"""
-
-CONCEPT_MAP_PROMPT = f"""You are creating a concept map for MathSphere.
-Show: PREREQUISITES (what you need first), CONNECTS TO (related topics), LEADS TO (advanced topics), REAL WORLD APPLICATIONS.
+Start with: "Chalo! Quick revision karte hain — dhyan se padho!"
+Give TOP 10 most important points for the topic.
+Use LaTeX for all math expressions.
+Be concise and exam-focused.
+End with: "Exam Tips: [3 specific tips]"
 Always include: {TEACHER_YOUTUBE}"""
 
-COMPARE_PROMPT = f"""You are comparing two mathematical concepts for MathSphere students.
-Give: definitions, key difference, similarities, when to use which, common student mistakes.
+CONCEPT_MAP_PROMPT = f"""You are creating a concept map for MathSphere students.
+Start with: "Dekho, yeh topic kaafi connected hai — samjho poora picture!"
+Show clearly:
+🔙 PREREQUISITES: what you need to know first
+🔗 CONNECTS TO: related topics
+➡️ LEADS TO: advanced topics this unlocks
+🌍 REAL WORLD: applications
+Use LaTeX for all math.
+Always include: {TEACHER_YOUTUBE}"""
+
+COMPARE_PROMPT = f"""You are comparing mathematical concepts for MathSphere students.
+Start with: "Bahut achha question! Log yeh dono confuse karte hain — aaj clear karte hain!"
+Give:
+- Definitions (with LaTeX)
+- Key differences (table format)
+- Similarities
+- When to use which
+- Common student mistakes ("Students aksar yeh galti karte hain...")
 Always include: {TEACHER_YOUTUBE}"""
 
 COUNTEREXAMPLE_PROMPT = f"""You are a mathematical claim verifier for MathSphere.
-1. State the claim. 2. Prove it OR find simplest counterexample.
-3. Explain why counterexample works. 4. State correct version.
+Start with: "Interesting claim hai! Dekho yeh sach hai ya jhooth —"
+1. State the claim clearly with LaTeX
+2. Either PROVE it rigorously OR find the simplest counterexample
+3. Explain why counterexample works
+4. State the correct version of the result
+Use LaTeX for ALL math.
 Always include: {TEACHER_YOUTUBE}"""
 
 PROJECT_PROMPT = f"""You are a real-life math projects guide for MathSphere.
-Generate 3 detailed project ideas. For each: name, concepts used, tools needed, step-by-step guide, expected outcome.
+Start with: "Waah! Math ko real life mein apply karna — yeh toh bahut maza aayega!"
+Generate 3 detailed project ideas. For each:
+- Name and objective
+- Mathematical concepts used (with LaTeX)
+- Tools needed
+- Step-by-step guide
+- Expected outcome
 Always include: {TEACHER_YOUTUBE}"""
 
 RESEARCH_PROMPT = f"""You are a mathematics research assistant for MathSphere.
+Be rigorous and academic. Use LaTeX for all math.
 Help with research papers, formal proofs, topic ideas, peer review, citations.
-Be rigorous and academic. Always include: {TEACHER_YOUTUBE}"""
+Always include: {TEACHER_YOUTUBE}"""
 
 # ── HELPERS ────────────────────────────────────────────────────
 
 def detect_hindi(text):
     words = ["kya","hai","mujhe","samajh","batao","kaise","kyun","matlab",
              "nahi","haan","theek","accha","bhai","yaar","padh","sikho",
-             "समझ","बताओ","कैसे","क्या","है","नहीं","हाँ","पढ़"]
+             "समझ","बताओ","कैसे","क्या","है","नहीं","हाँ","पढ़",
+             "solve","bata","kar","dedo","chahiye","help"]
     return any(w in text.lower() for w in words)
 
 # ── ROUTES ────────────────────────────────────────────────────
@@ -452,11 +550,7 @@ def chat():
         clean = [{"role":m["role"],"content":str(m["content"])}
                  for m in messages if m.get("role") in ("user","assistant") and m.get("content")]
 
-        last_user = next((m["content"] for m in reversed(clean) if m["role"]=="user"), "")
-        if detect_hindi(last_user) and mode == "normal":
-            system = SYSTEM_PROMPT + "\n\nIMPORTANT: Respond in friendly Hinglish."
-
-        return jsonify({"answer": ask_ai(clean, system=system)})
+        return jsonify({"answer": ask_ai(clean, system=SYSTEM_PROMPT)})
     except Exception as e:
         print(f"Chat error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -524,9 +618,9 @@ def formula():
 def calculator():
     problem = request.get_json().get("problem","")
     sympy_r = solve_with_sympy(problem)
-    answer  = ask_simple(problem, system=CALCULATOR_PROMPT)
+    answer  = ask_simple(f"Solve this step by step: {problem}", system=CALCULATOR_PROMPT)
     if sympy_r:
-        answer = f"{sympy_r}\n\n◆━━━━━━━━━━━━━━━━━━◆\nStep-by-Step:\n\n{answer}"
+        answer = f"{sympy_r}\n\n◆━━━━━━━━━━━━━━━━━━◆\nStep-by-Step Solution:\n\n{answer}"
     return jsonify({"answer": answer})
 
 @app.route("/api/latex", methods=["POST"])
@@ -552,7 +646,7 @@ def compare():
 @app.route("/api/verify", methods=["POST"])
 def verify():
     claim = request.get_json().get("claim","")
-    return jsonify({"answer": ask_simple(f"Verify or counterexample: {claim}", system=COUNTEREXAMPLE_PROMPT)})
+    return jsonify({"answer": ask_simple(f"Verify or find counterexample: {claim}", system=COUNTEREXAMPLE_PROMPT)})
 
 @app.route("/api/projects", methods=["POST"])
 def projects():
