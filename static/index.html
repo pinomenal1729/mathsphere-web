@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MathSphere — AI Mathematics Tutor by Anupam Nigam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#07090e;--sur:#0d1018;--sur2:#12161f;--sur3:#181e2c;
+  --bor:#1a2030;--bor2:#222b3d;
+  --acc:#4f8ef7;--acc2:#7c5cfc;--acc3:#00d4a8;--acc4:#f7934f;
+  --txt:#dde1f0;--txt2:#7d879e;--txt3:#404b60;
+  --red:#e84040;--green:#2dd67a;--yellow:#f7c34f;
+  --font-head:'Syne',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--font-body);font-size:14.5px;line-height:1.65;overflow:hidden}
+
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 90% 60% at 15% 0%,rgba(79,142,247,.07) 0%,transparent 55%),
+             radial-gradient(ellipse 70% 50% at 85% 100%,rgba(124,92,252,.06) 0%,transparent 55%),
+             radial-gradient(ellipse 50% 35% at 60% 40%,rgba(0,212,168,.04) 0%,transparent 50%);
+  pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.013) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.013) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;z-index:0}
+
+/* ── LAYOUT ── */
+#app{position:relative;z-index:1;display:flex;height:100vh;max-width:1100px;margin:0 auto}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:240px;flex-shrink:0;border-right:1px solid var(--bor);
+  background:rgba(7,9,14,.92);backdrop-filter:blur(20px);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:transform .3s ease
+}
+.sidebar-logo{padding:18px 16px 12px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:10px}
+.sidebar-logo .icon{width:36px;height:36px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;
+  box-shadow:0 0 18px rgba(79,142,247,.3)}
+.sidebar-logo .name{font-family:var(--font-head);font-weight:800;font-size:15px;letter-spacing:-.2px;
+  background:linear-gradient(90deg,#dde1f0,#7d879e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sidebar-logo .by{font-size:9px;color:var(--txt3);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+
+.sidebar-section{padding:10px 10px 4px;font-size:9px;color:var(--txt3);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase}
+.nav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;
+  color:var(--txt2);cursor:pointer;border-radius:8px;font-family:var(--font-body);font-size:13px;
+  transition:all .18s;text-align:left}
+.nav-btn:hover{background:var(--sur2);color:var(--txt)}
+.nav-btn.active{background:rgba(79,142,247,.12);color:var(--acc);border:1px solid rgba(79,142,247,.2)}
+.nav-btn .emoji{width:20px;text-align:center;font-size:14px}
+
+.sidebar-scroll{flex:1;overflow-y:auto;padding:6px 8px;scrollbar-width:none}
+.sidebar-scroll::-webkit-scrollbar{display:none}
+
+.sidebar-footer{padding:12px;border-top:1px solid var(--bor)}
+.social-links{display:flex;gap:8px;flex-wrap:wrap}
+.social-link{font-size:10px;color:var(--txt3);font-family:var(--font-mono);text-decoration:none;
+  padding:3px 7px;border:1px solid var(--bor);border-radius:4px;transition:all .2s}
+.social-link:hover{color:var(--acc);border-color:var(--acc)}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── TOPBAR ── */
+#topbar{display:flex;align-items:center;gap:10px;padding:12px 20px;
+  border-bottom:1px solid var(--bor);background:rgba(7,9,14,.85);backdrop-filter:blur(20px);flex-shrink:0}
+#menu-toggle{display:none;background:none;border:1px solid var(--bor);color:var(--txt2);
+  width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:15px;align-items:center;justify-content:center}
+#mode-title{font-family:var(--font-head);font-weight:700;font-size:16px;flex:1}
+.status{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt3);font-family:var(--font-mono)}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--acc3);box-shadow:0 0 6px var(--acc3);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+#clear-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;
+  border-radius:6px;font-size:10px;font-family:var(--font-mono);cursor:pointer;transition:all .2s;letter-spacing:.5px}
+#clear-btn:hover{border-color:var(--bor2);color:var(--txt2);background:var(--sur2)}
+
+/* ── CHAT ── */
+#chat{flex:1;overflow-y:auto;padding:20px 20px 10px;display:flex;flex-direction:column;gap:16px;
+  scrollbar-width:thin;scrollbar-color:var(--bor2) transparent}
+#chat::-webkit-scrollbar{width:3px}
+#chat::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:3px}
+
+/* ── WELCOME ── */
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;padding:40px 20px;text-align:center;animation:fadeUp .5s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+#welcome .big-icon{width:68px;height:68px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:20px;
+  box-shadow:0 0 40px rgba(79,142,247,.25),0 0 80px rgba(124,92,252,.1);animation:float 4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#welcome h1{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-1px;
+  background:linear-gradient(135deg,#dde1f0,#7d879e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+#welcome p{color:var(--txt2);max-width:420px;font-size:13.5px;line-height:1.7;margin-bottom:28px}
+.feat-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:480px}
+.feat{background:var(--sur2);border:1px solid var(--bor);border-radius:7px;padding:6px 12px;
+  font-size:11px;color:var(--txt2);font-family:var(--font-mono)}
+
+/* ── MESSAGES ── */
+.msg{display:flex;gap:10px;animation:msgIn .25s ease both}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;margin-top:2px}
+.msg.user .avatar{background:linear-gradient(135deg,#1a2540,#1e2f52);border:1px solid #253552}
+.msg.bot .avatar{background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 0 10px rgba(79,142,247,.3)}
+.bubble{max-width:78%;padding:12px 15px;border-radius:13px;font-size:13.5px;line-height:1.72;position:relative}
+.msg.user .bubble{background:#131d35;border:1px solid #1e2d4a;border-top-right-radius:3px;color:var(--txt)}
+.msg.bot .bubble{background:var(--sur);border:1px solid var(--bor);border-top-left-radius:3px;color:var(--txt)}
+.msg.bot .bubble::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--acc),var(--acc2),transparent);border-radius:13px 13px 0 0;opacity:.45}
+
+/* Rich formatting in bubbles */
+.bubble pre{background:var(--sur3);border:1px solid var(--bor2);border-radius:7px;padding:11px;
+  margin:10px 0;overflow-x:auto;font-family:var(--font-mono);font-size:12px;line-height:1.55;color:#9dd0ff}
+.bubble code{font-family:var(--font-mono);font-size:11.5px;background:var(--sur3);
+  padding:2px 5px;border-radius:4px;color:var(--acc3)}
+.bubble .sec{font-family:var(--font-head);font-weight:600;font-size:12.5px;color:var(--acc);
+  letter-spacing:.4px;margin:11px 0 4px;display:block}
+.bubble hr{border:none;border-top:1px solid var(--bor);margin:9px 0}
+.bubble a{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(79,142,247,.3);transition:border-color .2s}
+.bubble a:hover{border-color:var(--acc)}
+
+/* ── TYPING ── */
+.typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
+  border-radius:13px;border-top-left-radius:3px;width:fit-content}
+.tdot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:tdot 1.2s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.2s;background:var(--acc2)}
+.tdot:nth-child(3){animation-delay:.4s;background:var(--acc3)}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-6px);opacity:1}}
+
+/* ── QUIZ ── */
+.quiz-card{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:18px;
+  display:flex;flex-direction:column;gap:12px}
+.quiz-q{font-size:14px;line-height:1.7;color:var(--txt)}
+.quiz-opts{display:flex;flex-direction:column;gap:7px}
+.quiz-opt{background:var(--sur3);border:1px solid var(--bor2);border-radius:8px;padding:9px 14px;
+  cursor:pointer;font-size:13px;color:var(--txt2);transition:all .2s;text-align:left;display:flex;gap:10px;align-items:center}
+.quiz-opt:hover:not(:disabled){background:var(--sur2);border-color:var(--acc);color:var(--txt)}
+.quiz-opt.correct{background:rgba(45,214,122,.08);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:rgba(232,64,64,.08);border-color:var(--red);color:var(--red)}
+.quiz-opt:disabled{cursor:default}
+.quiz-letter{font-family:var(--font-mono);font-size:11px;font-weight:600;
+  width:22px;height:22px;border-radius:5px;background:var(--bor2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.quiz-footer{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--txt2)}
+.quiz-score{font-family:var(--font-mono);font-size:11px;color:var(--acc)}
+.quiz-expl{background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.15);border-radius:8px;
+  padding:10px 13px;font-size:12.5px;color:var(--txt2);display:none}
+.quiz-next{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;
+  color:white;padding:8px 18px;font-size:12.5px;cursor:pointer;font-family:var(--font-body);
+  box-shadow:0 0 14px rgba(79,142,247,.25);transition:all .2s}
+.quiz-next:hover{transform:scale(1.03)}
+
+/* ── MOCK TEST ── */
+.mock-info{font-size:11px;color:var(--txt3);font-family:var(--font-mono)}
+.mock-progress{height:3px;background:var(--bor);border-radius:2px;overflow:hidden;margin:4px 0}
+.mock-bar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s ease}
+
+/* ── RESULT ── */
+.result-card{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:22px;text-align:center}
+.result-score{font-family:var(--font-head);font-size:42px;font-weight:800;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.result-stars{font-size:22px;margin:8px 0}
+.result-label{font-size:14px;color:var(--txt2);margin-bottom:14px}
+.result-restart{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;
+  color:white;padding:9px 22px;font-size:13px;cursor:pointer;font-family:var(--font-body)}
+
+/* ── MODE PANELS (sidebar overlays) ── */
+.panel{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.panel-title{font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px}
+.panel-btn{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);border-radius:8px;
+  padding:9px 13px;cursor:pointer;font-size:12.5px;font-family:var(--font-body);transition:all .2s;text-align:left}
+.panel-btn:hover{background:var(--sur3);border-color:var(--acc);color:var(--txt)}
+
+/* ── INPUT ── */
+#inputarea{padding:12px 20px 16px;border-top:1px solid var(--bor);
+  background:rgba(7,9,14,.9);backdrop-filter:blur(20px);flex-shrink:0}
+#img-preview{display:none;position:relative;margin-bottom:8px}
+#img-preview img{width:72px;height:54px;object-fit:cover;border-radius:7px;border:1px solid var(--bor2)}
+#img-preview button{position:absolute;top:-4px;right:-4px;width:15px;height:15px;
+  background:var(--red);border-radius:50%;border:none;color:white;font-size:9px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
+.input-wrap{display:flex;gap:8px;align-items:flex-end;background:var(--sur2);
+  border:1px solid var(--bor2);border-radius:12px;padding:9px 9px 9px 15px;
+  transition:border-color .2s,box-shadow .2s}
+.input-wrap:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,142,247,.09),0 0 18px rgba(79,142,247,.07)}
+#input{flex:1;background:none;border:none;outline:none;color:var(--txt);
+  font-family:var(--font-body);font-size:13.5px;line-height:1.6;resize:none;max-height:120px;min-height:22px}
+#input::placeholder{color:var(--txt3)}
+.inp-btns{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.inp-icon{width:32px;height:32px;background:var(--sur3);border:1px solid var(--bor);border-radius:7px;
+  color:var(--txt3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s}
+.inp-icon:hover{background:var(--sur2);border-color:var(--bor2);color:var(--txt2)}
+#send-btn{width:32px;height:32px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  border:none;border-radius:7px;color:white;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:15px;box-shadow:0 0 14px rgba(79,142,247,.28);transition:all .2s}
+#send-btn:hover{transform:scale(1.06);box-shadow:0 0 20px rgba(79,142,247,.4)}
+#send-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.inp-hint{text-align:center;margin-top:7px;font-size:9.5px;color:var(--txt3);font-family:var(--font-mono);letter-spacing:.5px}
+
+/* ── TAGS BAR ── */
+#tagsbar{display:flex;gap:7px;padding:9px 20px;border-bottom:1px solid var(--bor);
+  background:rgba(7,9,14,.7);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+#tagsbar::-webkit-scrollbar{display:none}
+.tag{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);padding:4px 11px;
+  border-radius:18px;font-size:10.5px;font-family:var(--font-mono);cursor:pointer;white-space:nowrap;transition:all .2s}
+.tag:hover{background:var(--sur3);border-color:var(--acc);color:var(--acc);box-shadow:0 0 10px rgba(79,142,247,.12)}
+
+/* ── BOOKMARKS ── */
+.bm-item{background:var(--sur2);border:1px solid var(--bor);border-radius:9px;padding:12px;margin:5px 0}
+.bm-topic{font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:4px}
+.bm-content{font-size:12px;color:var(--txt2);line-height:1.6}
+.bm-delete{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;margin-top:6px;transition:color .2s}
+.bm-delete:hover{color:var(--red)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:100;transform:translateX(-100%)}
+  #sidebar.open{transform:translateX(0)}
+  #menu-toggle{display:flex}
+  .bubble{max-width:90%}
+  #welcome h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">🧮</div>
+    <div>
+      <div class="name">MathSphere</div>
+      <div class="by">By Anupam Nigam</div>
+    </div>
+  </div>
+  <div class="sidebar-scroll">
+    <div class="sidebar-section">Learn</div>
+    <button class="nav-btn active" onclick="setMode('chat')" id="nav-chat"><span class="emoji">💬</span>Ask Anything</button>
+    <button class="nav-btn" onclick="setMode('calculator')" id="nav-calculator"><span class="emoji">🧮</span>Step Calculator</button>
+    <button class="nav-btn" onclick="setMode('formula')" id="nav-formula"><span class="emoji">📋</span>Formula Sheet</button>
+    <button class="nav-btn" onclick="setMode('revision')" id="nav-revision"><span class="emoji">⚡</span>Rapid Revision</button>
+    <button class="nav-btn" onclick="setMode('conceptmap')" id="nav-conceptmap"><span class="emoji">🗺️</span>Concept Map</button>
+    <button class="nav-btn" onclick="setMode('compare')" id="nav-compare"><span class="emoji">⚖️</span>Compare Concepts</button>
+    <button class="nav-btn" onclick="setMode('verify')" id="nav-verify"><span class="emoji">🔍</span>Verify My Claim</button>
+    <button class="nav-btn" onclick="setMode('latex')" id="nav-latex"><span class="emoji">🧾</span>LaTeX Generator</button>
+    <button class="nav-btn" onclick="setMode('projects')" id="nav-projects"><span class="emoji">🚀</span>Math Projects</button>
+
+    <div class="sidebar-section">Practice</div>
+    <button class="nav-btn" onclick="setMode('quiz')" id="nav-quiz"><span class="emoji">🏆</span>Quiz Mode</button>
+    <button class="nav-btn" onclick="setMode('mocktest')" id="nav-mocktest"><span class="emoji">📝</span>Mock Test</button>
+    <button class="nav-btn" onclick="setMode('challenge')" id="nav-challenge"><span class="emoji">🧩</span>Daily Challenge</button>
+    <button class="nav-btn" onclick="setMode('proof')" id="nav-proof"><span class="emoji">✍️</span>Proof Builder</button>
+    <button class="nav-btn" onclick="setMode('debate')" id="nav-debate"><span class="emoji">🗣️</span>Math Debate</button>
+    <button class="nav-btn" onclick="setMode('pyq')" id="nav-pyq"><span class="emoji">📜</span>PYQ Bank</button>
+
+    <div class="sidebar-section">Exams</div>
+    <button class="nav-btn" onclick="showExam('JAM')"><span class="emoji">🎓</span>IIT JAM</button>
+    <button class="nav-btn" onclick="showExam('GATE')"><span class="emoji">🔬</span>GATE Maths</button>
+    <button class="nav-btn" onclick="showExam('CSIR')"><span class="emoji">📚</span>CSIR NET</button>
+
+    <div class="sidebar-section">Explore</div>
+    <button class="nav-btn" onclick="setMode('mathematician')" id="nav-mathematician"><span class="emoji">🧠</span>Mathematician</button>
+    <button class="nav-btn" onclick="setMode('realworld')" id="nav-realworld"><span class="emoji">🌍</span>Real World Maths</button>
+    <button class="nav-btn" onclick="setMode('debate')" id="nav-paradox"><span class="emoji">🌀</span>Paradoxes</button>
+    <button class="nav-btn" onclick="setMode('research')" id="nav-research"><span class="emoji">🔬</span>Research Hub</button>
+    <button class="nav-btn" onclick="setMode('bookmarks')" id="nav-bookmarks"><span class="emoji">🔖</span>My Bookmarks</button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="social-links">
+      <a class="social-link" href="https://youtube.com/@pi_nomenal1729" target="_blank">YouTube</a>
+      <a class="social-link" href="https://instagram.com/pi_nomenal1729" target="_blank">Instagram</a>
+      <a class="social-link" href="https://www.anupamnigam.com" target="_blank">Website</a>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div id="mode-title">💬 Ask Anything</div>
+    <div class="status"><div class="dot"></div><span style="font-size:10px">ONLINE</span></div>
+    <button id="clear-btn" onclick="clearChat()">CLEAR</button>
+  </div>
+
+  <div id="tagsbar">
+    <div class="tag" onclick="quickSend('Explain integration by parts with a full example')">∫ Integration</div>
+    <div class="tag" onclick="quickSend('What are eigenvalues and eigenvectors? Explain with example')">λ Eigenvalues</div>
+    <div class="tag" onclick="quickSend('Explain continuity and uniform continuity difference')">ε-δ Analysis</div>
+    <div class="tag" onclick="quickSend('What is Abstract Algebra? Groups, Rings and Fields explained')">⊕ Algebra</div>
+    <div class="tag" onclick="quickSend('Explain Fourier series step by step')">∑ Fourier</div>
+    <div class="tag" onclick="quickSend('Explain probability — basic to advanced with examples')">🎯 Probability</div>
+    <div class="tag" onclick="quickSend('Explain topology — open sets, metric spaces')">🌀 Topology</div>
+    <div class="tag" onclick="quickSend('Solve 5 IIT JAM previous year questions on Real Analysis with full solutions')">🎓 JAM PYQ</div>
+    <div class="tag" onclick="quickSend('Give me a GATE mathematics mock question with solution')">🔬 GATE Q</div>
+  </div>
+
+  <div id="chat"></div>
+
+  <div id="inputarea">
+    <div id="img-preview">
+      <img id="prev-img" src="" alt=""/>
+      <button onclick="removeImg()">✕</button>
+    </div>
+    <div class="input-wrap">
+      <textarea id="input" rows="1" placeholder="Ask any math question..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <div class="inp-btns">
+        <input type="file" id="file-in" accept="image/*" style="display:none" onchange="handleImg(event)"/>
+        <button class="inp-icon" onclick="document.getElementById('file-in').click()" title="Upload problem image">📸</button>
+        <button id="send-btn" onclick="sendMsg()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="inp-hint">MATHSPHERE · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let mode = 'chat';
+let chatHistory = [];
+let imgB64 = null, imgType = null;
+let busy = false;
+let quizState = null;
+let mockState = null;
+let proofHistory = [], debateHistory = [];
+let bookmarks = JSON.parse(localStorage.getItem('ms_bookmarks') || '[]');
+
+const PROMPTS = {
+  chat:        { title:'💬 Ask Anything',       ph:'Ask any math question...' },
+  calculator:  { title:'🧮 Step Calculator',    ph:'Type a math problem to solve step by step...' },
+  formula:     { title:'📋 Formula Sheet',      ph:'Type a topic (e.g. Calculus, Linear Algebra)...' },
+  revision:    { title:'⚡ Rapid Revision',     ph:'Type a topic for TOP 10 revision points...' },
+  conceptmap:  { title:'🗺️ Concept Map',       ph:'Type a topic to see how it connects...' },
+  compare:     { title:'⚖️ Compare Concepts',  ph:'e.g. Continuity vs Uniform Continuity' },
+  verify:      { title:'🔍 Verify My Claim',    ph:'Type a mathematical claim to prove or disprove...' },
+  latex:       { title:'🧾 LaTeX Generator',    ph:'Describe what you need LaTeX code for...' },
+  projects:    { title:'🚀 Math Projects',      ph:'Type a domain (e.g. Machine Learning, Cryptography)...' },
+  proof:       { title:'✍️ Proof Builder',      ph:'Type the theorem you want to prove step by step...' },
+  debate:      { title:'🗣️ Math Debate',        ph:'Type your argument about the paradox...' },
+  research:    { title:'🔬 Research Hub',       ph:'Ask about research papers, proofs, topics, grants...' },
+  bookmarks:   { title:'🔖 My Bookmarks',       ph:'' },
+};
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+window.onload = () => { showWelcome(); renderTagsForMode(); };
+
+function showWelcome(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = `
+    <div id="welcome">
+      <div class="big-icon">🧮</div>
+      <h1>MathSphere</h1>
+      <p>Your AI-powered mathematics companion — step-by-step solutions, exam prep, proofs, quizzes and more. Built by Anupam Nigam.</p>
+      <div class="feat-grid">
+        <div class="feat">⚡ Groq AI</div><div class="feat">📐 Step-by-step</div>
+        <div class="feat">🎓 JAM · GATE · CSIR</div><div class="feat">📸 Image solving</div>
+        <div class="feat">🏆 Quiz + Mock Test</div><div class="feat">🌍 Hindi / Hinglish</div>
+        <div class="feat">📋 Formula Sheets</div><div class="feat">✍️ Proof Builder</div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+//  MODE
+// ─────────────────────────────────────────────
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById(`nav-${m}`);
+  if(nb) nb.classList.add('active');
+
+  const cfg = PROMPTS[m] || PROMPTS.chat;
+  document.getElementById('mode-title').textContent = cfg.title;
+  const inp = document.getElementById('input');
+  inp.placeholder = cfg.ph || 'Type here...';
+
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+  renderTagsForMode();
+
+  if(m === 'quiz')      { showQuizTopics(); return; }
+  if(m === 'mocktest')  { showMockTopics(); return; }
+  if(m === 'challenge') { fetchChallenge(); return; }
+  if(m === 'pyq')       { showPYQTopics(); return; }
+  if(m === 'mathematician') { fetchMathematician(); return; }
+  if(m === 'realworld') { fetchRealWorld(); return; }
+  if(m === 'bookmarks') { showBookmarks(); return; }
+  if(m === 'debate')    { showParadoxPicker(); return; }
+
+  clearChat();
+}
+
+function renderTagsForMode(){
+  const bar = document.getElementById('tagsbar');
+  if(mode === 'quiz') {
+    bar.innerHTML = ['Calculus','Linear Algebra','Real Analysis','Algebra','Probability','Number Theory','Complex Analysis','Statistics']
+      .map(t => `<div class="tag" onclick="startQuiz('${t}')">${t}</div>`).join('');
+  } else if(mode === 'mocktest') {
+    bar.innerHTML = ['JAM','GATE','CSIR'].map(e => `<div class="tag" onclick="startMock('${e}')">${e} Mock</div>`).join('');
+  } else if(mode === 'pyq') {
+    bar.innerHTML = ['JAM','GATE','CSIR'].map(e => `<div class="tag" onclick="fetchPYQ('${e}')">${e} PYQs</div>`).join('');
+  } else {
+    bar.innerHTML = [
+      ['∫ Integration','Explain integration by parts with a full example'],
+      ['λ Eigenvalues','Explain eigenvalues and eigenvectors with example'],
+      ['ε-δ Analysis','Explain epsilon-delta definition of limit'],
+      ['⊕ Algebra','Explain groups, rings and fields in abstract algebra'],
+      ['∑ Fourier','Explain Fourier series with a worked example'],
+      ['🎯 Probability','Explain Bayes theorem with a real example'],
+      ['🌀 Topology','Explain open sets and metric spaces'],
+    ].map(([l,q]) => `<div class="tag" onclick="quickSend('${q}')">${l}</div>`).join('');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  CHAT
+// ─────────────────────────────────────────────
+function clearChat(){
+  chatHistory = []; proofHistory = []; debateHistory = [];
+  showWelcome();
+}
+
+function removeWelcome(){
+  const w = document.getElementById('welcome');
+  if(w) w.remove();
+}
+
+async function sendMsg(){
+  const inp = document.getElementById('input');
+  const text = inp.value.trim();
+  if((!text && !imgB64) || busy) return;
+  removeWelcome();
+
+  addMsg('user', text || '📸 [Image sent]');
+  inp.value = ''; inp.style.height = 'auto';
+
+  const curImg = imgB64, curType = imgType;
+  removeImg();
+
+  // Save to history
+  chatHistory.push({role:'user', content: text || 'Solve this image problem.'});
+
+  if(mode === 'quiz' && quizState)   { handleQuizAnswer(text); return; }
+  if(mode === 'mocktest' && mockState){ handleMockAnswer(text); return; }
+
+  showTyping();
+  try {
+    let answer;
+    if(mode === 'calculator'){
+      const r = await post('/api/calculator',{problem:text});
+      answer = r.answer;
+    } else if(mode === 'formula'){
+      const r = await post('/api/formula',{topic:text});
+      answer = r.answer;
+    } else if(mode === 'revision'){
+      const r = await post('/api/revision',{topic:text});
+      answer = r.answer;
+    } else if(mode === 'conceptmap'){
+      const r = await post('/api/conceptmap',{topic:text});
+      answer = r.answer;
+    } else if(mode === 'compare'){
+      const r = await post('/api/compare',{concepts:text});
+      answer = r.answer;
+    } else if(mode === 'verify'){
+      const r = await post('/api/verify',{claim:text});
+      answer = r.answer;
+    } else if(mode === 'latex'){
+      const r = await post('/api/latex',{text:text});
+      answer = r.answer;
+    } else if(mode === 'projects'){
+      const r = await post('/api/projects',{domain:text});
+      answer = r.answer;
+    } else if(mode === 'proof'){
+      proofHistory.push({role:'user', content:text});
+      const r = await post('/api/proof',{theorem:text, history:proofHistory.slice(-10)});
+      answer = r.answer;
+      proofHistory.push({role:'assistant', content:answer});
+    } else if(mode === 'debate'){
+      debateHistory.push({role:'user', content:text});
+      const r = await post('/api/debate',{argument:text, history:debateHistory.slice(-10)});
+      answer = r.answer;
+      debateHistory.push({role:'assistant', content:answer});
+    } else if(mode === 'research'){
+      const r = await post('/api/research',{question:text});
+      answer = r.answer;
+    } else {
+      // Normal chat + image support
+      const payload = {messages: chatHistory.slice(-16), mode:'normal'};
+      if(curImg){ payload.image_b64 = curImg; payload.image_type = curType; }
+      const r = await post('/api/chat', payload);
+      answer = r.answer;
+    }
+    hideTyping();
+    chatHistory.push({role:'assistant', content:answer});
+    addMsg('bot', answer);
+  } catch(e){
+    hideTyping();
+    addMsg('bot', '⚠️ Error: ' + e.message, true);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  QUIZ
+// ─────────────────────────────────────────────
+function showQuizTopics(){
+  removeWelcome();
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  const topics = ['Calculus','Linear Algebra','Real Analysis','Algebra','Probability','Number Theory','Complex Analysis','Statistics','Differential Equations','Topology'];
+  addBotHTML(`<div class="panel">
+    <div class="panel-title">🏆 Quiz Mode — Select a Topic</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${topics.map(t=>`<button class="panel-btn" onclick="startQuiz('${t}')">${t}</button>`).join('')}
+    </div>
+  </div>`);
+}
+
+async function startQuiz(topic){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  quizState = {topic, q:0, total:5, score:0, difficulty:'medium'};
+  addMsg('bot', `🏆 Starting ${topic} Quiz — 5 questions!\nSelect A, B, C or D for each question.`);
+  await nextQuizQuestion();
+}
+
+async function nextQuizQuestion(){
+  showTyping();
+  try {
+    const r = await post('/api/quiz/question',{
+      topic: quizState.topic,
+      difficulty: quizState.difficulty,
+      q_num: quizState.q+1,
+      total: quizState.total
+    });
+    hideTyping();
+    quizState.q++;
+    quizState.currentAnswer = r.answer;
+    quizState.currentExpl = r.explanation;
+    renderQuizQuestion(r.question, r.answer, r.explanation);
+  } catch(e){
+    hideTyping();
+    addMsg('bot','⚠️ Error generating question. Please try again.',true);
+  }
+}
+
+function renderQuizQuestion(question, answer, explanation){
+  // Parse options from question text
+  const lines = question.split('\n').filter(l=>l.trim());
+  const qLine = lines.find(l=>l.startsWith('Q:')) || lines[0];
+  const opts = lines.filter(l=>/^[A-D]\)/.test(l.trim()));
+
+  const id = 'quiz-' + Date.now();
+  const html = `
+    <div class="quiz-card" id="${id}">
+      <div class="mock-info">Question ${quizState.q} of ${quizState.total}</div>
+      <div class="mock-progress"><div class="mock-bar" style="width:${(quizState.q/quizState.total)*100}%"></div></div>
+      <div class="quiz-q">${fmt(qLine.replace(/^Q:\s*/,''))}</div>
+      <div class="quiz-opts">
+        ${opts.map((o,i)=>{
+          const letter = o.trim()[0];
+          const text = o.trim().slice(2).trim();
+          return `<button class="quiz-opt" id="${id}-${letter}" onclick="checkAnswer('${id}','${letter}','${answer}','${escQ(explanation)}')" data-letter="${letter}">
+            <span class="quiz-letter">${letter}</span>${fmt(text)}
+          </button>`;
+        }).join('')}
+      </div>
+      <div class="quiz-expl" id="${id}-expl"></div>
+      <div class="quiz-footer">
+        <span class="quiz-score">Score: ${quizState.score}/${quizState.q-1}</span>
+        <button class="quiz-next" id="${id}-next" style="display:none" onclick="quizNext('${id}')">Next →</button>
+      </div>
+    </div>`;
+  addBotHTML(html);
+}
+
+function checkAnswer(id, chosen, correct, explanation){
+  // Disable all buttons
+  ['A','B','C','D'].forEach(l=>{
+    const btn = document.getElementById(`${id}-${l}`);
+    if(btn){ btn.disabled = true;
+      if(l===correct) btn.classList.add('correct');
+      else if(l===chosen && chosen!==correct) btn.classList.add('wrong');
+    }
+  });
+  const isCorrect = chosen === correct;
+  if(isCorrect) quizState.score++;
+  const expl = document.getElementById(`${id}-expl`);
+  if(expl){
+    expl.style.display = 'block';
+    expl.innerHTML = (isCorrect ? '✅ Correct! ' : `❌ Wrong. Answer: ${correct}. `) + (explanation||'');
+  }
+  document.getElementById(`${id}-next`).style.display = 'block';
+  // Update score display
+  const sc = document.querySelector(`#${id} .quiz-score`);
+  if(sc) sc.textContent = `Score: ${quizState.score}/${quizState.q}`;
+}
+
+async function quizNext(id){
+  document.getElementById(`${id}-next`).style.display = 'none';
+  if(quizState.q >= quizState.total){
+    showQuizResult();
+  } else {
+    await nextQuizQuestion();
+  }
+}
+
+function showQuizResult(){
+  const s = quizState.score, t = quizState.total;
+  const pct = Math.round((s/t)*100);
+  const stars = '⭐'.repeat(Math.min(s,5)) + '☆'.repeat(5-Math.min(s,5));
+  const remark = pct===100?'Perfect score! Outstanding! 🏆':pct>=80?'Excellent work! 🌟':pct>=60?'Good job! Keep practicing! 💪':'Need more practice. Study hard! 📚';
+  addBotHTML(`<div class="result-card">
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:8px">🏆 Quiz Complete — ${quizState.topic}</div>
+    <div class="result-score">${s}/${t}</div>
+    <div class="result-stars">${stars}</div>
+    <div class="result-label">${pct}% · ${remark}</div>
+    <button class="result-restart" onclick="startQuiz('${quizState.topic}')">Try Again</button>
+    &nbsp;
+    <button class="result-restart" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)" onclick="showQuizTopics()">Change Topic</button>
+  </div>`);
+  quizState = null;
+}
+
+// ─────────────────────────────────────────────
+//  MOCK TEST
+// ─────────────────────────────────────────────
+function showMockTopics(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML = '';
+  addBotHTML(`<div class="panel">
+    <div class="panel-title">📝 Mock Test — Select Exam</div>
+    ${['JAM','GATE','CSIR'].map(e=>`<button class="panel-btn" onclick="startMock('${e}')">🎓 ${e} Full Mock Test (30 Questions)</button>`).join('')}
+  </div>`);
+}
+
+async function startMock(exam){
+  document.getElementById('chat').innerHTML = '';
+  mockState = {exam, q:0, total:30, score:0, wrongTopics:[]};
+  addMsg('bot',`📝 Starting ${exam} Mock Test — 30 Questions!\nType A, B, C or D for each answer.\nType STOP to end the test.`);
+  await nextMockQuestion();
+}
+
+async function nextMockQuestion(){
+  showTyping();
+  try {
+    const r = await post('/api/quiz/question',{
+      topic: getMockTopic(mockState.exam),
+      difficulty: 'hard',
+      q_num: mockState.q+1,
+      total: mockState.total
+    });
+    hideTyping();
+    mockState.q++;
+    mockState.currentAnswer = r.answer;
+    mockState.currentExpl = r.explanation;
+    renderMockQuestion(r.question, mockState.q);
+  } catch(e){
+    hideTyping();
+    addMsg('bot','⚠️ Error. Type STOP to end.',true);
+  }
+}
+
+function getMockTopic(exam){
+  const topics = {
+    JAM:['Real Analysis','Linear Algebra','Calculus','Differential Equations','Probability','Statistics'],
+    GATE:['Calculus','Linear Algebra','Complex Analysis','PDE','ODE','Combinatorics','Numerical Analysis'],
+    CSIR:['Real Analysis','Topology','Algebra','Complex Analysis','Functional Analysis','Probability']
+  };
+  const list = topics[exam] || topics.JAM;
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+function renderMockQuestion(question, qNum){
+  const lines = question.split('\n').filter(l=>l.trim());
+  const qLine = lines.find(l=>l.startsWith('Q:')) || lines[0];
+  const opts = lines.filter(l=>/^[A-D]\)/.test(l.trim()));
+  const id = 'mock-'+Date.now();
+  const html = `<div class="quiz-card" id="${id}">
+    <div class="mock-info">${mockState.exam} Mock — Q${qNum}/${mockState.total} | Score: ${mockState.score}</div>
+    <div class="mock-progress"><div class="mock-bar" style="width:${(qNum/mockState.total)*100}%"></div></div>
+    <div class="quiz-q">${fmt(qLine.replace(/^Q:\s*/,''))}</div>
+    <div class="quiz-opts">
+      ${opts.map(o=>{
+        const letter=o.trim()[0], text=o.trim().slice(2).trim();
+        return `<button class="quiz-opt" id="${id}-${letter}" onclick="checkMock('${id}','${letter}')" data-letter="${letter}">
+          <span class="quiz-letter">${letter}</span>${fmt(text)}
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="quiz-expl" id="${id}-expl"></div>
+    <div class="quiz-footer">
+      <span class="mock-info">Type STOP in input to end test</span>
+      <button class="quiz-next" id="${id}-next" style="display:none" onclick="mockNext('${id}')">${qNum>=mockState.total?'See Result':'Next →'}</button>
+    </div>
+  </div>`;
+  addBotHTML(html);
+}
+
+function checkMock(id, chosen){
+  if(!mockState) return;
+  const correct = mockState.currentAnswer;
+  ['A','B','C','D'].forEach(l=>{
+    const btn=document.getElementById(`${id}-${l}`);
+    if(btn){ btn.disabled=true;
+      if(l===correct) btn.classList.add('correct');
+      else if(l===chosen&&chosen!==correct) btn.classList.add('wrong');
+    }
+  });
+  const isCorrect = chosen===correct;
+  if(isCorrect) mockState.score++;
+  else mockState.wrongTopics.push(getMockTopic(mockState.exam));
+  const expl=document.getElementById(`${id}-expl`);
+  if(expl){ expl.style.display='block'; expl.innerHTML=(isCorrect?'✅ Correct! ':'❌ Wrong. Answer: '+correct+'. ')+(mockState.currentExpl||''); }
+  document.getElementById(`${id}-next`).style.display='block';
+}
+
+async function mockNext(id){
+  document.getElementById(`${id}-next`).style.display='none';
+  if(mockState.q>=mockState.total){ showMockResult(); }
+  else { await nextMockQuestion(); }
+}
+
+function showMockResult(){
+  const s=mockState.score,t=mockState.total,pct=Math.round((s/t)*100);
+  const grade=pct>=80?'Outstanding! 🏆':pct>=60?'Good! Keep practicing! 💪':'Need more practice! 📚';
+  const weak=[...new Set(mockState.wrongTopics)].slice(0,4).join(', ')||'None';
+  addBotHTML(`<div class="result-card">
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:8px">📝 ${mockState.exam} Mock Test Complete</div>
+    <div class="result-score">${s}/${t}</div>
+    <div class="result-stars">${pct}%</div>
+    <div class="result-label">${grade}</div>
+    ${weak!=='None'?`<div style="font-size:12px;color:var(--txt2);margin:8px 0">⚠️ Revise: ${weak}</div>`:''}
+    <button class="result-restart" onclick="startMock('${mockState.exam}')">Retry</button>
+    &nbsp;
+    <button class="result-restart" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)" onclick="showMockTopics()">Change Exam</button>
+  </div>`);
+  mockState=null;
+}
+
+// Handle STOP in mock/quiz
+function checkStop(text){
+  if(text.trim().toUpperCase()==='STOP'){
+    if(mockState){ showMockResult(); return true; }
+    if(quizState){ showQuizResult(); return true; }
+  }
+  return false;
+}
+
+// ─────────────────────────────────────────────
+//  PYQ BANK
+// ─────────────────────────────────────────────
+function showPYQTopics(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  addBotHTML(`<div class="panel">
+    <div class="panel-title">📜 Previous Year Questions</div>
+    ${['JAM','GATE','CSIR'].map(e=>`<button class="panel-btn" onclick="fetchPYQ('${e}')">🎓 ${e} Previous Year Questions</button>`).join('')}
+  </div>`);
+}
+
+async function fetchPYQ(exam){
+  removeWelcome();
+  showTyping();
+  try {
+    const r = await fetch(`/api/pyq?exam=${exam}`);
+    const d = await r.json();
+    hideTyping();
+    const html=`<div class="quiz-card">
+      <div class="mock-info">📜 ${exam} PYQ — ${d.year} | Topic: ${d.topic}</div>
+      <div class="quiz-q" style="margin:10px 0"><strong>Question:</strong><br>${fmt(d.q)}</div>
+      <div class="quiz-expl" style="display:block"><strong>✅ Solution:</strong><br>${fmt(d.a)}</div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="quiz-next" onclick="fetchPYQ('${exam}')">Next Question →</button>
+        <button class="quiz-next" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)" onclick="saveBookmark('${exam} PYQ','${escQ(d.q+'\\n\\nSolution: '+d.a)}')">🔖 Save</button>
+      </div>
+    </div>`;
+    addBotHTML(html);
+  } catch(e){ hideTyping(); addMsg('bot','⚠️ Error loading PYQ.',true); }
+}
+
+// ─────────────────────────────────────────────
+//  CHALLENGE
+// ─────────────────────────────────────────────
+async function fetchChallenge(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  showTyping();
+  try {
+    const r = await fetch('/api/challenge');
+    const d = await r.json();
+    hideTyping();
+    addBotHTML(`<div class="quiz-card">
+      <div class="panel-title">🧩 Today's Math Challenge</div>
+      <div class="quiz-q" style="margin:10px 0">${fmt(d.challenge)}</div>
+      <div style="color:var(--txt3);font-size:12px">Type your solution in the chat — I'll check it!</div>
+      <div style="margin-top:10px">
+        <button class="quiz-next" onclick="fetchChallenge()">New Challenge</button>
+        &nbsp;
+        <button class="quiz-next" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)" onclick="saveBookmark('Daily Challenge','${escQ(d.challenge)}')">🔖 Save</button>
+      </div>
+    </div>`);
+    mode = 'chat'; // allow freeform reply
+  } catch(e){ hideTyping(); addMsg('bot','⚠️ Error.',true); }
+}
+
+// ─────────────────────────────────────────────
+//  MATHEMATICIAN
+// ─────────────────────────────────────────────
+async function fetchMathematician(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  showTyping();
+  try {
+    const d = await (await fetch('/api/mathematician')).json();
+    hideTyping();
+    addBotHTML(`<div class="quiz-card">
+      <div class="panel-title">🧠 Mathematician of the Week</div>
+      <div style="margin:10px 0">
+        <div style="font-size:18px;font-weight:700;color:var(--txt)">${d.name}</div>
+        <div style="font-size:12px;color:var(--acc);font-family:var(--font-mono);margin:3px 0">${d.period} · ${d.country}</div>
+        <div style="margin:12px 0;color:var(--txt2);font-size:13px;line-height:1.7">${d.contribution}</div>
+        <div style="background:var(--sur3);border-left:3px solid var(--acc2);padding:10px 13px;border-radius:0 8px 8px 0;font-style:italic;color:var(--txt2);font-size:13px">"${d.quote}"</div>
+      </div>
+      <button class="quiz-next" onclick="fetchMathematician()">Next Mathematician</button>
+    </div>`);
+  } catch(e){ hideTyping(); addMsg('bot','⚠️ Error.',true); }
+}
+
+// ─────────────────────────────────────────────
+//  REAL WORLD
+// ─────────────────────────────────────────────
+async function fetchRealWorld(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  showTyping();
+  try {
+    const d = await (await fetch('/api/realworld')).json();
+    hideTyping();
+    addBotHTML(`<div class="quiz-card">
+      <div class="panel-title">🌍 Real World Mathematics</div>
+      <div style="margin:10px 0">
+        <div style="font-size:13px;color:var(--acc);font-family:var(--font-mono)">Concept: ${d.concept}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--txt);margin:4px 0">Used in: ${d.application}</div>
+        <div style="margin:12px 0;color:var(--txt2);font-size:13px;line-height:1.7">${d.explanation}</div>
+      </div>
+      <button class="quiz-next" onclick="fetchRealWorld()">Next Application</button>
+    </div>`);
+  } catch(e){ hideTyping(); addMsg('bot','⚠️ Error.',true); }
+}
+
+// ─────────────────────────────────────────────
+//  PARADOX PICKER
+// ─────────────────────────────────────────────
+async function showParadoxPicker(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  showTyping();
+  try {
+    const paradoxes = await (await fetch('/api/paradoxes')).json();
+    hideTyping();
+    addBotHTML(`<div class="panel">
+      <div class="panel-title">🗣️ Math Debate Club — Pick a Paradox</div>
+      ${paradoxes.map(p=>`<button class="panel-btn" onclick="startDebate('${escQ(p.name)}','${escQ(p.statement)}','${escQ(p.teaser)}')">${p.name}</button>`).join('')}
+      <button class="panel-btn" onclick="startRandomDebate()">🎲 Random Paradox!</button>
+    </div>`);
+  } catch(e){ hideTyping(); addMsg('bot','⚠️ Error.',true); }
+}
+
+async function startRandomDebate(){
+  const d = await (await fetch('/api/paradox')).json();
+  startDebate(d.name, d.statement, d.teaser);
+}
+
+function startDebate(name, statement, teaser){
+  debateHistory = [];
+  document.getElementById('chat').innerHTML='';
+  addBotHTML(`<div class="quiz-card">
+    <div class="panel-title">🗣️ ${name}</div>
+    <div style="background:var(--sur3);border-left:3px solid var(--acc4);padding:10px 13px;border-radius:0 8px 8px 0;margin:10px 0;color:var(--acc4);font-size:13px"><strong>Teaser:</strong> ${teaser}</div>
+    <div style="color:var(--txt2);font-size:13px;line-height:1.7;margin:8px 0">${statement}</div>
+    <div style="font-size:12px;color:var(--txt3);margin-top:10px">What do YOU think? Type your argument below!</div>
+  </div>`);
+  mode = 'debate';
+}
+
+// ─────────────────────────────────────────────
+//  EXAM INFO
+// ─────────────────────────────────────────────
+async function showExam(exam){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  showTyping();
+  try {
+    const d = await (await fetch(`/api/exam/${exam}`)).json();
+    hideTyping();
+    const html=`<div class="quiz-card">
+      <div class="panel-title">🎓 ${d.full_name}</div>
+      <div style="display:grid;gap:12px;margin-top:12px">
+        <div><div style="font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:3px">CONDUCTING BODY</div><div style="color:var(--txt2);font-size:13px">${d.conducting_body}</div></div>
+        <div><div style="font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:3px">ELIGIBILITY</div><div style="color:var(--txt2);font-size:13px">${d.eligibility}</div></div>
+        <div><div style="font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:3px">EXAM PATTERN</div><div style="color:var(--txt2);font-size:13px;white-space:pre-line">${d.pattern}</div></div>
+        <div><div style="font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:3px">SYLLABUS</div><div style="color:var(--txt2);font-size:13px">${d.syllabus}</div></div>
+        <div><div style="font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:3px">TOPIC WEIGHTAGE</div><div style="color:var(--txt2);font-size:13px;white-space:pre-line">${d.weightage}</div></div>
+        <div><div style="font-size:10px;color:var(--acc);font-family:var(--font-mono);margin-bottom:3px">RECOMMENDED BOOKS</div><div style="color:var(--txt2);font-size:13px">${d.books}</div></div>
+        <div><a href="${d.website}" target="_blank" style="color:var(--acc);font-size:13px">🔗 Official Website: ${d.website}</a></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="quiz-next" onclick="fetchPYQ('${exam}')">📜 View PYQs</button>
+        <button class="quiz-next" onclick="startMock('${exam}')" style="background:var(--acc2)">📝 Take Mock Test</button>
+      </div>
+    </div>`;
+    addBotHTML(html);
+    document.getElementById('sidebar').classList.remove('open');
+  } catch(e){ hideTyping(); addMsg('bot','⚠️ Error.',true); }
+}
+
+// ─────────────────────────────────────────────
+//  BOOKMARKS
+// ─────────────────────────────────────────────
+function showBookmarks(){
+  removeWelcome();
+  document.getElementById('chat').innerHTML='';
+  if(!bookmarks.length){
+    addBotHTML(`<div class="quiz-card"><div class="panel-title">🔖 My Bookmarks</div>
+      <div style="color:var(--txt2);font-size:13px;margin-top:8px">No bookmarks yet!<br>After any answer, click the 🔖 Save button to bookmark it.</div>
+    </div>`);
+    return;
+  }
+  let html=`<div class="quiz-card"><div class="panel-title">🔖 My Bookmarks (${bookmarks.length})</div>`;
+  bookmarks.slice().reverse().forEach((b,i)=>{
+    html+=`<div class="bm-item">
+      <div class="bm-topic">${b.topic} · ${b.date}</div>
+      <div class="bm-content">${fmt(b.content.substring(0,300))}${b.content.length>300?'...':''}</div>
+      <button class="bm-delete" onclick="deleteBookmark(${bookmarks.length-1-i})">🗑 Delete</button>
+    </div>`;
+  });
+  html+=`<button class="quiz-next" style="background:var(--red);margin-top:4px" onclick="clearBookmarks()">Clear All</button></div>`;
+  addBotHTML(html);
+}
+
+function saveBookmark(topic, content){
+  bookmarks.push({topic, content, date:new Date().toLocaleDateString()});
+  if(bookmarks.length>30) bookmarks.shift();
+  localStorage.setItem('ms_bookmarks', JSON.stringify(bookmarks));
+  showNotif('🔖 Saved to bookmarks!');
+}
+
+function saveLastMsg(){
+  const bots = document.querySelectorAll('.msg.bot .bubble');
+  if(!bots.length){ showNotif('Nothing to save yet!'); return; }
+  const last = bots[bots.length-1].innerText;
+  saveBookmark(mode==='chat'?'Math Answer':PROMPTS[mode]?.title||mode, last);
+}
+
+function deleteBookmark(idx){
+  bookmarks.splice(idx,1);
+  localStorage.setItem('ms_bookmarks', JSON.stringify(bookmarks));
+  showBookmarks();
+}
+
+function clearBookmarks(){
+  if(confirm('Delete all bookmarks?')){ bookmarks=[]; localStorage.setItem('ms_bookmarks','[]'); showBookmarks(); }
+}
+
+function showNotif(msg){
+  const n=document.createElement('div');
+  n.style.cssText=`position:fixed;top:16px;right:16px;background:var(--sur3);border:1px solid var(--bor2);
+    color:var(--txt);padding:10px 16px;border-radius:8px;font-size:12px;z-index:999;font-family:var(--font-mono);
+    animation:fadeUp .3s ease`;
+  n.textContent=msg;
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(),2200);
+}
+
+// ─────────────────────────────────────────────
+//  DOM HELPERS
+// ─────────────────────────────────────────────
+function addMsg(role, text, isErr=false){
+  removeWelcome();
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  div.innerHTML=`
+    <div class="avatar">${role==='user'?'👤':'🧮'}</div>
+    <div class="bubble${isErr?' error-bubble':''}">${fmt(text)}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+  // Add save button for bot messages
+  if(role==='bot' && !isErr){
+    const bub=div.querySelector('.bubble');
+    const savebtn=document.createElement('div');
+    savebtn.style.cssText='margin-top:8px';
+    savebtn.innerHTML=`<button onclick="saveLastMsg()" style="background:none;border:1px solid var(--bor);color:var(--txt3);padding:3px 9px;border-radius:5px;font-size:10px;cursor:pointer;font-family:var(--font-mono);transition:all .2s" onmouseover="this.style.borderColor='var(--acc)';this.style.color='var(--acc)'" onmouseout="this.style.borderColor='var(--bor)';this.style.color='var(--txt3)'">🔖 Save</button>`;
+    bub.appendChild(savebtn);
+  }
+}
+
+function addBotHTML(html){
+  removeWelcome();
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');
+  div.className='msg bot';
+  div.innerHTML=`<div class="avatar">🧮</div><div class="bubble">${html}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function showTyping(){
+  busy=true;
+  document.getElementById('send-btn').disabled=true;
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');
+  div.className='msg bot'; div.id='typing-ind';
+  div.innerHTML=`<div class="avatar">🧮</div><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function hideTyping(){
+  busy=false;
+  document.getElementById('send-btn').disabled=false;
+  const t=document.getElementById('typing-ind');
+  if(t)t.remove();
+}
+
+function fmt(text){
+  if(!text)return '';
+  let t=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t=t.replace(/(https?:\/\/[^\s<&]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  t=t.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>');
+  t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
+  t=t.replace(/(◆━+◆)/g,'<hr>');
+  t=t.replace(/^(📌|💡|📖|📐|✏️|📚|📝|✅|⚠️|🎯|🔢|🔷|📊|🏆|🧩|🌐|📌|🔬)\s+(.+)$/gm,'<span class="sec">$1 $2</span>');
+  t=t.replace(/\n/g,'<br>');
+  return t;
+}
+
+function escQ(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n'); }
+
+// ─────────────────────────────────────────────
+//  INPUT HANDLING
+// ─────────────────────────────────────────────
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }
+
+async function quickSend(msg){
+  if(mode!=='chat') setMode('chat');
+  document.getElementById('input').value=msg;
+  await sendMsg();
+}
+
+// ─────────────────────────────────────────────
+//  IMAGE HANDLING
+// ─────────────────────────────────────────────
+function handleImg(e){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const res=ev.target.result;
+    imgB64=res.split(',')[1]; imgType=file.type;
+    document.getElementById('prev-img').src=res;
+    document.getElementById('img-preview').style.display='block';
+    document.getElementById('input').placeholder='Ask about this image...';
+  };
+  r.readAsDataURL(file);
+}
+
+function removeImg(){
+  imgB64=null; imgType=null;
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('file-in').value='';
+  document.getElementById('input').placeholder = (PROMPTS[mode]||PROMPTS.chat).ph;
+}
+
+// Paste image
+document.addEventListener('paste',e=>{
+  const items=e.clipboardData?.items; if(!items)return;
+  for(const it of items){
+    if(it.type.startsWith('image/')){
+      const file=it.getAsFile();
+      const r=new FileReader();
+      r.onload=ev=>{ const res=ev.target.result; imgB64=res.split(',')[1]; imgType=file.type;
+        document.getElementById('prev-img').src=res; document.getElementById('img-preview').style.display='block'; };
+      r.readAsDataURL(file);
+    }
+  }
+});
+
+// ─────────────────────────────────────────────
+//  MISC
+// ─────────────────────────────────────────────
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+document.getElementById('app').addEventListener('click',e=>{
+  if(window.innerWidth<=700&&!document.getElementById('sidebar').contains(e.target)&&
+     !document.getElementById('menu-toggle').contains(e.target)){
+    document.getElementById('sidebar').classList.remove('open');
+  }
+});
+
+async function post(url, data){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!r.ok){ const err=await r.json().catch(()=>({})); throw new Error(err.error||`Server error ${r.status}`); }
+  return r.json();
+}
+
+// Handle mock/quiz answers through text input
+const _origSend = sendMsg;
+</script>
+</body>
+</html>
