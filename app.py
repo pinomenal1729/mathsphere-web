@@ -51,9 +51,7 @@ if GEMINI_AVAILABLE:
 
 GROQ_MODELS = [
     "llama-3.3-70b-versatile",
-    "llama-3.1-70b-versatile",
-    "mixtral-8x7b-32768",
-    "llama3-70b-8192",
+    "llama-3.1-8b-instant",
 ]
 
 # ── AI CORE ───────────────────────────────────────────────────
