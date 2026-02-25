@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
 <title>MathSphere — AI Mathematics Tutor by Anupam Nigam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
@@ -255,9 +255,7 @@ body::after{content:'';position:fixed;inset:0;
 .panel-btn:hover::before{transform:scaleY(1)}
 
 /* ── INPUT ── */
-#inputarea{padding:12px 20px 16px;border-top:1px solid var(--bor);
-  background:rgba(7,9,14,.92);backdrop-filter:blur(20px);flex-shrink:0;
-  animation:slideUp .5s cubic-bezier(.4,0,.2,1) .1s both}
+#inputarea{padding:12px 20px 16px;border-top:1px solid var(--bor);background:rgba(7,9,14,.92);backdrop-filter:blur(20px);flex-shrink:0;animation:slideUp .5s cubic-bezier(.4,0,.2,1) .1s both;position:relative;z-index:999;will-change:transform;transform:translateZ(0)}
 @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
 #img-preview{display:none;position:relative;margin-bottom:8px}
 #img-preview img{width:72px;height:54px;object-fit:cover;border-radius:7px;border:1px solid var(--bor2)}
@@ -266,8 +264,7 @@ body::after{content:'';position:fixed;inset:0;
 .input-wrap{display:flex;gap:8px;align-items:flex-end;background:var(--sur2);
   border:1px solid var(--bor2);border-radius:12px;padding:9px 9px 9px 15px;
   transition:border-color .25s,box-shadow .25s,transform .15s}
-.input-wrap:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,142,247,.09),0 0 22px rgba(79,142,247,.09);transform:translateY(-1px)}
-#input{flex:1;background:none;border:none;outline:none;color:var(--txt);
+.input-wrap:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,142,247,.09),0 0 22px rgba(79,142,247,.09)}#input{flex:1;background:none;border:none;outline:none;color:var(--txt);
   font-family:var(--font-body);font-size:13.5px;line-height:1.6;resize:none;max-height:120px;min-height:22px}
 #input::placeholder{color:var(--txt3)}
 .inp-btns{display:flex;gap:6px;align-items:center;flex-shrink:0}

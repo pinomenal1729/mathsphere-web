@@ -4,6 +4,10 @@ All features from Telegram bot converted to web
 Flask + Groq + Gemini fallback
 Deploy FREE on Render.com
 By Anupam Nigam | youtube.com/@pi_nomenal1729
+
+✅ FIXES APPLIED:
+1. Aggressive chat history limiting (Issue #3)
+2. Enhanced system prompt directive (Issue #3)
 """
 
 import os
@@ -62,8 +66,10 @@ def ask_ai(messages, system=None):
         if system:
             full.append({"role": "system", "content": system})
         full.extend(messages)
-        if len(full) > 21:
-            full = [full[0]] + full[-20:]
+        # ✅ FIX #3.1: AGGRESSIVE HISTORY LIMITING
+        # Keep only 9 previous messages (4-5 exchanges) instead of 20
+        if len(full) > 11:
+            full = [full[0]] + full[-9:]
         for model in GROQ_MODELS:
             try:
                 resp = groq_client.chat.completions.create(
@@ -533,7 +539,6 @@ def chat():
         data = request.get_json()
         messages   = data.get("messages", [])
         mode       = data.get("mode", "normal")
-        system     = data.get("system", SYSTEM_PROMPT)
         image_b64  = data.get("image_b64")
         image_type = data.get("image_type", "image/jpeg")
 
@@ -548,7 +553,25 @@ def chat():
         clean = [{"role":m["role"],"content":str(m["content"])}
                  for m in messages if m.get("role") in ("user","assistant") and m.get("content")]
 
-        return jsonify({"answer": ask_ai(clean, system=SYSTEM_PROMPT)})
+        # ✅ FIX #3.2: AGGRESSIVE HISTORY LIMITING
+        # Keep only 6 last messages (3 exchanges) instead of 20+
+        if len(clean) > 8:
+            clean = clean[-6:]
+
+        # ✅ FIX #3.3: ENHANCED SYSTEM PROMPT DIRECTIVE
+        # Add critical instruction to focus only on current question
+        enhanced_system = SYSTEM_PROMPT + """
+
+═══════════════════════════════════════
+⚠️ CRITICAL INSTRUCTION FOR THIS CHAT:
+═══════════════════════════════════════
+- Answer ONLY the current/latest question being asked
+- Do NOT repeat or summarize answers from previous messages
+- Do NOT reference or re-explain earlier topics unless asked again
+- Focus completely on the NEW question only
+- Be concise and avoid redundancy"""
+
+        return jsonify({"answer": ask_ai(clean, system=enhanced_system)})
     except Exception as e:
         print(f"Chat error: {e}")
         return jsonify({"error": str(e)}), 500
