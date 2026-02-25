@@ -622,7 +622,6 @@ function renderQuizQuestion(question,answer,explanation){
     </div>
   </div>`;
   addBotHTML(html);
-  // Render math in quiz question and options after DOM insert
   setTimeout(()=>{
     const card=document.getElementById(id);
     if(card)renderMath(card);
@@ -953,11 +952,9 @@ function addMsg(role,text,isErr=false){
     : `<img src="/static/logo.png" style="width:26px;height:26px;object-fit:contain;" onerror="this.style.display='none';this.parentNode.textContent='🧮'"/>`;
   div.innerHTML=`<div class="avatar">${avatarContent}</div><div class="bubble${isErr?' error-bubble':''}"></div>`;
   const bubble=div.querySelector('.bubble');
-  // Set text safely then render math
   bubble.innerHTML=fmt(text);
   chat.appendChild(div);
   chat.scrollTop=chat.scrollHeight;
-  // Render math after DOM insert
   requestAnimationFrame(()=>{renderMath(bubble);chat.scrollTop=chat.scrollHeight;});
   if(role==='bot'&&!isErr){
     const savebtn=document.createElement('div');savebtn.style.cssText='margin-top:8px';
@@ -994,26 +991,14 @@ function escHtml(text){
 
 function fmt(text){
   if(!text)return '';
-  // Preserve LaTeX delimiters — don't escape them
-  // First protect LaTeX blocks
   const latexBlocks=[];
   let t=text;
-  // Protect display math \[ ... \]
   t=t.replace(/\\\[([\s\S]*?)\\\]/g,(m)=>{latexBlocks.push(m);return `\x00LATEX${latexBlocks.length-1}\x00`;});
-  // Protect inline math \( ... \)
   t=t.replace(/\\\(([\s\S]*?)\\\)/g,(m)=>{latexBlocks.push(m);return `\x00LATEX${latexBlocks.length-1}\x00`;});
-  // Protect $$ ... $$
   t=t.replace(/\$\$([\s\S]*?)\$\$/g,(m)=>{latexBlocks.push(m);return `\x00LATEX${latexBlocks.length-1}\x00`;});
-  // Protect $ ... $
   t=t.replace(/\$([^\$\n]+?)\$/g,(m)=>{latexBlocks.push(m);return `\x00LATEX${latexBlocks.length-1}\x00`;});
-
-  // Now escape HTML
   t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  // Restore LaTeX blocks (unescaped)
   t=t.replace(/\x00LATEX(\d+)\x00/g,(_,i)=>latexBlocks[parseInt(i)]);
-
-  // Other formatting
   t=t.replace(/(https?:\/\/[^\s<&]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
   t=t.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>');
   t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
@@ -1084,6 +1069,555 @@ function checkStop(text){
     if(mockState){showMockResult();return true;}
     if(quizState){showQuizResult();return true;}
   }return false;
+}
+
+// ── EXAM OPTIONS (Step 2C) ────────────────────────────
+const EXAM_OPTIONS = {
+    jam: [
+        { label: '📖 Syllabus', onclick: 'showExam("JAM")' },
+        { label: '📚 Study Materials', onclick: 'showMaterials("JAM")' },
+        { label: '📝 PYQ Mock Test', onclick: 'startPYQMockTest("JAM")' },
+        { label: '💡 Concept Checker', onclick: 'showConceptTopics("JAM")' },
+        { label: '📊 Progress Tracker', onclick: 'showProgressTracker("JAM")' },
+        { label: '❓ Ask Expert', onclick: 'setMode("chat")' }
+    ],
+    gate: [
+        { label: '📖 Syllabus', onclick: 'showExam("GATE")' },
+        { label: '📚 Study Materials', onclick: 'showMaterials("GATE")' },
+        { label: '📝 PYQ Mock Test', onclick: 'startPYQMockTest("GATE")' },
+        { label: '💡 Concept Checker', onclick: 'showConceptTopics("GATE")' },
+        { label: '📊 Progress Tracker', onclick: 'showProgressTracker("GATE")' },
+        { label: '❓ Ask Expert', onclick: 'setMode("chat")' }
+    ],
+    net: [
+        { label: '📖 Syllabus', onclick: 'showExam("CSIR")' },
+        { label: '📚 Study Materials', onclick: 'showMaterials("NET")' },
+        { label: '📝 PYQ Mock Test', onclick: 'startPYQMockTest("NET")' },
+        { label: '💡 Concept Checker', onclick: 'showConceptTopics("NET")' },
+        { label: '📊 Progress Tracker', onclick: 'showProgressTracker("NET")' },
+        { label: '❓ Ask Expert', onclick: 'setMode("chat")' }
+    ],
+    boards: [
+        { label: '📚 Study Materials', onclick: 'showMaterials("BOARDS")' },
+        { label: '📝 Mock Tests', onclick: 'startPYQMockTest("BOARDS")' },
+        { label: '💡 Concept Checker', onclick: 'showConceptTopics("BOARDS")' },
+        { label: '📊 Progress Tracker', onclick: 'showProgressTracker("BOARDS")' },
+        { label: '❓ Ask Expert', onclick: 'setMode("chat")' }
+    ],
+    general: [
+        { label: '💬 Ask Anything', onclick: 'setMode("chat")' },
+        { label: '📈 Plot Function', onclick: 'showGraphPrompt()' },
+        { label: '🧮 Calculator', onclick: 'setMode("calculator")' }
+    ]
+};
+
+// ── HELPER FUNCTIONS FOR NEW FEATURES (Step 2E) ────────────────────────────
+
+function showConceptTopics(exam) {
+    removeWelcome();
+    const topicMap = {
+        "JAM": ["Limits and Continuity", "Derivatives"],
+        "GATE": ["Linear Algebra"],
+        "NET": ["Analysis"]
+    };
+    const topics = topicMap[exam] || [];
+    let html = `<div class="panel">
+        <div class="panel-title">💡 Select Topic for Concept Check</div>
+        ${topics.map(t => `<button class="panel-btn" onclick="startConceptChecker('${exam}', '${t}')">${t}</button>`).join('')}
+    </div>`;
+    addBotHTML(html);
+}
+
+function showGraphPrompt() {
+    removeWelcome();
+    let html = `<div class="panel">
+        <div class="panel-title">📈 Function Plotter</div>
+        <div style="margin: 15px 0; color: var(--txt2); font-size: 12px;">
+            Enter a function to plot (use 'x' as variable)<br>
+            Examples: x**2, x**2-4*x+3, sin(x), cos(x), exp(x)
+        </div>
+        <input id="equation-input" type="text" placeholder="e.g., x**2 - 4*x + 3" style="width: 100%; padding: 10px; border: 1px solid var(--bor); border-radius: 8px; background: var(--sur2); color: var(--txt); margin: 10px 0; font-family: monospace;">
+        <button onclick="const eq = document.getElementById('equation-input').value; if(eq) plotFunction2D(eq); else alert('Please enter an equation');" style="width: 100%; padding: 10px; background: var(--acc); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+            📊 Plot Function
+        </button>
+    </div>`;
+    addBotHTML(html);
+}
+
+// ── PYQ MOCK TEST SYSTEM ────────────────────────────
+
+let currentMockTest = null;
+let mockTestTimer = null;
+let mockTestStartTime = null;
+
+async function startPYQMockTest(exam) {
+    removeWelcome();
+    showTyping();
+    try {
+        const r = await fetch(`/api/pyq-mock/${exam}`);
+        const data = await r.json();
+        hideTyping();
+        currentMockTest = {
+            ...data,
+            answers: {},
+            currentQuestion: 0,
+            startTime: Date.now()
+        };
+        displayMockTestUI();
+        startMockTimer();
+    } catch (e) {
+        hideTyping();
+        addMsg('bot', '⚠️ Error loading mock test.', true);
+    }
+}
+
+function startMockTimer() {
+    mockTestStartTime = Date.now();
+    const duration = currentMockTest.duration * 60 * 1000;
+    const endTime = mockTestStartTime + duration;
+    mockTestTimer = setInterval(() => {
+        const now = Date.now();
+        const remaining = endTime - now;
+        if (remaining <= 0) {
+            clearInterval(mockTestTimer);
+            submitMockTest();
+            return;
+        }
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        const timerEl = document.getElementById('mock-timer');
+        if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        if (remaining < 5 * 60 * 1000) {
+            if (timerEl) timerEl.style.color = 'var(--red)';
+        }
+    }, 1000);
+}
+
+function displayMockTestUI() {
+    const q = currentMockTest.currentQuestion;
+    const question = currentMockTest.questions[q];
+    let html = `
+        <div class="quiz-card" style="position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <span style="color: var(--txt2);">${currentMockTest.exam} MOCK TEST</span><br>
+                    <strong>Question ${q + 1} of ${currentMockTest.total_questions}</strong>
+                </div>
+                <div style="font-size: 20px; font-weight: bold; color: var(--red);" id="mock-timer">60:00</div>
+            </div>
+            <div style="width: 100%; height: 4px; background: var(--bor); border-radius: 2px; overflow: hidden; margin-bottom: 15px;">
+                <div style="width: ${((q + 1) / currentMockTest.total_questions) * 100}%; height: 100%; background: var(--acc); transition: width 0.3s;"></div>
+            </div>
+            <div style="margin: 20px 0;">
+                <h3 style="margin-bottom: 15px; line-height: 1.7;">${question.question}</h3>
+                <p style="color: var(--txt3); font-size: 12px; margin-bottom: 10px;">Topic: <strong>${question.topic}</strong> | Year: <strong>${question.year}</strong></p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin: 20px 0;">
+                ${['A', 'B', 'C', 'D'].map(option => `
+                    <label style="padding: 12px; border: 2px solid var(--bor); border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="mock-answer-${q}" value="${option}"
+                            ${currentMockTest.answers[q] === option ? 'checked' : ''}
+                            onchange="currentMockTest.answers[${q}] = this.value;"
+                            style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="flex: 1;"><strong>${option})</strong> (Select option)</span>
+                    </label>
+                `).join('')}
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: space-between;">
+                <button onclick="previousMockQuestion()" ${q === 0 ? 'disabled' : ''}
+                    style="padding: 10px 20px; background: var(--sur3); border: 1px solid var(--bor); border-radius: 8px; color: var(--txt2); cursor: pointer;">
+                    ← Previous
+                </button>
+                <div style="display: flex; gap: 10px;">
+                    ${q < currentMockTest.total_questions - 1 ? `
+                        <button onclick="nextMockQuestion()"
+                            style="padding: 10px 20px; background: var(--acc); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                            Next →
+                        </button>
+                    ` : `
+                        <button onclick="submitMockTest()"
+                            style="padding: 10px 20px; background: var(--green); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                            ✓ SUBMIT TEST
+                        </button>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+    addBotHTML(html);
+}
+
+function nextMockQuestion() {
+    if (currentMockTest.currentQuestion < currentMockTest.total_questions - 1) {
+        currentMockTest.currentQuestion++;
+        document.getElementById('chat').lastElementChild.remove();
+        displayMockTestUI();
+    }
+}
+
+function previousMockQuestion() {
+    if (currentMockTest.currentQuestion > 0) {
+        currentMockTest.currentQuestion--;
+        document.getElementById('chat').lastElementChild.remove();
+        displayMockTestUI();
+    }
+}
+
+async function submitMockTest() {
+    clearInterval(mockTestTimer);
+    const duration = (Date.now() - mockTestStartTime) / 1000 / 60;
+    showTyping();
+    try {
+        const r = await fetch(`/api/pyq-submit/${currentMockTest.exam}/${currentMockTest.test_id}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ answers: currentMockTest.answers, duration: duration })
+        });
+        const result = await r.json();
+        hideTyping();
+        document.getElementById('chat').lastElementChild.remove();
+        let html = `
+            <div class="result-card" style="text-align: center;">
+                <div style="font-size: 14px; color: var(--txt2); margin-bottom: 15px;">
+                    📝 ${currentMockTest.exam} MOCK TEST RESULT
+                </div>
+                <div style="font-size: 48px; font-weight: 800; color: var(--acc); margin: 20px 0;">
+                    ${result.score}/${result.total}
+                </div>
+                <div style="font-size: 32px; margin: 10px 0;">
+                    ${result.percentage >= 80 ? '⭐⭐⭐⭐⭐' : result.percentage >= 60 ? '⭐⭐⭐⭐' : result.percentage >= 40 ? '⭐⭐⭐' : '⭐⭐'}
+                </div>
+                <div style="font-size: 18px; color: var(--txt); margin: 15px 0;">${result.percentage.toFixed(1)}%</div>
+                <div style="color: var(--txt2); margin: 15px 0;">${result.feedback}</div>
+                <div style="margin: 20px 0; padding: 15px; background: var(--sur3); border-radius: 8px; text-align: left;">
+                    <div style="color: var(--acc); font-weight: 600; margin-bottom: 8px;">💪 Strong Areas:</div>
+                    <div style="color: var(--txt2); margin-bottom: 15px;">${result.strong_areas.join(', ') || 'None identified'}</div>
+                    <div style="color: var(--red); font-weight: 600; margin-bottom: 8px;">📌 Weak Areas (Focus Here):</div>
+                    <div style="color: var(--txt2);">${result.weak_areas.join(', ') || 'None identified'}</div>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="startPYQMockTest('${currentMockTest.exam}')"
+                        style="padding: 10px 20px; background: var(--acc); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        🔄 Retry Test
+                    </button>
+                    <button onclick="setMode('chat')"
+                        style="padding: 10px 20px; background: var(--sur3); color: var(--txt2); border: 1px solid var(--bor); border-radius: 8px; cursor: pointer;">
+                        Ask Doubt
+                    </button>
+                </div>
+            </div>
+        `;
+        addBotHTML(html);
+        currentMockTest = null;
+    } catch (e) {
+        hideTyping();
+        addMsg('bot', '⚠️ Error submitting test.', true);
+    }
+}
+
+// ── CONCEPT CHECKER ────────────────────────────
+
+async function startConceptChecker(exam, topic) {
+    removeWelcome();
+    showTyping();
+    try {
+        const r = await fetch(`/api/concept-check/${exam}/${topic}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        });
+        const data = await r.json();
+        hideTyping();
+        let html = `
+            <div class="quiz-card">
+                <h2>💡 Concept Checker: ${topic}</h2>
+                <p style="color: var(--txt2); margin: 10px 0; font-size: 13px;">
+                    ✓ Pass Score: ${data.pass_score}% (${Math.ceil(data.total_questions * data.pass_score / 100)} out of ${data.total_questions} correct)
+                </p>
+                <form id="concept-form" onsubmit="submitConceptChecker(event, '${exam}', '${topic}', ${data.total_questions})">
+                    ${data.questions.map((q, i) => `
+                        <div style="margin: 20px 0; padding: 15px; background: var(--sur3); border-radius: 8px;">
+                            <h4 style="margin-bottom: 12px;">Q${i+1}: ${q.question}</h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                ${Object.entries(q.options).map(([key, value]) => `
+                                    <label style="padding: 10px; border: 1px solid var(--bor); border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; gap: 10px;">
+                                        <input type="radio" name="cc-q${i}" value="${key}" required style="cursor: pointer;">
+                                        <span><strong>${key})</strong> ${value}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                    <button type="submit" style="width: 100%; padding: 12px; background: var(--acc); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 20px; font-size: 14px;">
+                        ✓ Check My Understanding
+                    </button>
+                </form>
+            </div>
+        `;
+        addBotHTML(html);
+    } catch (e) {
+        hideTyping();
+        addMsg('bot', '⚠️ Error loading concept check.', true);
+    }
+}
+
+async function submitConceptChecker(event, exam, topic, totalQuestions) {
+    event.preventDefault();
+    showTyping();
+    try {
+        const answers = {};
+        for (let i = 0; i < totalQuestions; i++) {
+            const selected = document.querySelector(`input[name="cc-q${i}"]:checked`);
+            if (selected) answers[`Q${i+1}`] = selected.value;
+        }
+        const r = await fetch(`/api/concept-check/submit/${exam}/${topic}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({answers: answers})
+        });
+        const result = await r.json();
+        hideTyping();
+        document.getElementById('chat').lastElementChild.remove();
+        const passed = result.percentage >= 80;
+        let html = `
+            <div class="result-card" style="text-align: center;">
+                <h2 style="color: ${passed ? 'var(--green)' : 'var(--yellow)'};">
+                    ${passed ? '✅ CONCEPT CLEAR!' : '⚠️ NEEDS REVIEW'}
+                </h2>
+                <div style="font-size: 42px; font-weight: 800; color: var(--acc); margin: 15px 0;">
+                    ${result.score}/${result.total}
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">${result.percentage.toFixed(1)}%</div>
+                <div style="color: var(--txt2); margin: 15px 0; font-size: 13px;">${result.message}</div>
+                <div style="margin: 20px 0; padding: 15px; background: var(--sur3); border-radius: 8px; text-align: left; max-height: 300px; overflow-y: auto;">
+                    ${result.feedback.map(f => `
+                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--bor);">
+                            <div style="color: ${f.status.includes('✅') ? 'var(--green)' : 'var(--red)'}; font-weight: 600; margin-bottom: 5px;">${f.status}</div>
+                            <div style="color: var(--txt2); font-size: 12px; margin: 5px 0;"><strong>Q:</strong> ${f.question}</div>
+                            <div style="color: var(--txt3); font-size: 11px;">Your answer: <strong>${f.your_answer || 'Not answered'}</strong> | Correct: <strong>${f.correct_answer}</strong></div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    ${!passed ? `
+                        <button onclick="startConceptChecker('${exam}', '${topic}')"
+                            style="padding: 10px 20px; background: var(--acc); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            🔄 Try Again
+                        </button>
+                    ` : ''}
+                    <button onclick="setMode('chat')"
+                        style="padding: 10px 20px; background: var(--sur3); color: var(--txt2); border: 1px solid var(--bor); border-radius: 8px; cursor: pointer;">
+                        Ask Questions
+                    </button>
+                </div>
+            </div>
+        `;
+        addBotHTML(html);
+    } catch (e) {
+        hideTyping();
+        addMsg('bot', '⚠️ Error submitting concept check.', true);
+    }
+}
+
+// ── PROGRESS TRACKER ────────────────────────────
+
+async function showProgressTracker(exam) {
+    removeWelcome();
+    showTyping();
+    try {
+        const r = await fetch(`/api/tracker/${exam}`);
+        const data = await r.json();
+        hideTyping();
+        let html = `
+            <div class="tracker" style="background: var(--sur2); border: 1px solid var(--bor); border-radius: 12px; padding: 20px;">
+                <h2>📊 ${exam} Progress Tracker</h2>
+                <div style="margin: 20px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Overall Progress</span>
+                        <strong>${data.overall_progress.toFixed(1)}%</strong>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: var(--bor); border-radius: 4px; overflow: hidden;">
+                        <div style="width: ${data.overall_progress}%; height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc2)); transition: width 0.5s;"></div>
+                    </div>
+                </div>
+                ${Object.entries(data.topics).map(([topic, subtopics]) => `
+                    <div style="margin: 20px 0;">
+                        <h3 style="color: var(--acc); margin-bottom: 12px;">📚 ${topic}</h3>
+                        ${Object.entries(subtopics).map(([subtopic, status]) => {
+                            const completed = [status.definition_learned, status.concept_check_passed, status.practice_done, status.pyq_attempted].filter(s => s).length;
+                            return `
+                                <div style="margin: 10px 0; padding: 12px; background: var(--sur3); border-radius: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-weight: 600;">${subtopic}</span>
+                                        <span style="color: var(--txt3); font-size: 12px;">${completed}/4 completed</span>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        ${[
+                                            ['definition_learned', '📖 Definition'],
+                                            ['concept_check_passed', '💡 Concept'],
+                                            ['practice_done', '🧪 Practice'],
+                                            ['pyq_attempted', '📝 PYQ Test']
+                                        ].map(([key, label]) => `
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding: 6px 10px; background: ${status[key] ? 'rgba(45, 214, 122, 0.1)' : 'rgba(125, 135, 158, 0.1)'}; border-radius: 6px; transition: all 0.2s;">
+                                                <input type="checkbox" ${status[key] ? 'checked' : ''}
+                                                    onchange="updateTracker('${exam}', '${topic}', '${subtopic}', '${key}', this.checked)"
+                                                    style="cursor: pointer; width: 16px; height: 16px;">
+                                                <span>${label}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        addBotHTML(html);
+    } catch (e) {
+        hideTyping();
+        addMsg('bot', '⚠️ Error loading tracker.', true);
+    }
+}
+
+async function updateTracker(exam, topic, subtopic, item, status) {
+    try {
+        const r = await fetch('/api/tracker/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ exam, topic, subtopic, item, status })
+        });
+        const result = await r.json();
+        if (result.status === 'success') showProgressTracker(exam);
+    } catch (e) {
+        console.error('Error updating tracker:', e);
+    }
+}
+
+// ── GRAPH VISUALIZATION ────────────────────────────
+
+async function plotFunction2D(equation) {
+    removeWelcome();
+    showTyping();
+    try {
+        const r = await fetch('/api/plot-2d', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ equation, x_min: -10, x_max: 10 })
+        });
+        const data = await r.json();
+        hideTyping();
+        if (data.error) { addMsg('bot', `⚠️ ${data.error}`, true); return; }
+        let html = `
+            <div style="background: var(--sur2); border: 1px solid var(--bor); border-radius: 12px; padding: 20px; margin: 10px 0;">
+                <h3>📊 Function Graph: f(x) = ${equation}</h3>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                    <svg width="100%" height="400" style="border: 1px solid #ddd; border-radius: 8px;" id="graph-plot"></svg>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+                    <div style="background: var(--sur3); padding: 12px; border-radius: 8px;">
+                        <div style="color: var(--txt3); font-size: 12px; margin-bottom: 5px;">📍 ROOTS</div>
+                        <div style="color: var(--txt); font-weight: 600;">${data.roots.length > 0 ? data.roots.map(r => `x = ${r}`).join(', ') : 'No real roots'}</div>
+                    </div>
+                    <div style="background: var(--sur3); padding: 12px; border-radius: 8px;">
+                        <div style="color: var(--txt3); font-size: 12px; margin-bottom: 5px;">🔄 CRITICAL POINTS</div>
+                        <div style="color: var(--txt); font-weight: 600;">${data.critical_points.length > 0 ? `Found: ${data.critical_points.length}` : 'None found'}</div>
+                    </div>
+                    <div style="background: var(--sur3); padding: 12px; border-radius: 8px;">
+                        <div style="color: var(--txt3); font-size: 12px; margin-bottom: 5px;">📈 DOMAIN</div>
+                        <div style="color: var(--txt); font-weight: 600;">${data.analysis.domain}</div>
+                    </div>
+                    <div style="background: var(--sur3); padding: 12px; border-radius: 8px;">
+                        <div style="color: var(--txt3); font-size: 12px; margin-bottom: 5px;">🎯 Y-INTERCEPT</div>
+                        <div style="color: var(--txt); font-weight: 600;">${data.analysis.y_intercept !== null ? `y = ${data.analysis.y_intercept.toFixed(2)}` : 'Undefined'}</div>
+                    </div>
+                </div>
+                ${data.critical_points.length > 0 ? `
+                    <div style="background: var(--sur3); padding: 12px; border-radius: 8px; margin-top: 15px;">
+                        <div style="color: var(--txt3); font-size: 12px; margin-bottom: 8px;">📌 CRITICAL POINTS DETAILS</div>
+                        ${data.critical_points.map(cp => `
+                            <div style="color: var(--txt2); font-size: 12px; margin: 5px 0;">
+                                <strong>x = ${cp.x.toFixed(4)}</strong>, f(x) = ${cp.y.toFixed(4)} [${cp.type.toUpperCase()}]
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        addBotHTML(html);
+        setTimeout(() => { drawPlot(data); }, 100);
+    } catch (e) {
+        hideTyping();
+        addMsg('bot', `⚠️ Error: ${e.message}`, true);
+    }
+}
+
+function drawPlot(data) {
+    const svg = document.getElementById('graph-plot');
+    if (!svg) return;
+    const width = svg.clientWidth;
+    const height = 400;
+    const padding = 40;
+    const plotWidth = width - 2 * padding;
+    const plotHeight = height - 2 * padding;
+    const yValues = data.y.filter(v => !isNaN(v) && isFinite(v));
+    const yMin = Math.min(...yValues);
+    const yMax = Math.max(...yValues);
+    const yRange = yMax - yMin || 1;
+    for (let i = 0; i <= 10; i++) {
+        const x = padding + (plotWidth / 10) * i;
+        const y = padding + (plotHeight / 10) * i;
+        const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line1.setAttribute('x1', x); line1.setAttribute('y1', padding);
+        line1.setAttribute('x2', x); line1.setAttribute('y2', height - padding);
+        line1.setAttribute('stroke', '#ddd'); line1.setAttribute('stroke-width', '0.5');
+        svg.appendChild(line1);
+        const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line2.setAttribute('x1', padding); line2.setAttribute('y1', y);
+        line2.setAttribute('x2', width - padding); line2.setAttribute('y2', y);
+        line2.setAttribute('stroke', '#ddd'); line2.setAttribute('stroke-width', '0.5');
+        svg.appendChild(line2);
+    }
+    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    xAxis.setAttribute('x1', padding); xAxis.setAttribute('y1', padding + plotHeight / 2);
+    xAxis.setAttribute('x2', width - padding); xAxis.setAttribute('y2', padding + plotHeight / 2);
+    xAxis.setAttribute('stroke', '#333'); xAxis.setAttribute('stroke-width', '2');
+    svg.appendChild(xAxis);
+    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    yAxis.setAttribute('x1', padding); yAxis.setAttribute('y1', padding);
+    yAxis.setAttribute('x2', padding); yAxis.setAttribute('y2', height - padding);
+    yAxis.setAttribute('stroke', '#333'); yAxis.setAttribute('stroke-width', '2');
+    svg.appendChild(yAxis);
+    let pathData = '';
+    for (let i = 0; i < data.x.length; i++) {
+        const x_val = data.x[i];
+        const y_val = data.y[i];
+        if (!isNaN(y_val) && isFinite(y_val)) {
+            const x_pos = padding + ((x_val - (-10)) / 20) * plotWidth;
+            const y_pos = padding + plotHeight / 2 - ((y_val - 0) / (yRange || 1)) * (plotHeight / 2);
+            pathData += (i === 0 ? `M ${x_pos} ${y_pos}` : ` L ${x_pos} ${y_pos}`);
+        }
+    }
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathData); path.setAttribute('stroke', '#4f8ef7');
+    path.setAttribute('stroke-width', '2'); path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+    data.roots.forEach(root => {
+        const x_pos = padding + ((root - (-10)) / 20) * plotWidth;
+        const y_pos = padding + plotHeight / 2;
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', x_pos); circle.setAttribute('cy', y_pos);
+        circle.setAttribute('r', '5'); circle.setAttribute('fill', '#e84040');
+        svg.appendChild(circle);
+    });
+    data.critical_points.forEach(cp => {
+        const x_pos = padding + ((cp.x - (-10)) / 20) * plotWidth;
+        const y_pos = padding + plotHeight / 2 - ((cp.y - 0) / (yRange || 1)) * (plotHeight / 2);
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', x_pos); circle.setAttribute('cy', y_pos);
+        circle.setAttribute('r', '4'); circle.setAttribute('fill', '#2dd67a');
+        svg.appendChild(circle);
+    });
 }
 </script>
 </body>

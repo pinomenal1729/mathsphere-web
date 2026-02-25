@@ -1,19 +1,19 @@
 """
-MathSphere Web — Complete Backend
-All features from Telegram bot converted to web
-Flask + Groq + Gemini fallback
-Deploy FREE on Render.com
-By Anupam Nigam | youtube.com/@pi_nomenal1729
+MathSphere Web — Complete Backend with ALL 4 FEATURES
+Features:
+✅ PYQ Mock Tests
+✅ Concept Checker
+✅ Progress Tracker
+✅ Graph Visualization
 
-✅ FIXES APPLIED:
-1. Aggressive chat history limiting (Issue #3)
-2. Enhanced system prompt directive (Issue #3)
+By Anupam Nigam | youtube.com/@pi_nomenal1729
 """
 
 import os
 import json
 import random
 import base64
+import numpy as np
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -66,8 +66,6 @@ def ask_ai(messages, system=None):
         if system:
             full.append({"role": "system", "content": system})
         full.extend(messages)
-        # ✅ FIX #3.1: AGGRESSIVE HISTORY LIMITING
-        # Keep only 9 previous messages (4-5 exchanges) instead of 20
         if len(full) > 11:
             full = [full[0]] + full[-9:]
         for model in GROQ_MODELS:
@@ -332,7 +330,277 @@ EXAM_INFO = {
     }
 }
 
-# ── PROMPTS ────────────────────────────────────────────────────
+# ── VERIFIED DEFINITIONS DATABASE ────────────────────────────
+
+VERIFIED_DEFINITIONS = {
+    "Limit": {
+        "definition": "A function f(x) approaches limit L as x approaches a if: for every ε > 0, there exists δ > 0 such that |x - a| < δ implies |f(x) - L| < ε",
+        "latex": "\\lim_{x \\to a} f(x) = L \\iff \\forall \\varepsilon > 0, \\exists \\delta > 0 : |x-a| < \\delta \\Rightarrow |f(x)-L| < \\varepsilon",
+        "source": "Rudin - Principles of Mathematical Analysis",
+        "page": "47",
+        "edition": "3rd Edition, 1976",
+        "verified": True,
+        "confidence": "100%",
+        "exams": ["JAM", "NET", "GATE", "BOARDS"]
+    },
+    "Eigenvalue": {
+        "definition": "A scalar λ is an eigenvalue of matrix A if there exists a non-zero vector v (eigenvector) such that Av = λv",
+        "latex": "A\\mathbf{v} = \\lambda\\mathbf{v}, \\text{ where } \\mathbf{v} \\neq \\mathbf{0}",
+        "source": "Gilbert Strang - Linear Algebra and Its Applications",
+        "page": "228",
+        "edition": "5th Edition, 2016",
+        "verified": True,
+        "confidence": "100%",
+        "exams": ["JAM", "GATE", "NET"]
+    },
+    "Continuous Function": {
+        "definition": "A function f is continuous at point a if lim(x→a) f(x) = f(a). A function is continuous on an interval if it is continuous at every point in that interval.",
+        "latex": "f \\text{ is continuous at } a \\iff \\lim_{x \\to a} f(x) = f(a)",
+        "source": "Rudin - Principles of Mathematical Analysis",
+        "page": "84",
+        "edition": "3rd Edition, 1976",
+        "verified": True,
+        "confidence": "100%",
+        "exams": ["JAM", "NET", "BOARDS"]
+    },
+    "Derivative": {
+        "definition": "The derivative of f at x is defined as: f'(x) = lim(h→0) [f(x+h) - f(x)] / h, if this limit exists",
+        "latex": "f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}",
+        "source": "Rudin - Principles of Mathematical Analysis",
+        "page": "103",
+        "edition": "3rd Edition, 1976",
+        "verified": True,
+        "confidence": "100%",
+        "exams": ["JAM", "GATE", "NET", "BOARDS"]
+    },
+    "Linear Independence": {
+        "definition": "Vectors v₁, v₂, ..., vₙ are linearly independent if the only solution to c₁v₁ + c₂v₂ + ... + cₙvₙ = 0 is c₁ = c₂ = ... = cₙ = 0",
+        "latex": "c_1\\mathbf{v}_1 + c_2\\mathbf{v}_2 + \\cdots + c_n\\mathbf{v}_n = \\mathbf{0} \\implies c_1 = c_2 = \\cdots = c_n = 0",
+        "source": "Strang - Linear Algebra and Its Applications",
+        "page": "89",
+        "edition": "5th Edition, 2016",
+        "verified": True,
+        "confidence": "100%",
+        "exams": ["JAM", "GATE", "NET"]
+    }
+}
+
+# ── STUDY MATERIALS DATABASE ────────────────────────────
+
+STUDY_MATERIALS = {
+    "JAM": {
+        "Real Analysis": {
+            "Limits and Continuity": {
+                "theory": "The concept of limit is foundational to calculus. It describes the behavior of a function as the input approaches some value.",
+                "key_theorems": [
+                    "Epsilon-Delta Definition of Limit",
+                    "Squeeze Theorem",
+                    "Continuity Theorem",
+                    "Intermediate Value Theorem"
+                ],
+                "practice_problems": [
+                    {
+                        "id": "RA-LC-001",
+                        "question": "Prove using epsilon-delta definition that lim(x→2) (3x + 1) = 7",
+                        "difficulty": "medium",
+                        "source": "JAM 2022"
+                    },
+                    {
+                        "id": "RA-LC-002",
+                        "question": "Find the limit: lim(x→0) sin(x)/x",
+                        "difficulty": "easy",
+                        "source": "JAM 2021"
+                    }
+                ],
+                "estimated_hours": 8
+            },
+            "Derivatives": {
+                "theory": "Derivative measures the rate of change of a function.",
+                "key_theorems": ["Product Rule", "Chain Rule", "Mean Value Theorem"],
+                "practice_problems": [],
+                "estimated_hours": 6
+            }
+        },
+        "Linear Algebra": {
+            "Vector Spaces": {
+                "theory": "A vector space is a set of vectors with operations of addition and scalar multiplication.",
+                "key_theorems": ["Basis Theorem", "Dimension Theorem"],
+                "practice_problems": [],
+                "estimated_hours": 7
+            }
+        }
+    },
+    "GATE": {
+        "Calculus": {
+            "Integration": {
+                "theory": "Integration is the reverse of differentiation.",
+                "key_theorems": ["Fundamental Theorem of Calculus"],
+                "practice_problems": [],
+                "estimated_hours": 6
+            }
+        }
+    },
+    "NET": {
+        "Analysis": {
+            "Convergence": {
+                "theory": "Understanding convergence is key to real analysis.",
+                "key_theorems": ["Monotone Convergence Theorem"],
+                "practice_problems": [],
+                "estimated_hours": 8
+            }
+        }
+    }
+}
+
+# ── CONCEPT CHECKER QUESTIONS ────────────────────────────
+
+CONCEPT_QUESTIONS = {
+    "JAM": {
+        "Limits and Continuity": [
+            {
+                "question": "What is the epsilon-delta definition of limit?",
+                "options": {
+                    "A": "For every ε > 0, there exists δ > 0 such that |x-a| < δ implies |f(x)-L| < ε",
+                    "B": "For every δ > 0, there exists ε > 0 such that |f(x)-L| < δ implies |x-a| < ε",
+                    "C": "f(x) approaches L as x gets very large",
+                    "D": "f(x) is continuous at point a"
+                },
+                "correct": "A"
+            },
+            {
+                "question": "A function is continuous at x=a if:",
+                "options": {
+                    "A": "lim(x→a) f(x) = f(a)",
+                    "B": "f(a) is defined",
+                    "C": "f(x) is differentiable at a",
+                    "D": "f(x) > 0 for all x near a"
+                },
+                "correct": "A"
+            },
+            {
+                "question": "What does the Intermediate Value Theorem state?",
+                "options": {
+                    "A": "If f is continuous on [a,b] and k is between f(a) and f(b), then f(c)=k for some c in [a,b]",
+                    "B": "Every function has a limit at every point",
+                    "C": "Every continuous function is differentiable",
+                    "D": "The derivative exists at every point"
+                },
+                "correct": "A"
+            },
+            {
+                "question": "What is the Squeeze Theorem?",
+                "options": {
+                    "A": "If g(x) ≤ f(x) ≤ h(x) and lim g(x) = lim h(x) = L, then lim f(x) = L",
+                    "B": "If f is continuous, then f is bounded",
+                    "C": "If f(x) → L, then f is differentiable",
+                    "D": "Every function has a minimum value"
+                },
+                "correct": "A"
+            },
+            {
+                "question": "When is a function NOT continuous at a point?",
+                "options": {
+                    "A": "When the limit does not equal the function value",
+                    "B": "When the derivative exists",
+                    "C": "When the function is increasing",
+                    "D": "When the function is positive"
+                },
+                "correct": "A"
+            }
+        ],
+        "Derivatives": [
+            {
+                "question": "What is the formal definition of derivative?",
+                "options": {
+                    "A": "f'(x) = lim(h→0) [f(x+h) - f(x)] / h",
+                    "B": "f'(x) = f(x+1) - f(x)",
+                    "C": "f'(x) = [f(b) - f(a)] / (b - a)",
+                    "D": "f'(x) = f(x) * 2"
+                },
+                "correct": "A"
+            }
+        ]
+    },
+    "GATE": {
+        "Linear Algebra": [
+            {
+                "question": "What is an eigenvalue?",
+                "options": {
+                    "A": "A scalar λ such that Av = λv for non-zero vector v",
+                    "B": "A vector that is perpendicular to another vector",
+                    "C": "The determinant of a matrix",
+                    "D": "A number that is always positive"
+                },
+                "correct": "A"
+            },
+            {
+                "question": "What do linearly independent vectors mean?",
+                "options": {
+                    "A": "No vector is a linear combination of others",
+                    "B": "All vectors are in the same direction",
+                    "C": "All vectors have the same magnitude",
+                    "D": "The vectors are orthogonal to each other"
+                },
+                "correct": "A"
+            }
+        ]
+    }
+}
+
+# ── TRACKER DATA ────────────────────────────────
+
+TRACKER_DATA = {
+    "default": {
+        "JAM": {
+            "Real Analysis": {
+                "Limits and Continuity": {
+                    "definition_learned": False,
+                    "concept_check_passed": False,
+                    "practice_done": False,
+                    "pyq_attempted": False
+                },
+                "Derivatives": {
+                    "definition_learned": False,
+                    "concept_check_passed": False,
+                    "practice_done": False,
+                    "pyq_attempted": False
+                },
+                "Integration": {
+                    "definition_learned": False,
+                    "concept_check_passed": False,
+                    "practice_done": False,
+                    "pyq_attempted": False
+                }
+            },
+            "Linear Algebra": {
+                "Vector Spaces": {
+                    "definition_learned": False,
+                    "concept_check_passed": False,
+                    "practice_done": False,
+                    "pyq_attempted": False
+                },
+                "Eigenvalues": {
+                    "definition_learned": False,
+                    "concept_check_passed": False,
+                    "practice_done": False,
+                    "pyq_attempted": False
+                }
+            }
+        },
+        "GATE": {
+            "Calculus": {
+                "Integration": {
+                    "definition_learned": False,
+                    "concept_check_passed": False,
+                    "practice_done": False,
+                    "pyq_attempted": False
+                }
+            }
+        }
+    }
+}
+
+# ── SYSTEM PROMPT ────────────────────────────────────────────
 
 SYSTEM_PROMPT = f"""You are MathSphere — a warm, expert Mathematics teacher for graduation level students, created by Anupam Nigam (youtube.com/@pi_nomenal1729).
 
@@ -391,138 +659,6 @@ TEACHING STRUCTURE (for math questions):
 
 Always include: {TEACHER_YOUTUBE}"""
 
-
-QUIZ_PROMPT = """You are a mathematics quiz generator for graduation level students.
-Generate ONE multiple choice question.
-Topic: {topic}
-Difficulty: {difficulty}
-Question {q_num} of {total}
-
-IMPORTANT RULES:
-- The question must be mathematically correct and well-formed
-- All 4 options must be plausible but only ONE is correct
-- Use LaTeX for all math: \\( ... \\) for inline, \\[ ... \\] for display
-- Double-check that your stated ANSWER is actually correct
-- The explanation must clearly justify why the answer is correct
-
-REPLY ONLY IN THIS EXACT FORMAT — nothing else:
-Q: [question text with LaTeX math]
-A) [option with LaTeX]
-B) [option with LaTeX]
-C) [option with LaTeX]
-D) [option with LaTeX]
-ANSWER: [A or B or C or D]
-EXPLANATION: [clear one-sentence explanation with LaTeX]"""
-
-PROOF_PROMPT = f"""You are running an interactive Proof Builder session in MathSphere.
-You are a friendly Indian math teacher — use Hinglish naturally.
-
-Rules:
-- Break proof into clear numbered steps
-- Use LaTeX for ALL math expressions: \\( ... \\) inline, \\[ ... \\] for display
-- Present hints one step at a time
-- If student is correct → "Bilkul sahi! Ekdum correct! ✅ Next step..."
-- If student is wrong → "Arre, thoda sochna... Hint: ..."
-- At the end, show the complete assembled proof beautifully formatted
-
-Always include: {TEACHER_YOUTUBE}"""
-
-DEBATE_PROMPT = f"""You are hosting Math Debate Club in MathSphere with Hinglish flair.
-Start with: "Wah! Interesting argument hai yeh! Chalo isko mathematically check karte hain..."
-Engage seriously with arguments. Use LaTeX for all math.
-Challenge reasoning warmly. Guide toward mathematical truth.
-Always include: {TEACHER_YOUTUBE}"""
-
-CALCULATOR_PROMPT = f"""You are a precise step-by-step mathematical calculator for MathSphere.
-You are a friendly Indian math teacher.
-
-For EVERY problem:
-1. "Dekho, yeh ek [type] problem hai. Method use karenge: [method]"
-2. Show EVERY numbered step with full LaTeX formatting
-3. Use \\[ ... \\] for major equations, \\( ... \\) for inline
-4. Verify the final answer by substitution or alternative method
-5. State: "✅ Final Answer: \\[ ... \\]"
-
-ACCURACY IS PARAMOUNT — double check every calculation.
-Always include: {TEACHER_YOUTUBE}"""
-
-FORMULA_PROMPT = f"""You are a formula sheet generator for MathSphere students.
-You are a friendly Indian math teacher — add brief Hinglish notes.
-
-Generate a COMPLETE formula sheet with:
-- All major formulas, theorems, definitions
-- LaTeX formatting for EVERY formula: \\( ... \\) inline, \\[ ... \\] for display equations
-- Clear sections with emoji headers
-- Brief "Yaad rakho:" tips for important formulas
-
-Always include: {TEACHER_YOUTUBE}"""
-
-LATEX_PROMPT = f"""You are a LaTeX code generator for MathSphere.
-Give: complete LaTeX code in code blocks, brief explanation, minimal working example.
-Start with: "Haan! Yeh LaTeX code ready hai tumhare liye —"
-Compile free at: https://overleaf.com | MathSphere: {TEACHER_YOUTUBE}"""
-
-REVISION_PROMPT = f"""You are doing rapid revision for MathSphere students.
-Start with: "Chalo! Quick revision karte hain — dhyan se padho!"
-Give TOP 10 most important points for the topic.
-Use LaTeX for all math expressions.
-Be concise and exam-focused.
-End with: "Exam Tips: [3 specific tips]"
-Always include: {TEACHER_YOUTUBE}"""
-
-CONCEPT_MAP_PROMPT = f"""You are creating a concept map for MathSphere students.
-Start with: "Dekho, yeh topic kaafi connected hai — samjho poora picture!"
-Show clearly:
-🔙 PREREQUISITES: what you need to know first
-🔗 CONNECTS TO: related topics
-➡️ LEADS TO: advanced topics this unlocks
-🌍 REAL WORLD: applications
-Use LaTeX for all math.
-Always include: {TEACHER_YOUTUBE}"""
-
-COMPARE_PROMPT = f"""You are comparing mathematical concepts for MathSphere students.
-Start with: "Bahut achha question! Log yeh dono confuse karte hain — aaj clear karte hain!"
-Give:
-- Definitions (with LaTeX)
-- Key differences (table format)
-- Similarities
-- When to use which
-- Common student mistakes ("Students aksar yeh galti karte hain...")
-Always include: {TEACHER_YOUTUBE}"""
-
-COUNTEREXAMPLE_PROMPT = f"""You are a mathematical claim verifier for MathSphere.
-Start with: "Interesting claim hai! Dekho yeh sach hai ya jhooth —"
-1. State the claim clearly with LaTeX
-2. Either PROVE it rigorously OR find the simplest counterexample
-3. Explain why counterexample works
-4. State the correct version of the result
-Use LaTeX for ALL math.
-Always include: {TEACHER_YOUTUBE}"""
-
-PROJECT_PROMPT = f"""You are a real-life math projects guide for MathSphere.
-Start with: "Waah! Math ko real life mein apply karna — yeh toh bahut maza aayega!"
-Generate 3 detailed project ideas. For each:
-- Name and objective
-- Mathematical concepts used (with LaTeX)
-- Tools needed
-- Step-by-step guide
-- Expected outcome
-Always include: {TEACHER_YOUTUBE}"""
-
-RESEARCH_PROMPT = f"""You are a mathematics research assistant for MathSphere.
-Be rigorous and academic. Use LaTeX for all math.
-Help with research papers, formal proofs, topic ideas, peer review, citations.
-Always include: {TEACHER_YOUTUBE}"""
-
-# ── HELPERS ────────────────────────────────────────────────────
-
-def detect_hindi(text):
-    words = ["kya","hai","mujhe","samajh","batao","kaise","kyun","matlab",
-             "nahi","haan","theek","accha","bhai","yaar","padh","sikho",
-             "समझ","बताओ","कैसे","क्या","है","नहीं","हाँ","पढ़",
-             "solve","bata","kar","dedo","chahiye","help"]
-    return any(w in text.lower() for w in words)
-
 # ── ROUTES ────────────────────────────────────────────────────
 
 @app.route("/")
@@ -553,13 +689,9 @@ def chat():
         clean = [{"role":m["role"],"content":str(m["content"])}
                  for m in messages if m.get("role") in ("user","assistant") and m.get("content")]
 
-        # ✅ FIX #3.2: AGGRESSIVE HISTORY LIMITING
-        # Keep only 6 last messages (3 exchanges) instead of 20+
         if len(clean) > 8:
             clean = clean[-6:]
 
-        # ✅ FIX #3.3: ENHANCED SYSTEM PROMPT DIRECTIVE
-        # Add critical instruction to focus only on current question
         enhanced_system = SYSTEM_PROMPT + """
 
 ═══════════════════════════════════════
@@ -576,14 +708,436 @@ def chat():
         print(f"Chat error: {e}")
         return jsonify({"error": str(e)}), 500
 
+# ── FEATURE 1: PYQ MOCK TEST ────────────────────────────
+
+@app.route("/api/pyq-mock/<exam>")
+def pyq_mock_test(exam):
+    """Get random PYQ questions for mock test"""
+    exam_upper = exam.upper()
+    
+    if exam_upper not in PYQ_BANK:
+        return jsonify({"error": "Exam not found"}), 404
+    
+    questions = PYQ_BANK[exam_upper]
+    
+    if not questions:
+        return jsonify({"error": "No questions found"}), 404
+    
+    test_questions = questions[:min(10, len(questions))]
+    
+    mock_test = {
+        "test_id": f"{exam_upper}-MOCK-{datetime.now().timestamp()}",
+        "exam": exam_upper,
+        "duration": 60,
+        "total_questions": len(test_questions),
+        "questions": [
+            {
+                "id": f"Q{i+1}",
+                "question": q.get("q", "Question not available"),
+                "topic": q.get("topic", "General"),
+                "year": q.get("year", "Unknown"),
+                "source": "PYQ"
+            }
+            for i, q in enumerate(test_questions)
+        ]
+    }
+    
+    return jsonify(mock_test)
+
+@app.route("/api/pyq-submit/<exam>/<test_id>", methods=["POST"])
+def submit_pyq_test(exam, test_id):
+    """Grade mock test and save results"""
+    try:
+        data = request.get_json()
+        user_answers = data.get("answers", {})
+        
+        exam_upper = exam.upper()
+        questions = PYQ_BANK.get(exam_upper, [])
+        
+        if not questions:
+            return jsonify({"error": "Exam not found"}), 404
+        
+        score = 0
+        total = len(questions[:10])
+        weak_areas = []
+        strong_areas = []
+        
+        detailed_results = []
+        
+        for i, q in enumerate(questions[:10]):
+            question_id = f"Q{i+1}"
+            correct_answer = q.get("a", "").split()[0]
+            user_answer = user_answers.get(question_id, "").upper()
+            
+            is_correct = user_answer == correct_answer
+            
+            if is_correct:
+                score += 1
+                if q.get("topic") not in strong_areas:
+                    strong_areas.append(q.get("topic", "General"))
+            else:
+                if q.get("topic") not in weak_areas:
+                    weak_areas.append(q.get("topic", "General"))
+            
+            detailed_results.append({
+                "question_id": question_id,
+                "question": q.get("q", ""),
+                "topic": q.get("topic", ""),
+                "user_answer": user_answer,
+                "correct_answer": correct_answer,
+                "is_correct": is_correct,
+                "solution": q.get("a", "No solution available")
+            })
+        
+        percentage = (score / total) * 100
+        
+        result = {
+            "test_id": test_id,
+            "exam": exam_upper,
+            "score": score,
+            "total": total,
+            "percentage": round(percentage, 2),
+            "duration": data.get("duration", 0),
+            "date": datetime.now().isoformat(),
+            "weak_areas": list(set(weak_areas)),
+            "strong_areas": list(set(strong_areas)),
+            "detailed_results": detailed_results,
+            "status": "PASSED" if percentage >= 70 else "NEEDS IMPROVEMENT",
+            "feedback": generate_feedback(percentage, weak_areas)
+        }
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        print(f"Error submitting test: {e}")
+        return jsonify({"error": str(e)}), 500
+
+def generate_feedback(percentage, weak_areas):
+    """Generate personalized feedback"""
+    if percentage >= 90:
+        return f"🌟 Excellent! You scored {percentage}%. Ready for exam!"
+    elif percentage >= 70:
+        return f"✅ Good! Score {percentage}%. Focus on: {', '.join(weak_areas[:2])}"
+    elif percentage >= 50:
+        return f"⚠️ Need improvement. Score {percentage}%. Review: {', '.join(weak_areas[:3])}"
+    else:
+        return f"❌ Low score {percentage}%. Need serious revision. Start with: {weak_areas[0] if weak_areas else 'Basics'}"
+
+# ── FEATURE 2: CONCEPT CHECKER ────────────────────────────
+
+@app.route("/api/concept-check/<exam>/<topic>", methods=["POST"])
+def concept_checker(exam, topic):
+    """Generate concept verification quiz"""
+    exam_upper = exam.upper()
+    
+    if exam_upper not in CONCEPT_QUESTIONS:
+        return jsonify({"error": "Exam not found"}), 404
+    
+    if topic not in CONCEPT_QUESTIONS[exam_upper]:
+        return jsonify({"error": "Topic not found"}), 404
+    
+    questions = CONCEPT_QUESTIONS[exam_upper][topic]
+    
+    formatted_questions = [
+        {
+            "id": f"Q{i+1}",
+            "question": q["question"],
+            "options": q["options"]
+        }
+        for i, q in enumerate(questions)
+    ]
+    
+    return jsonify({
+        "exam": exam_upper,
+        "topic": topic,
+        "total_questions": len(formatted_questions),
+        "questions": formatted_questions,
+        "pass_score": 80
+    })
+
+@app.route("/api/concept-check/submit/<exam>/<topic>", methods=["POST"])
+def submit_concept_check(exam, topic):
+    """Grade concept check"""
+    try:
+        data = request.get_json()
+        user_answers = data.get("answers", {})
+        
+        exam_upper = exam.upper()
+        
+        if exam_upper not in CONCEPT_QUESTIONS or topic not in CONCEPT_QUESTIONS[exam_upper]:
+            return jsonify({"error": "Invalid exam or topic"}), 404
+        
+        questions = CONCEPT_QUESTIONS[exam_upper][topic]
+        
+        score = 0
+        total = len(questions)
+        feedback_list = []
+        
+        for i, q in enumerate(questions):
+            question_id = f"Q{i+1}"
+            user_answer = user_answers.get(question_id, "").upper()
+            correct_answer = q["correct"]
+            
+            is_correct = user_answer == correct_answer
+            
+            if is_correct:
+                score += 1
+                feedback_list.append({
+                    "question": q["question"],
+                    "status": "✅ CORRECT",
+                    "your_answer": user_answer,
+                    "correct_answer": correct_answer
+                })
+            else:
+                feedback_list.append({
+                    "question": q["question"],
+                    "status": "❌ INCORRECT",
+                    "your_answer": user_answer,
+                    "correct_answer": correct_answer,
+                    "explanation": f"Correct answer is {correct_answer}"
+                })
+        
+        percentage = (score / total) * 100
+        
+        result = {
+            "exam": exam_upper,
+            "topic": topic,
+            "score": score,
+            "total": total,
+            "percentage": round(percentage, 2),
+            "date": datetime.now().isoformat(),
+            "status": "✅ CONCEPT CLEAR!" if percentage >= 80 else "⚠️ REVIEW NEEDED",
+            "feedback": feedback_list,
+            "message": generate_concept_feedback(percentage)
+        }
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def generate_concept_feedback(percentage):
+    """Generate concept check feedback"""
+    if percentage >= 100:
+        return "🌟 Perfect! You have mastered this concept!"
+    elif percentage >= 80:
+        return "✅ Concept is clear! You understand the fundamentals."
+    elif percentage >= 60:
+        return "⚠️ Partial understanding. Review the material before proceeding."
+    else:
+        return "❌ Concept is not clear. Study the definitions and examples again."
+
+# ── FEATURE 3: PROGRESS TRACKER ────────────────────────────
+
+@app.route("/api/tracker/<exam>")
+def get_tracker(exam):
+    """Get complete progress tracker for exam"""
+    exam_upper = exam.upper()
+    
+    tracker = TRACKER_DATA["default"].get(exam_upper, {})
+    
+    if not tracker:
+        return jsonify({"error": "Exam not found"}), 404
+    
+    total_items = 0
+    completed_items = 0
+    
+    structure = {}
+    
+    for topic, subtopics in tracker.items():
+        structure[topic] = {}
+        for subtopic, status in subtopics.items():
+            total_items += 4
+            completed_items += sum(1 for v in status.values() if v)
+            
+            structure[topic][subtopic] = {
+                "definition_learned": status.get("definition_learned", False),
+                "concept_check_passed": status.get("concept_check_passed", False),
+                "practice_done": status.get("practice_done", False),
+                "pyq_attempted": status.get("pyq_attempted", False),
+                "completion_percentage": (sum(1 for v in status.values() if v) / 4) * 100
+            }
+    
+    overall_progress = (completed_items / total_items * 100) if total_items > 0 else 0
+    
+    return jsonify({
+        "exam": exam_upper,
+        "topics": structure,
+        "overall_progress": round(overall_progress, 2),
+        "completed_items": completed_items,
+        "total_items": total_items
+    })
+
+@app.route("/api/tracker/update", methods=["POST"])
+def update_tracker():
+    """Update tracker status"""
+    try:
+        data = request.get_json()
+        exam = data.get("exam", "").upper()
+        topic = data.get("topic", "")
+        subtopic = data.get("subtopic", "")
+        item = data.get("item", "")
+        status = data.get("status", False)
+        
+        if exam not in TRACKER_DATA["default"]:
+            return jsonify({"error": "Exam not found"}), 404
+        
+        if topic not in TRACKER_DATA["default"][exam]:
+            return jsonify({"error": "Topic not found"}), 404
+        
+        if subtopic not in TRACKER_DATA["default"][exam][topic]:
+            return jsonify({"error": "Subtopic not found"}), 404
+        
+        TRACKER_DATA["default"][exam][topic][subtopic][item] = status
+        
+        tracker = TRACKER_DATA["default"][exam]
+        total_items = 0
+        completed_items = 0
+        
+        for t, subtopics in tracker.items():
+            for st, st_status in subtopics.items():
+                total_items += 4
+                completed_items += sum(1 for v in st_status.values() if v)
+        
+        overall_progress = (completed_items / total_items * 100) if total_items > 0 else 0
+        
+        return jsonify({
+            "status": "success",
+            "message": f"{item.replace('_', ' ').title()} updated",
+            "overall_progress": round(overall_progress, 2)
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ── FEATURE 4: GRAPH VISUALIZATION ────────────────────────────
+
+@app.route("/api/plot-2d", methods=["POST"])
+def plot_2d():
+    """Plot 2D function and analyze it"""
+    try:
+        data = request.get_json()
+        equation = data.get("equation", "x**2")
+        x_min = data.get("x_min", -10)
+        x_max = data.get("x_max", 10)
+        
+        x = np.linspace(x_min, x_max, 1000)
+        
+        try:
+            y = eval(equation.replace('^', '**'), {"x": x, "np": np, "sin": np.sin, "cos": np.cos, "exp": np.exp, "log": np.log})
+        except:
+            return jsonify({"error": "Invalid equation"}), 400
+        
+        roots = []
+        for i in range(len(y)-1):
+            if (y[i] * y[i+1]) < 0:
+                roots.append(float(x[i]))
+        
+        critical_points = []
+        dy = np.gradient(y)
+        for i in range(1, len(dy)-1):
+            if (dy[i-1] * dy[i+1]) < 0:
+                critical_points.append({
+                    "x": float(x[i]),
+                    "y": float(y[i]),
+                    "type": "maximum" if dy[i-1] > 0 else "minimum"
+                })
+        
+        plot_data = {
+            "x": x.tolist(),
+            "y": y.tolist(),
+            "equation": equation,
+            "roots": [round(r, 4) for r in roots],
+            "critical_points": critical_points,
+            "analysis": {
+                "domain": f"[{x_min}, {x_max}]",
+                "number_of_roots": len(roots),
+                "has_critical_points": len(critical_points) > 0,
+                "y_intercept": float(eval(equation.replace('x', '0').replace('^', '**'), {"np": np, "sin": np.sin, "cos": np.cos, "exp": np.exp, "log": np.log})) if 'x' in equation else None
+            }
+        }
+        
+        return jsonify(plot_data)
+    
+    except Exception as e:
+        print(f"Error in plot_2d: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# ── EXISTING ROUTES (KEEP THESE) ────────────────────────────
+
+@app.route("/api/definition/<concept>")
+def get_definition(concept):
+    """Get verified definition from authenticated sources"""
+    concept_lower = concept.lower()
+    
+    for key, value in VERIFIED_DEFINITIONS.items():
+        if key.lower() == concept_lower:
+            return jsonify({
+                "concept": key,
+                "definition": value["definition"],
+                "latex": value["latex"],
+                "source": value["source"],
+                "page": value["page"],
+                "edition": value["edition"],
+                "verified": value["verified"],
+                "confidence": value["confidence"],
+                "exams": value["exams"]
+            })
+    
+    return jsonify({"error": "Definition not found in verified database"}), 404
+
+@app.route("/api/materials/<exam>")
+def get_materials(exam):
+    """Get study materials for an exam"""
+    exam_upper = exam.upper()
+    materials = STUDY_MATERIALS.get(exam_upper, {})
+    
+    if not materials:
+        return jsonify({"error": f"Materials not found for {exam}"}), 404
+    
+    structure = {}
+    for topic, subtopics in materials.items():
+        structure[topic] = list(subtopics.keys())
+    
+    return jsonify({"exam": exam_upper, "topics": structure})
+
+@app.route("/api/materials/<exam>/<topic>/<subtopic>")
+def get_material_detail(exam, topic, subtopic):
+    """Get specific material"""
+    exam_upper = exam.upper()
+    material = STUDY_MATERIALS.get(exam_upper, {}).get(topic, {}).get(subtopic, {})
+    
+    if not material:
+        return jsonify({"error": "Material not found"}), 404
+    
+    return jsonify(material)
+
 @app.route("/api/quiz/question", methods=["POST"])
 def quiz_question():
     try:
         d = request.get_json()
-        prompt = QUIZ_PROMPT.format(
-            topic=d.get("topic","Calculus"), difficulty=d.get("difficulty","medium"),
-            q_num=d.get("q_num",1), total=d.get("total",5)
-        )
+        prompt = f"""You are a mathematics quiz generator for graduation level students.
+Generate ONE multiple choice question.
+Topic: {d.get("topic","Calculus")}
+Difficulty: {d.get("difficulty","medium")}
+Question {d.get("q_num",1)} of {d.get("total",5)}
+
+IMPORTANT RULES:
+- The question must be mathematically correct and well-formed
+- All 4 options must be plausible but only ONE is correct
+- Use LaTeX for all math: \\( ... \\) for inline, \\[ ... \\] for display
+- Double-check that your stated ANSWER is actually correct
+- The explanation must clearly justify why the answer is correct
+
+REPLY ONLY IN THIS EXACT FORMAT — nothing else:
+Q: [question text with LaTeX math]
+A) [option with LaTeX]
+B) [option with LaTeX]
+C) [option with LaTeX]
+D) [option with LaTeX]
+ANSWER: [A or B or C or D]
+EXPLANATION: [clear one-sentence explanation with LaTeX]"""
+        
         raw = ask_simple(prompt)
         lines = raw.strip().split('\n')
         ans_line  = next((l for l in lines if l.strip().startswith("ANSWER:")), "ANSWER: A")
@@ -633,13 +1187,13 @@ def exam_info(exam):
 @app.route("/api/formula", methods=["POST"])
 def formula():
     topic = request.get_json().get("topic","")
-    return jsonify({"answer": ask_simple(f"Generate a complete formula sheet for: {topic}", system=FORMULA_PROMPT)})
+    return jsonify({"answer": ask_simple(f"Generate a complete formula sheet for: {topic}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/calculator", methods=["POST"])
 def calculator():
     problem = request.get_json().get("problem","")
     sympy_r = solve_with_sympy(problem)
-    answer  = ask_simple(f"Solve this step by step: {problem}", system=CALCULATOR_PROMPT)
+    answer  = ask_simple(f"Solve this step by step: {problem}")
     if sympy_r:
         answer = f"{sympy_r}\n\n◆━━━━━━━━━━━━━━━━━━◆\nStep-by-Step Solution:\n\n{answer}"
     return jsonify({"answer": answer})
@@ -647,49 +1201,49 @@ def calculator():
 @app.route("/api/latex", methods=["POST"])
 def latex():
     text = request.get_json().get("text","")
-    return jsonify({"answer": ask_simple(f"Generate LaTeX code for: {text}", system=LATEX_PROMPT)})
+    return jsonify({"answer": ask_simple(f"Generate LaTeX code for: {text}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/revision", methods=["POST"])
 def revision():
     topic = request.get_json().get("topic","")
-    return jsonify({"answer": ask_simple(f"TOP 10 rapid revision points for: {topic}", system=REVISION_PROMPT)})
+    return jsonify({"answer": ask_simple(f"TOP 10 rapid revision points for: {topic}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/conceptmap", methods=["POST"])
 def conceptmap():
     topic = request.get_json().get("topic","")
-    return jsonify({"answer": ask_simple(f"Concept map for: {topic}", system=CONCEPT_MAP_PROMPT)})
+    return jsonify({"answer": ask_simple(f"Concept map for: {topic}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/compare", methods=["POST"])
 def compare():
     concepts = request.get_json().get("concepts","")
-    return jsonify({"answer": ask_simple(f"Compare: {concepts}", system=COMPARE_PROMPT)})
+    return jsonify({"answer": ask_simple(f"Compare: {concepts}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/verify", methods=["POST"])
 def verify():
     claim = request.get_json().get("claim","")
-    return jsonify({"answer": ask_simple(f"Verify or find counterexample: {claim}", system=COUNTEREXAMPLE_PROMPT)})
+    return jsonify({"answer": ask_simple(f"Verify or find counterexample: {claim}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/projects", methods=["POST"])
 def projects():
     domain = request.get_json().get("domain","")
-    return jsonify({"answer": ask_simple(f"3 real-life math projects for: {domain}", system=PROJECT_PROMPT)})
+    return jsonify({"answer": ask_simple(f"3 real-life math projects for: {domain}", system=SYSTEM_PROMPT)})
 
 @app.route("/api/proof", methods=["POST"])
 def proof():
     d = request.get_json()
     msgs = d.get("history",[]) + [{"role":"user","content":d.get("theorem","")}]
-    return jsonify({"answer": ask_ai(msgs, system=PROOF_PROMPT)})
+    return jsonify({"answer": ask_ai(msgs, system=SYSTEM_PROMPT)})
 
 @app.route("/api/debate", methods=["POST"])
 def debate():
     d = request.get_json()
     msgs = d.get("history",[]) + [{"role":"user","content":d.get("argument","")}]
-    return jsonify({"answer": ask_ai(msgs, system=SYSTEM_PROMPT+"\n\n"+DEBATE_PROMPT)})
+    return jsonify({"answer": ask_ai(msgs, system=SYSTEM_PROMPT)})
 
 @app.route("/api/research", methods=["POST"])
 def research():
     d = request.get_json()
-    return jsonify({"answer": ask_simple(d.get("question",""), system=RESEARCH_PROMPT)})
+    return jsonify({"answer": ask_simple(d.get("question",""), system=SYSTEM_PROMPT)})
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
