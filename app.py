@@ -988,7 +988,8 @@ RESEARCH_HUB = {
         "Metric Geometry and Alexandrov Spaces"
     ]
 }
-
+def normalize_name(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (value or "").lower())
 
 # ═══════════════════════════════════════════════════
 # ROUTES
@@ -1045,8 +1046,9 @@ def mathematician_list():
 
 @app.route("/api/mathematician/<name>")
 def mathematician_detail(name):
+    q = normalize_name(name)
     for n, d in MATHEMATICIANS.items():
-        if name.lower().replace("-","") in n.lower().replace(" ",""):
+        if q and (q in normalize_name(n) or normalize_name(n) in q):
             return jsonify({"name": n, **d})
     return jsonify({"error": "Not found"}), 404
 

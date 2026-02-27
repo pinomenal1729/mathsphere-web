@@ -88,7 +88,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 /* ── MAIN ─────────────────────────────────────────── */
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 #topbar{display:flex;align-items:center;gap:10px;padding:12px 20px;
-  border-bottom:1px solid var(--bor);background:rgba(7,9,14,.9);backdrop-filter:blur(20px);flex-shrink:0}
+  border-bottom:1px solid var(--bor);background:var(--sur);backdrop-filter:blur(20px);flex-shrink:0}
 #menu-toggle{display:none;background:none;border:1px solid var(--bor);color:var(--txt2);
   width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:15px;align-items:center;justify-content:center}
 #mode-title{font-family:var(--fH);font-weight:700;font-size:16px;flex:1;transition:all .25s}
@@ -99,10 +99,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;
   letter-spacing:.5px;transition:all .2s}
 #clear-btn:hover{border-color:var(--red);color:var(--red)}
+#owner-name{font-family:var(--fH);font-weight:700;font-size:12px;color:var(--acc3);padding:4px 9px;border:1px solid var(--bor2);border-radius:999px;background:var(--sur2)}
+#theme-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;letter-spacing:.5px;transition:all .2s}
+#theme-btn:hover{border-color:var(--acc);color:var(--acc)}
+body.light{
+  --bg:#f5f7ff; --sur:#ffffff; --sur2:#eef2ff; --sur3:#e7ecfa;
+  --bor:#d6ddf1; --bor2:#c3cde6;
+  --txt:#1e2940; --txt2:#4b5a79; --txt3:#7a88a9;
+}
 
 /* ── TAGS ─────────────────────────────────────────── */
 #tagsbar{display:flex;gap:7px;padding:9px 20px;border-bottom:1px solid var(--bor);
-  background:rgba(7,9,14,.72);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+  background:var(--sur2);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
 #tagsbar::-webkit-scrollbar{display:none}
 .tag{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);padding:4px 11px;
   border-radius:18px;font-size:10.5px;font-family:var(--fM);cursor:pointer;white-space:nowrap;transition:all .22s}
@@ -330,7 +338,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 <nav id="sidebar">
   <div class="logo-wrap">
     <div class="logo-icon">
-      <img src="/static/logo.png" style="width:34px;height:34px;object-fit:contain"
+      <img src="/logo.png" style="width:34px;height:34px;object-fit:contain"
            onerror="this.style.display='none';this.parentNode.textContent='🧮'"/>
     </div>
     <div>
@@ -341,7 +349,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
   <div class="sb-scroll">
     <div class="sb-section">LEARN</div>
-    <button class="nav-btn active" id="nav-chat"        onclick="setMode('chat')">        <span class="em">💬</span>Ask Anything</button>
+
     <button class="nav-btn"        id="nav-askanupam"   onclick="setMode('askanupam')">   <span class="em">🧠</span>Ask Anupam</button>
     <button class="nav-btn"        id="nav-formula"     onclick="setMode('formula')">     <span class="em">📋</span>Formula Sheet</button>
     <button class="nav-btn"        id="nav-revision"    onclick="setMode('revision')">    <span class="em">⚡</span>Rapid Revision</button>
@@ -383,9 +391,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 <div id="main">
   <div id="topbar">
     <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
-    <div id="mode-title">💬 Ask Anything</div>
+    <div id="mode-title">🧠 Ask Anupam</div>
     <div class="status-dot"></div>
     <span style="font-size:10px;color:var(--txt3);font-family:var(--fM)">ONLINE</span>
+    <span id="owner-name">Anupam Nigam</span>
+    <button id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
     <button id="clear-btn" onclick="clearAll()">CLEAR</button>
   </div>
   <div id="tagsbar"></div>
@@ -442,13 +452,13 @@ function renderMath(el){
 }
 
 /* ══ STATE ══════════════════════════════════════ */
-let mode='chat', chatHistory=[], imgB64=null, imgType=null, busy=false;
+let mode='askanupam', chatHistory=[], imgB64=null, imgType=null, busy=false;
 let quizState=null, mockState=null;
 let bookmarks=JSON.parse(localStorage.getItem('ms_bm')||'[]');
 
 const MODE_CFG={
   chat:         {title:'💬 Ask Anything',       ph:'Ask any question...'},
-  askanupam:    {title:'🧠 Ask Anupam',         ph:'Ask anything: math, non-math, coding, writing, or upload an image...'},
+  askanupam:    {title:'🧠 Ask Anupam',         ph:'Ask anything: math, coding, writing, or upload an image...'},
   formula:      {title:'📋 Formula Sheet',       ph:'Topic + exam, e.g. "Calculus JAM" or "Linear Algebra GATE"'},
   revision:     {title:'⚡ Rapid Revision',       ph:'Type a topic for 10 key revision points...'},
   conceptmap:   {title:'🗺️ Concept Map',          ph:'Type a topic to explore all its connections...'},
@@ -467,7 +477,7 @@ const MODE_CFG={
   bookmarks:    {title:'🔖 My Bookmarks',         ph:''},
 };
 
-window.onload=()=>{showWelcome();renderTagsBar();};
+window.onload=()=>{initTheme();setMode('askanupam');renderTagsBar();};
 
 /* ══ WELCOME ════════════════════════════════════ */
 function showWelcome(){
@@ -477,7 +487,7 @@ function showWelcome(){
       <div class="orbit orbit1"><div class="orbit-dot od1"></div></div>
       <div class="orbit orbit2"><div class="orbit-dot od2" style="top:auto;bottom:-3px"></div></div>
       <div class="big-icon">
-        <img src="/static/logo.png" style="width:60px;height:60px;object-fit:contain"
+        <img src="/logo.png" style="width:60px;height:60px;object-fit:contain"
              onerror="this.style.display='none';this.parentNode.textContent='🧮'"/>
       </div>
     </div>
@@ -1274,7 +1284,7 @@ function addMsg(role,text,isErr=false){
   const div=document.createElement('div');div.className=`msg ${role}`;
   const avHtml=role==='user'
     ?'<div class="avatar" style="font-size:16px">👤</div>'
-    :`<div class="avatar"><img src="/static/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div>`;
+    :`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div>`;
   div.innerHTML=avHtml+`<div class="bubble"></div>`;
   const bubble=div.querySelector('.bubble');
   bubble.innerHTML=fmt(text);
@@ -1302,7 +1312,7 @@ function addBotHTML(html){
   rmWelcome();
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='msg bot';
-  div.innerHTML=`<div class="avatar"><img src="/static/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div><div class="bubble">${html}</div>`;
+  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div><div class="bubble">${html}</div>`;
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
   // wire copy buttons on pre
   div.querySelectorAll('pre').forEach(pre=>{
@@ -1315,7 +1325,7 @@ function showTyping(){
   busy=true;document.getElementById('send-btn').disabled=true;
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='msg bot';div.id='typing-ind';
-  div.innerHTML=`<div class="avatar"><img src="/static/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
 }
 
@@ -1358,7 +1368,20 @@ function fmt(text){
   t=t.replace(/\n/g,'<br>');
   return t;
 }
+function initTheme(){
+  const t=localStorage.getItem('ms_theme')||'dark';
+  document.body.classList.toggle('light', t==='light');
+  const b=document.getElementById('theme-btn');
+  if(b) b.textContent = t==='light' ? '☀️ Light' : '🌙 Dark';
+}
 
+function toggleTheme(){
+  const nowLight=!document.body.classList.contains('light');
+  document.body.classList.toggle('light', nowLight);
+  localStorage.setItem('ms_theme', nowLight?'light':'dark');
+  const b=document.getElementById('theme-btn');
+  if(b) b.textContent = nowLight ? '☀️ Light' : '🌙 Dark';
+}
 /* ══ UTILITIES ═════════════════════════════════ */
 function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escQ(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n');}
