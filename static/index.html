@@ -99,6 +99,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;
   letter-spacing:.5px;transition:all .2s}
 #clear-btn:hover{border-color:var(--red);color:var(--red)}
+
 #owner-name{font-family:var(--fH);font-weight:700;font-size:12px;color:var(--acc3);padding:4px 9px;border:1px solid var(--bor2);border-radius:999px;background:var(--sur2)}
 #theme-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;letter-spacing:.5px;transition:all .2s}
 #theme-btn:hover{border-color:var(--acc);color:var(--acc)}
@@ -357,14 +358,14 @@ body.light{
     <button class="nav-btn"        id="nav-latex"       onclick="setMode('latex')">       <span class="em">🧾</span>LaTeX Generator</button>
 
     <div class="sb-section">EXPLORE</div>
-    <button class="nav-btn"        id="nav-mathematician" onclick="setMode('mathematician')"><span class="em">🧠</span>Mathematicians (16)</button>
-    <button class="nav-btn"        id="nav-projects"    onclick="setMode('projects')">    <span class="em">🚀</span>Projects (20)</button>
+    <button class="nav-btn"        id="nav-mathematician" onclick="setMode('mathematician')"><span class="em">🧠</span>Mathematicians</button>
+    <button class="nav-btn"        id="nav-projects"    onclick="setMode('projects')">    <span class="em">🚀</span>Projects</button>
     <button class="nav-btn"        id="nav-theorem"     onclick="setMode('theorem')">     <span class="em">📐</span>Theorem Explorer</button>
     <button class="nav-btn"        id="nav-competition" onclick="setMode('competition')"> <span class="em">🏆</span>Competition Math</button>
     <button class="nav-btn"        id="nav-learning"    onclick="setMode('learning')">    <span class="em">🎓</span>Learning Paths</button>
     <button class="nav-btn"        id="nav-realworld"   onclick="setMode('realworld')">   <span class="em">🌍</span>Real World Maths</button>
     <button class="nav-btn"        id="nav-research"    onclick="setMode('research')">    <span class="em">🔬</span>Research Hub</button>
-
+    <button class="nav-btn"        id="nav-books"       onclick="setMode('books')">       <span class="em">📚</span>Books</button>
     <div class="sb-section">PRACTICE</div>
     <button class="nav-btn"        id="nav-quiz"        onclick="setMode('quiz')">        <span class="em">📝</span>Quiz Mode</button>
     <button class="nav-btn"        id="nav-mocktest"    onclick="setMode('mocktest')">    <span class="em">🧪</span>Mock Test (30 Q)</button>
@@ -463,13 +464,14 @@ const MODE_CFG={
   revision:     {title:'⚡ Rapid Revision',       ph:'Type a topic for 10 key revision points...'},
   conceptmap:   {title:'🗺️ Concept Map',          ph:'Type a topic to explore all its connections...'},
   latex:        {title:'🧾 LaTeX Generator',      ph:'Describe what you need LaTeX code for...'},
-  mathematician:{title:'🧠 Mathematicians (16)',  ph:'Type a name or click a card...'},
-  projects:     {title:'🚀 Projects (20)',        ph:'Type a domain or click a project...'},
+  mathematician:{title:'🧠 Mathematicians',  ph:'Type a name or click a card...'},
+  projects:     {title:'🚀 Projects',        ph:'Type a domain or click a project...'},
   theorem:      {title:'📐 Theorem Explorer',     ph:'Click a theorem to see full proof...'},
   competition:  {title:'🏆 Competition Math',     ph:'IMO · Putnam · AIME problems...'},
   learning:     {title:'🎓 Learning Paths',       ph:'Select a learning path...'},
   realworld:    {title:'🌍 Real World Maths',     ph:'See where maths is used in industry...'},
   research:     {title:'🔬 Research Hub',         ph:'Ask about research areas, open problems...'},
+  books:        {title:'📚 Books',                ph:'Type topic and optionally exam, e.g. Real Analysis GATE'},
   quiz:         {title:'📝 Quiz Mode',            ph:''},
   mocktest:     {title:'🧪 Mock Test (30 Q)',      ph:''},
   challenge:    {title:'🧩 Daily Challenge',      ph:'Type your solution here...'},
@@ -526,6 +528,7 @@ function setMode(m){
   if(m==='learning')     {loadLearningPaths();return;}
   if(m==='realworld')    {loadRealWorld();return;}
   if(m==='research')     {loadResearchHub();return;}
+  if(m==='books')        {loadBooks();return;}
   if(m==='quiz')         {showQuizTopics();return;}
   if(m==='mocktest')     {showMockTopics();return;}
   if(m==='challenge')    {loadChallenge();return;}
@@ -558,12 +561,13 @@ function renderTagsBar(){
     askanupam:   [['📐 Solve Maths','Solve this calculus question step by step: evaluate integral of x^2 sin x dx'],
                   ['🧠 Explain Clearly','Explain black holes to a class 8 student with examples'],
                   ['💻 Coding Help','Write a simple Python script for Fibonacci using recursion and iteration'],
-                  ['📝 Writing Help','Improve this paragraph to professional English and keep same meaning']],              
+                  ['📝 Writing Help','Improve this paragraph to professional English and keep same meaning']],             
     formula:     [['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
                   ['Real Analysis CSIR','Real Analysis CSIR'],['Calculus GATE','Calculus GATE']],
     competition: [['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
     quiz:        [['Calculus'],['Linear Algebra'],['Real Analysis'],['Algebra'],['Probability'],['Complex Analysis']],
     mocktest:    [['JAM'],['GATE'],['CSIR']],
+    books:       [['Real Analysis JAM','Real Analysis JAM'],['Linear Algebra GATE','Linear Algebra GATE'],['Abstract Algebra CSIR','Abstract Algebra CSIR']],
     pyq:         [['JAM'],['GATE'],['CSIR']],
   };
   if(tags[mode]){
@@ -607,7 +611,7 @@ async function sendMsg(){
     } else if(mode==='research'){
       const r=await api('/api/research',{question:text});answer=r.answer;
     } else {
-      const payload={messages:chatHistory.slice(-16),mode: mode==='askanupam' ? 'ask_anupam' : 'normal'};
+      const payload={messages:chatHistory.slice(-30),mode: mode==='askanupam' ? 'ask_anupam' : 'normal'};
       if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
       const r=await api('/api/chat',payload);answer=r.answer;
     }
@@ -674,7 +678,7 @@ async function loadMathDetail(name){
 }
 
 function askAboutMath(name){
-  mode='chat';
+  mode='askanupam';
   document.getElementById('input').value=`Tell me deeply about ${name}'s mathematical contributions and how they impact modern mathematics`;
   sendMsg();
 }
@@ -687,7 +691,7 @@ async function loadProjects(){
     const diffs={'Advanced':'badge-hard','Intermediate':'badge-mid','Very Advanced':'badge-hard','Easy':'badge-easy'};
     const html=`<div class="panel">
       <div class="ptitle">🚀 Math Projects (${d.total})</div>
-      <div class="psubtitle">Real-world projects with companies, salaries, and career paths</div>
+      <div class="psubtitle">${d.source==='dynamic'?'Live AI curated projects with links':'Local fallback projects'}</div>
       ${d.projects.map(p=>`
         <button class="pbtn" onclick="loadProjectDetail(${p.id})">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -714,7 +718,8 @@ async function loadProjectDetail(pid){
       <div class="info-row"><span class="info-label">DESCRIPTION</span>${escHtml(p.desc)}</div>
       <div class="info-row"><span class="info-label">REAL-WORLD</span>${escHtml(p.real)}</div>
       <div class="info-row"><span class="info-label">COMPANIES</span><span style="color:var(--acc2)">${escHtml(p.companies)}</span></div>
-      <div class="info-row"><span class="info-label">SALARIES</span><span style="color:var(--green)">${escHtml(p.salary)}</span></div>
+      <div class="info-row"><span class="info-label">SALARIES</span><span style="color:var(--green)">${escHtml(p.salary||'N/A')}</span></div>
+      ${Array.isArray(p.links)&&p.links.length?`<div class="info-row"><span class="info-label">LINKS</span>${p.links.map(l=>`<a href="${escHtml((l.split(': ')[1]||'').trim())}" target="_blank" style="color:var(--acc)">${escHtml((l.split(': ')[0]||l).trim())}</a>`).join(' · ')}</div>`:''}
       <hr style="border-color:var(--bor);margin:8px 0"/>
       <div style="font-size:12.5px;color:var(--txt2);line-height:1.8" id="${id}-exp">${fmt(r.explanation)}</div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -781,7 +786,7 @@ async function loadTheoremDetail(name){
 }
 
 function askAboutTheorem(name){
-  mode='chat';
+  mode='askanupam';
   document.getElementById('input').value=`Explain ${name} in depth with all the details, intuition, proof, and real-world applications`;
   sendMsg();
 }
@@ -837,7 +842,7 @@ function toggleAns(pid){
   if(a){a.style.display=a.style.display==='none'?'block':'none';if(a.style.display==='block')renderMath(a);}
 }
 function solveCompProblem(prob){
-  mode='chat';
+  mode='askanupam';
   document.getElementById('input').value='Solve this competition problem with full solution:\n\n'+prob;
   sendMsg();
 }
@@ -917,7 +922,7 @@ async function loadRealWorld(){
 }
 
 function askAboutRealWorld(concept){
-  mode='chat';
+  mode='askanupam';
   document.getElementById('input').value=`Explain in detail how ${concept} is used in the real world. Include all the mathematics with LaTeX formulas.`;
   sendMsg();
 }
@@ -1127,10 +1132,13 @@ async function nextMockQ(){
         return `<button class="qopt" id="${id}${l}" onclick="pickMock('${id}','${l}')" data-l="${l}">
           <span class="qletter">${l}</span><span>${escHtml(t)}</span></button>`;
       }).join('')}</div>
-      <div class="qexpl" id="${id}ex"></div>
+      <div class="qexpl" id="${id}ex" style="display:none"></div>
       <div class="qfooter">
         <span style="font-size:11px;color:var(--txt3);font-family:var(--fM)">Type STOP in chat to end</span>
-        <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'See Result →':'Next →'}</button>
+        <div style="display:flex;gap:8px">
+          <button class="qnext" id="${id}sol" style="display:none;background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)" onclick="showMockSolution('${id}')">Solution</button>
+          <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'See Result →':'Next →'}</button>
+        </div>
       </div>
     </div>`;
     addBotHTML(html);
@@ -1145,9 +1153,15 @@ function pickMock(id,chosen){
     if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
   const ok=chosen===correct;if(ok)mockState.score++;else mockState.topics.push(mockState.curTopic);
   const ex=document.getElementById(id+'ex');
-  if(ex){ex.style.display='block';ex.innerHTML=(ok?'✅ Sahi! ':'❌ Wrong. Answer: '+correct+'. ')+escHtml(mockState.curExpl||'');renderMath(ex);}
+  if(ex){ex.innerHTML=(ok?'✅ Sahi! ':'❌ Wrong. Answer: '+correct+'. ')+fmt(mockState.curExpl||'');}
   const sc=document.getElementById(id+'sc');if(sc)sc.textContent=mockState.score;
-  document.getElementById(id+'nx').style.display='block';
+  document.getElementById(id+'sol').style.display='inline-flex';
+  document.getElementById(id+'nx').style.display='inline-flex';
+}
+
+function showMockSolution(id){
+  const ex=document.getElementById(id+'ex');
+  if(ex){ex.style.display='block';renderMath(ex);}
 }
 
 async function mockNext(id){document.getElementById(id+'nx').style.display='none';
@@ -1217,7 +1231,27 @@ async function loadChallenge(){
       </div>
     </div>`);
     setTimeout(()=>{const el=document.getElementById(cid);if(el)renderMath(el);},100);
-    mode='chat';
+    mode='askanupam';
+  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+}
+
+/* ══ BOOKS ══════════════════════════════════════ */
+async function loadBooks(topic='Mathematics', exam=''){
+  rmWelcome();showTyping();
+  try{
+    const r=await api('/api/books',{topic,exam});hideTyping();
+    if(!r.books||!r.books.length){addBotHTML(`<div class="qcard"><div class="ptitle">📚 Books</div><div style="color:var(--txt2)">No books found right now. Try another topic.</div></div>`);return;}
+    const html=`<div class="panel">
+      <div class="ptitle">📚 Books (${r.total})</div>
+      <div class="psubtitle">${escHtml(topic)} ${exam?('· '+escHtml(exam)):''} · ${r.source==='dynamic'?'Live curated links':'Fallback list'}</div>
+      ${r.books.map((b,i)=>`<div class="qcard" style="margin-bottom:8px">
+        <div style="font-weight:700;color:var(--txt)">${i+1}. ${escHtml(b.name||'Unknown')}</div>
+        <div style="font-size:12px;color:var(--acc2)">${escHtml(b.author||'')}${b.level?` · ${escHtml(b.level)}`:''}</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:4px">${escHtml(b.why||'')}</div>
+        <a href="${escHtml(b.link||'#')}" target="_blank" style="font-size:12px;color:var(--acc)">🔗 Open Link</a>
+      </div>`).join('')}
+    </div>`;
+    addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 

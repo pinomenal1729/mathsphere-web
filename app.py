@@ -176,10 +176,11 @@ MISSION:
 
 STYLE RULES:
 1. NEVER use asterisks symbols in output
-2. Keep structure clean and practical
-3. For solutions, always include Step 1, Step 2, Step 3 format
-4. For mathematical expressions use LaTeX when needed
-5. End with a concise final answer and next action suggestion
+2. Keep answers concise by default: short explanation + direct result
+3. Expand details ONLY when user asks follow-up or says explain deeply
+4. For math/proof/solve tasks, always use: Step 1, Step 2, Step 3... and then Final Answer
+5. Keep textual narration brief, but keep mathematical expressions complete and correct (LaTeX where needed)
+6. Use conversation memory from previous messages to keep context consistent
 
 TONE: Friendly, clear, and confident.
 """
@@ -991,6 +992,52 @@ RESEARCH_HUB = {
 def normalize_name(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", (value or "").lower())
 
+
+def parse_json_block(raw: str):
+    if not raw:
+        return None
+    raw = raw.strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    m = re.search(r"```json\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```", raw)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except Exception:
+            return None
+    m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except Exception:
+            return None
+    return None
+
+
+def ai_dynamic_mathematicians(count=18):
+    prompt = f"""Return ONLY valid JSON array with {count} mathematicians from diverse eras and countries.
+Each item keys: name, period, country, fields (array of 3-5), contribution, keyresults, quote, image, impact, resources (array of 'Label: URL').
+Use real public links (Wikipedia, MacTutor, university pages, archives). No markdown, no extra text."""
+    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
+    data = parse_json_block(raw)
+    if isinstance(data, list) and data:
+        return data
+    return []
+
+
+def ai_dynamic_projects(count=24):
+    prompt = f"""Return ONLY valid JSON array with {count} mathematics projects useful for students.
+Each item keys: title, difficulty, math (array), desc, real, companies, salary, links (array of 'Label: URL').
+Make projects practical across AI, finance, optimization, statistics, cryptography, data science.
+No markdown, no extra text."""
+    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
+    data = parse_json_block(raw)
+    if isinstance(data, list) and data:
+        return data
+    return []
+
 # ═══════════════════════════════════════════════════
 # ROUTES
 # ═══════════════════════════════════════════════════
@@ -1032,16 +1079,27 @@ def chat():
 
 @app.route("/api/mathematician")
 def mathematician_random():
+    dyn = ai_dynamic_mathematicians(count=12)
+    if dyn:
+        d = random.choice(dyn)
+        return jsonify(d)
     name, d = random.choice(list(MATHEMATICIANS.items()))
     return jsonify({"name": name, **d})
 
 @app.route("/api/mathematicians")
 def mathematician_list():
+    dyn = ai_dynamic_mathematicians(count=18)
+    if dyn:
+        slim = [{"name": x.get("name", "Unknown"), "period": x.get("period", "N/A"),
+                 "country": x.get("country", "N/A"), "fields": x.get("fields", [])}
+                for x in dyn]
+        return jsonify({"mathematicians": slim, "total": len(slim), "source": "dynamic"})
     return jsonify({
         "mathematicians": [
             {"name": n, "period": d["period"], "country": d["country"], "fields": d["fields"]}
             for n, d in MATHEMATICIANS.items()],
-        "total": len(MATHEMATICIANS)
+        "total": len(MATHEMATICIANS),
+        "source": "local"
     })
 
 @app.route("/api/mathematician/<name>")
@@ -1049,37 +1107,52 @@ def mathematician_detail(name):
     q = normalize_name(name)
     for n, d in MATHEMATICIANS.items():
         if q and (q in normalize_name(n) or normalize_name(n) in q):
-            return jsonify({"name": n, **d})
+            return jsonify({"name": n, **d, "source": "local"})
+
+    prompt = f"""Return ONLY valid JSON for mathematician: {name}
+Keys: name, period, country, fields (array), contribution, keyresults, quote, image, impact, resources (array of 'Label: URL').
+Use accurate public references and direct URLs."""
+    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
+    data = parse_json_block(raw)
+    if isinstance(data, dict) and data.get("name"):
+        data["source"] = "dynamic"
+        return jsonify(data)
     return jsonify({"error": "Not found"}), 404
 
 
 # ── Projects ────────────────────────────────────────
-
+DYNAMIC_PROJECTS_CACHE = []
 @app.route("/api/projects")
 def projects_list():
-    return jsonify({"projects": MATH_PROJECTS, "total": len(MATH_PROJECTS)})
+    global DYNAMIC_PROJECTS_CACHE
+    dyn = ai_dynamic_projects(count=24)
+    if dyn:
+        DYNAMIC_PROJECTS_CACHE = []
+        for i, p in enumerate(dyn, start=1):
+            DYNAMIC_PROJECTS_CACHE.append({"id": i, **p})
+        return jsonify({"projects": DYNAMIC_PROJECTS_CACHE, "total": len(DYNAMIC_PROJECTS_CACHE), "source": "dynamic"})
+
+    return jsonify({"projects": MATH_PROJECTS, "total": len(MATH_PROJECTS), "source": "local"})
 
 @app.route("/api/project/<int:pid>", methods=["POST"])
 def project_detail(pid):
-    p = next((x for x in MATH_PROJECTS if x["id"] == pid), None)
-    if not p: return jsonify({"error": "Not found"}), 404
-    prompt = f"""Explain this maths project in depth for a MSc student:
+    source = DYNAMIC_PROJECTS_CACHE if DYNAMIC_PROJECTS_CACHE else MATH_PROJECTS
+    p = next((x for x in source if int(x.get("id", -1)) == pid), None)
+    if not p:
+        return jsonify({"error": "Not found"}), 404
 
-Project: {p['title']}
-Math topics: {', '.join(p['math'])}
-Description: {p['desc']}
-Real-world use: {p['real']}
-Companies: {p['companies']}
+    links = ", ".join(p.get("links", [])) if isinstance(p.get("links"), list) else ""
+    prompt = f"""Explain this maths project for students in concise but complete style.
+Project: {p.get('title')}
+Math topics: {', '.join(p.get('math', []))}
+Description: {p.get('desc')}
+Real-world use: {p.get('real')}
+Companies: {p.get('companies')}
+Reference links: {links}
 
-Give:
-1. Detailed mathematical explanation with ALL formulas in LaTeX
-2. Step-by-step implementation roadmap (8-10 steps)
-3. What theorems/results you will use
-4. Career path this opens
-5. How to present this as a portfolio project
-
-NEVER use * or **. ALL math in LaTeX."""
-    return jsonify({"project": p, "explanation": ask_simple(prompt, system=SYSTEM_PROMPT)})
+Give Step 1, Step 2, Step 3... implementation and important formulas in LaTeX.
+Keep text concise, math details accurate."""
+    return jsonify({"project": p, "explanation": ask_simple(prompt, system=ASK_ANUPAM_PROMPT)})   
 
 
 # ── Theorems ────────────────────────────────────────
@@ -1228,15 +1301,18 @@ EXPLANATION: [full step-by-step solution with LaTeX]
 
 NEVER use * or **. ALL math in LaTeX."""
 
-    raw   = ask_simple(prompt)
-    lines = raw.strip().split('\n')
-    ans   = next((l for l in lines if l.strip().startswith("ANSWER:")),  "ANSWER: A")
-    expl  = next((l for l in lines if l.strip().startswith("EXPLANATION:")), "")
-    ans   = ans.replace("ANSWER:","").strip()[:1].upper() or "A"
-    expl  = expl.replace("EXPLANATION:","").strip()
-    question = '\n'.join(l for l in lines
-                         if not l.strip().startswith(("ANSWER:","EXPLANATION:")))
-    return jsonify({"question": question.strip(), "answer": ans, "explanation": expl})
+    raw = ask_simple(prompt)
+    lines = raw.strip().split("\n")
+    ans_line = next((l for l in lines if l.strip().startswith("ANSWER:")), "ANSWER: A")
+    ans = ans_line.replace("ANSWER:", "").strip()[:1].upper() or "A"
+
+    explanation = ""
+    if "EXPLANATION:" in raw:
+        explanation = raw.split("EXPLANATION:", 1)[1].strip()
+
+    question = "\n".join(l for l in lines if not l.strip().startswith("ANSWER:"))
+    question = question.split("EXPLANATION:", 1)[0].strip()
+    return jsonify({"question": question.strip(), "answer": ans, "explanation": explanation})
 
 
 # ── PYQ ─────────────────────────────────────────────
@@ -1334,7 +1410,19 @@ NEVER use * or **. ALL math in LaTeX."""
 
 
 # ── Exam Info ────────────────────────────────────────
-
+@app.route("/api/books", methods=["POST"])
+def books_search():
+    d = request.get_json() or {}
+    topic = (d.get("topic") or "Mathematics").strip()
+    exam = (d.get("exam") or "").strip()
+    prompt = f"""Return ONLY valid JSON array of best books for topic: {topic}. Exam context: {exam or 'General'}.
+Each item keys: name, author, level, why, link.
+Use publicly accessible links (publisher, archive, official, reliable store). Keep list focused and student-friendly (8-12 items)."""
+    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
+    data = parse_json_block(raw)
+    if isinstance(data, list) and data:
+        return jsonify({"books": data, "total": len(data), "source": "dynamic"})
+    return jsonify({"books": [], "total": 0, "source": "none"})
 @app.route("/api/exam/<exam>")
 def exam_info(exam):
     info = {
