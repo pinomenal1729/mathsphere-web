@@ -121,7 +121,29 @@ def ask_ai(messages, system=None):
 def ask_simple(prompt, system=None):
     return ask_ai([{"role": "user", "content": prompt}], system=system)
 
+def ask_ai_with_image(messages, image_b64=None, image_type=None, system=None):
+    if GEMINI_AVAILABLE and image_b64 and image_type:
+        try:
+            prompt_parts = []
+            if system:
+                prompt_parts.append(f"SYSTEM:\n{system}\n")
+            for m in messages:
+                role = "Student" if m.get("role") == "user" else "Assistant"
+                prompt_parts.append(f"{role}: {m.get('content', '')}\n")
+            prompt_parts.append("Analyse the uploaded image and answer step by step.")
+            contents = [
+                {"text": "\n".join(prompt_parts)},
+                {"inline_data": {"mime_type": image_type, "data": image_b64}}
+            ]
+            r = gemini_client.models.generate_content(model="gemini-2.5-flash", contents=contents)
+            return clean_response(r.text)
+        except Exception as e:
+            print(f"Gemini image error: {e}")
 
+    fallback = list(messages)
+    if image_b64:
+        fallback.append({"role": "user", "content": "User uploaded an image. If exact details are not visible, mention assumptions and solve step by step."})
+    return ask_ai(fallback, system=system)
 # ═══════════════════════════════════════════════════
 # SYSTEM PROMPT
 # ═══════════════════════════════════════════════════
@@ -145,6 +167,22 @@ FORMAT EVERY RESPONSE:
 
 TONE: Warm Hinglish — "Dekho...", "Samajh aaya?", "Bohot achha!"
 ALWAYS verify calculations twice."""
+ASK_ANUPAM_PROMPT = f"""You are Ask Anupam — an all-purpose AI tutor by Anupam Nigam.
+
+MISSION:
+- Answer ANY user question: mathematics, science, coding, writing, reasoning, productivity, or general knowledge
+- If an image is uploaded, analyse it carefully and solve/explain it STEP BY STEP
+- For unclear images, state what is visible, ask 1 concise clarification, then continue with best effort
+
+STYLE RULES:
+1. NEVER use asterisks symbols in output
+2. Keep structure clean and practical
+3. For solutions, always include Step 1, Step 2, Step 3 format
+4. For mathematical expressions use LaTeX when needed
+5. End with a concise final answer and next action suggestion
+
+TONE: Friendly, clear, and confident.
+"""
 
 
 # ═══════════════════════════════════════════════════
@@ -972,14 +1010,19 @@ def health():
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
-        data     = request.get_json()
-        messages = data.get("messages", [])
+        data       = request.get_json()
+        messages   = data.get("messages", [])
+        mode       = str(data.get("mode", "normal"))
+        image_b64  = data.get("image_b64")
+        image_type = data.get("image_type")
         if not messages:
             return jsonify({"error": "messages required"}), 400
         clean = [{"role": m["role"], "content": str(m["content"])}
                  for m in messages if m.get("role") in ("user","assistant") and m.get("content")]
         if len(clean) > 16: clean = clean[-14:]
-        return jsonify({"answer": ask_ai(clean, system=SYSTEM_PROMPT)})
+        system = ASK_ANUPAM_PROMPT if mode == "ask_anupam" else SYSTEM_PROMPT
+        answer = ask_ai_with_image(clean, image_b64=image_b64, image_type=image_type, system=system)
+        return jsonify({"answer": answer})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

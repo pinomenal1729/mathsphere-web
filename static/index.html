@@ -342,6 +342,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   <div class="sb-scroll">
     <div class="sb-section">LEARN</div>
     <button class="nav-btn active" id="nav-chat"        onclick="setMode('chat')">        <span class="em">💬</span>Ask Anything</button>
+    <button class="nav-btn"        id="nav-askanupam"   onclick="setMode('askanupam')">   <span class="em">🧠</span>Ask Anupam</button>
     <button class="nav-btn"        id="nav-formula"     onclick="setMode('formula')">     <span class="em">📋</span>Formula Sheet</button>
     <button class="nav-btn"        id="nav-revision"    onclick="setMode('revision')">    <span class="em">⚡</span>Rapid Revision</button>
     <button class="nav-btn"        id="nav-conceptmap"  onclick="setMode('conceptmap')">  <span class="em">🗺️</span>Concept Map</button>
@@ -446,7 +447,8 @@ let quizState=null, mockState=null;
 let bookmarks=JSON.parse(localStorage.getItem('ms_bm')||'[]');
 
 const MODE_CFG={
-  chat:         {title:'💬 Ask Anything',       ph:'Ask any math question...'},
+  chat:         {title:'💬 Ask Anything',       ph:'Ask any question...'},
+  askanupam:    {title:'🧠 Ask Anupam',         ph:'Ask anything: math, non-math, coding, writing, or upload an image...'},
   formula:      {title:'📋 Formula Sheet',       ph:'Topic + exam, e.g. "Calculus JAM" or "Linear Algebra GATE"'},
   revision:     {title:'⚡ Rapid Revision',       ph:'Type a topic for 10 key revision points...'},
   conceptmap:   {title:'🗺️ Concept Map',          ph:'Type a topic to explore all its connections...'},
@@ -543,6 +545,10 @@ function renderTagsBar(){
                   ['∑ Fourier','Explain Fourier series with example'],
                   ['🎲 Probability','Explain Bayes theorem with real example'],
                   ['🔢 Number Theory','Explain prime numbers and RSA encryption']],
+    askanupam:   [['📐 Solve Maths','Solve this calculus question step by step: evaluate integral of x^2 sin x dx'],
+                  ['🧠 Explain Clearly','Explain black holes to a class 8 student with examples'],
+                  ['💻 Coding Help','Write a simple Python script for Fibonacci using recursion and iteration'],
+                  ['📝 Writing Help','Improve this paragraph to professional English and keep same meaning']],              
     formula:     [['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
                   ['Real Analysis CSIR','Real Analysis CSIR'],['Calculus GATE','Calculus GATE']],
     competition: [['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
@@ -591,7 +597,7 @@ async function sendMsg(){
     } else if(mode==='research'){
       const r=await api('/api/research',{question:text});answer=r.answer;
     } else {
-      const payload={messages:chatHistory.slice(-16),mode:'normal'};
+      const payload={messages:chatHistory.slice(-16),mode: mode==='askanupam' ? 'ask_anupam' : 'normal'};
       if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
       const r=await api('/api/chat',payload);answer=r.answer;
     }
