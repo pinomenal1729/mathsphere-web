@@ -1,17 +1,6 @@
 """
-MathSphere Web v6.0 — Professor Edition
+MathSphere Web v7.0 — Professor Edition
 ========================================
-NEW in v6.0:
-✅ SymPy integration — symbolic CAS for verified answers
-✅ Answer Verifier — student submits answer, system checks it
-✅ Step Validator — validates each step of a student's work
-✅ Confidence Scoring — every AI answer gets a verification badge
-✅ Numerical Verification — substitution-based cross-checking
-✅ Graphing data endpoint — Desmos-ready function data
-✅ Error Analysis Mode — identifies exactly where student went wrong
-✅ Smart prompt engineering — forces step-by-step, boxes answers, states assumptions
-✅ All original features preserved and enhanced
-
 By Anupam Nigam | youtube.com/@pi_nomenal1729
 """
 
@@ -60,360 +49,38 @@ try:
         limit, series, oo, pi, E, I, sqrt, Rational, N, dsolve,
         Function, Eq, Symbol, cancel, apart, together, trigsimp,
         det, trace, eye, zeros, ones, linsolve, nonlinsolve,
-        Sum, Product, FiniteSet, Interval, Union, Intersection,
-        cos, sin, tan, exp, log, Abs, conjugate, re as sp_re, im as sp_im,
-        binomial, factorial, gcd, lcm, isprime, factorint, primerange,
-        Derivative, Integral, DiracDelta, Heaviside, fourier_transform
+        Sum, Product, cos, sin, tan, exp, log, Abs,
+        factorial, gcd, lcm, isprime, factorint,
+        Derivative, Integral
     )
     from sympy.parsing.sympy_parser import (
         parse_expr, standard_transformations, implicit_multiplication_application,
         convert_xor
     )
     SYMPY_AVAILABLE = True
-    print("✅ SymPy loaded — symbolic verification active")
+    print("✅ SymPy loaded")
 except ImportError:
-    print("⚠️ SymPy not installed. Run: pip install sympy --break-system-packages")
+    print("⚠️ SymPy not installed")
 
 GROQ_MODELS     = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
 TEACHER_YOUTUBE = "https://youtube.com/@pi_nomenal1729"
-TEACHER_INSTAGRAM="https://instagram.com/pi_nomenal1729"
 TEACHER_WEBSITE = "https://www.anupamnigam.com"
-
-
-# ══════════════════════════════════════════════════
-# SYMPY ENGINE — Core symbolic computation
-# ══════════════════════════════════════════════════
 
 SYMPY_TRANSFORMATIONS = (
     standard_transformations +
     (implicit_multiplication_application, convert_xor)
 ) if SYMPY_AVAILABLE else None
 
-
 def safe_parse(expr_str: str):
-    """Parse a string expression into a SymPy expression safely."""
-    if not SYMPY_AVAILABLE:
-        return None
+    if not SYMPY_AVAILABLE: return None
     try:
-        # Clean common input formats
         expr_str = expr_str.strip()
         expr_str = re.sub(r'\^', '**', expr_str)
         expr_str = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', expr_str)
         return parse_expr(expr_str, transformations=SYMPY_TRANSFORMATIONS)
     except Exception:
-        try:
-            return sympify(expr_str)
-        except Exception:
-            return None
-
-
-def sympy_compute(problem_type: str, expression: str, variable: str = "x",
-                  extra: dict = None) -> dict:
-    """
-    Core SymPy computation engine.
-    Returns: {success, result_latex, result_str, steps, error}
-    """
-    if not SYMPY_AVAILABLE:
-        return {"success": False, "error": "SymPy not available"}
-
-    extra = extra or {}
-    result = {"success": False, "result_latex": "", "result_str": "", "steps": [], "error": ""}
-
-    try:
-        x = Symbol(variable)
-        expr = safe_parse(expression)
-        if expr is None:
-            result["error"] = f"Could not parse: {expression}"
-            return result
-
-        if problem_type == "differentiate":
-            order = extra.get("order", 1)
-            der = diff(expr, x, order)
-            simplified = simplify(der)
-            result.update({
-                "success": True,
-                "result_latex": sp_latex(simplified),
-                "result_str": str(simplified),
-                "steps": [
-                    f"Expression: {sp_latex(expr)}",
-                    f"Apply differentiation rules (order {order})",
-                    f"Result: {sp_latex(simplified)}"
-                ]
-            })
-
-        elif problem_type == "integrate":
-            limits = extra.get("limits")
-            if limits:
-                a, b = safe_parse(str(limits[0])), safe_parse(str(limits[1]))
-                integral = integrate(expr, (x, a, b))
-                simplified = simplify(integral)
-                result.update({
-                    "success": True,
-                    "result_latex": sp_latex(simplified),
-                    "result_str": str(simplified),
-                    "steps": [
-                        f"Definite integral from {limits[0]} to {limits[1]}",
-                        f"Integrand: {sp_latex(expr)}",
-                        f"Result: {sp_latex(simplified)}"
-                    ]
-                })
-            else:
-                integral = integrate(expr, x)
-                result.update({
-                    "success": True,
-                    "result_latex": sp_latex(integral) + " + C",
-                    "result_str": str(integral) + " + C",
-                    "steps": [
-                        f"Integrand: {sp_latex(expr)}",
-                        f"Apply integration rules",
-                        f"Result: {sp_latex(integral)} + C"
-                    ]
-                })
-
-        elif problem_type == "solve":
-            rhs_str = extra.get("rhs", "0")
-            rhs = safe_parse(rhs_str)
-            solutions = solve(Eq(expr, rhs), x)
-            sols_latex = [sp_latex(s) for s in solutions]
-            result.update({
-                "success": True,
-                "result_latex": ", ".join(sols_latex) if sols_latex else "\\text{No solution}",
-                "result_str": str(solutions),
-                "steps": [
-                    f"Equation: {sp_latex(expr)} = {sp_latex(rhs)}",
-                    f"Solve for {variable}",
-                    f"Solutions: {', '.join(sols_latex)}"
-                ]
-            })
-
-        elif problem_type == "limit":
-            point = extra.get("point", "0")
-            direction = extra.get("direction", "+")
-            pt = safe_parse(str(point)) if point not in ["oo", "inf", "-oo"] else (oo if point in ["oo", "inf"] else -oo)
-            lim = limit(expr, x, pt, direction)
-            result.update({
-                "success": True,
-                "result_latex": sp_latex(lim),
-                "result_str": str(lim),
-                "steps": [
-                    f"Expression: {sp_latex(expr)}",
-                    f"Limit as {variable} → {point}",
-                    f"Result: {sp_latex(lim)}"
-                ]
-            })
-
-        elif problem_type == "simplify":
-            simp = simplify(expr)
-            result.update({
-                "success": True,
-                "result_latex": sp_latex(simp),
-                "result_str": str(simp),
-                "steps": [f"Original: {sp_latex(expr)}", f"Simplified: {sp_latex(simp)}"]
-            })
-
-        elif problem_type == "factor":
-            fac = factor(expr)
-            result.update({
-                "success": True,
-                "result_latex": sp_latex(fac),
-                "result_str": str(fac),
-                "steps": [f"Original: {sp_latex(expr)}", f"Factored: {sp_latex(fac)}"]
-            })
-
-        elif problem_type == "expand":
-            exp_result = expand(expr)
-            result.update({
-                "success": True,
-                "result_latex": sp_latex(exp_result),
-                "result_str": str(exp_result),
-                "steps": [f"Original: {sp_latex(expr)}", f"Expanded: {sp_latex(exp_result)}"]
-            })
-
-        elif problem_type == "series":
-            pt = safe_parse(str(extra.get("point", "0")))
-            n = extra.get("n", 6)
-            ser = series(expr, x, pt, n)
-            result.update({
-                "success": True,
-                "result_latex": sp_latex(ser),
-                "result_str": str(ser),
-                "steps": [
-                    f"Function: {sp_latex(expr)}",
-                    f"Taylor series around x = {pt}, up to order {n}",
-                    f"Result: {sp_latex(ser)}"
-                ]
-            })
-
-        elif problem_type == "eigenvalues":
-            # expression here is a matrix like "[[1,2],[3,4]]"
-            try:
-                mat_data = json.loads(expression)
-                M = Matrix(mat_data)
-                evals = M.eigenvals()
-                evects = M.eigenvects()
-                evals_latex = ", ".join([f"{sp_latex(k)} (\\text{{mult }}={v})" for k, v in evals.items()])
-                result.update({
-                    "success": True,
-                    "result_latex": evals_latex,
-                    "result_str": str(evals),
-                    "steps": [
-                        f"Matrix: {sp_latex(M)}",
-                        f"Characteristic polynomial: {sp_latex(M.charpoly())}",
-                        f"Eigenvalues: {evals_latex}"
-                    ]
-                })
-            except Exception as me:
-                result["error"] = f"Matrix parse error: {me}"
-
-        elif problem_type == "verify_answer":
-            # Check if student_answer equals the computed result
-            student_ans = safe_parse(extra.get("student_answer", "0"))
-            computed = safe_parse(extra.get("computed", "0"))
-            if student_ans is not None and computed is not None:
-                diff_result = simplify(student_ans - computed)
-                is_correct = diff_result == 0
-                result.update({
-                    "success": True,
-                    "is_correct": is_correct,
-                    "result_latex": "\\text{Correct}" if is_correct else f"\\text{{Incorrect: difference}} = {sp_latex(diff_result)}",
-                    "result_str": "correct" if is_correct else f"incorrect, difference = {diff_result}",
-                    "steps": [
-                        f"Your answer: {sp_latex(student_ans)}",
-                        f"Correct answer: {sp_latex(computed)}",
-                        f"Difference: {sp_latex(diff_result)}",
-                        "✅ VERIFIED CORRECT" if is_correct else "❌ INCORRECT"
-                    ]
-                })
-
-        elif problem_type == "numerical_check":
-            # Numerically verify by substituting test values
-            test_vals = extra.get("test_vals", [1, 2, 3])
-            expr2 = safe_parse(extra.get("expr2", "0"))
-            if expr2 is not None:
-                all_match = True
-                checks = []
-                for val in test_vals:
-                    try:
-                        v1 = complex(expr.subs(x, val))
-                        v2 = complex(expr2.subs(x, val))
-                        match = abs(v1 - v2) < 1e-9
-                        if not match:
-                            all_match = False
-                        checks.append(f"x={val}: LHS={round(v1.real,6)}, RHS={round(v2.real,6)}, {'✅' if match else '❌'}")
-                    except Exception:
-                        checks.append(f"x={val}: evaluation error")
-                result.update({
-                    "success": True,
-                    "is_correct": all_match,
-                    "result_latex": "\\text{Numerically verified}" if all_match else "\\text{Numerical mismatch found}",
-                    "result_str": "match" if all_match else "mismatch",
-                    "steps": checks
-                })
-
-    except Exception as e:
-        result["error"] = str(e)
-        result["traceback"] = traceback.format_exc()
-
-    return result
-
-
-def detect_math_type(text: str) -> tuple:
-    """Detect what type of math problem this is. Returns (type, expression, extra)."""
-    text_lower = text.lower().strip()
-
-    # Differentiation
-    m = re.search(r"(?:diff(?:erentiate)?|derivative)\s+(?:of\s+)?([^,\n]+?)(?:\s+with respect to\s+(\w))?(?:\s*$|,)", text_lower)
-    if m:
-        return ("differentiate", m.group(1).strip(), {"variable": m.group(2) or "x"})
-
-    # Integration
-    m = re.search(r"(?:integrat|antiderivative)\w*\s+(?:of\s+)?([^,\n]+?)(?:\s+(?:from|with respect))?", text_lower)
-    if m:
-        limits_m = re.search(r"from\s+(-?[\d\w./]+)\s+to\s+(-?[\d\w./]+|inf(?:inity)?|oo)", text_lower)
-        extra = {}
-        if limits_m:
-            extra["limits"] = [limits_m.group(1), limits_m.group(2)]
-        return ("integrate", m.group(1).strip(), extra)
-
-    # Solve equation
-    m = re.search(r"solve\s+(.+?)(?:\s*=\s*(.+))?(?:\s+for\s+(\w))?$", text_lower)
-    if m:
-        rhs = m.group(2) or "0"
-        return ("solve", m.group(1).strip(), {"rhs": rhs, "variable": m.group(3) or "x"})
-
-    # Limit
-    m = re.search(r"limit\s+(?:of\s+)?(.+?)\s+as\s+(\w)\s*(?:->|→|approaches?)\s*(-?[\w./]+)", text_lower)
-    if m:
-        return ("limit", m.group(1).strip(), {"variable": m.group(2), "point": m.group(3)})
-
-    # Simplify
-    m = re.search(r"simplif\w+\s+(.+)", text_lower)
-    if m:
-        return ("simplify", m.group(1).strip(), {})
-
-    # Factor
-    m = re.search(r"factor\s+(.+)", text_lower)
-    if m:
-        return ("factor", m.group(1).strip(), {})
-
-    return (None, None, {})
-
-
-def numerical_verify_derivative(f_str: str, df_str: str, variable: str = "x") -> dict:
-    """Verify df is the derivative of f by numerical differentiation."""
-    if not SYMPY_AVAILABLE:
-        return {"verified": None, "message": "SymPy unavailable"}
-    try:
-        x = Symbol(variable)
-        f  = safe_parse(f_str)
-        df = safe_parse(df_str)
-        if f is None or df is None:
-            return {"verified": None, "message": "Could not parse expressions"}
-        test_points = [0.3, 1.1, 2.7, -0.5, 5.2]
-        h = 1e-7
-        mismatches = 0
-        details = []
-        for val in test_points:
-            try:
-                f_val  = float(f.subs(x, val))
-                f_val2 = float(f.subs(x, val + h))
-                numerical_d = (f_val2 - f_val) / h
-                symbolic_d  = float(df.subs(x, val))
-                match = abs(numerical_d - symbolic_d) < 1e-4
-                if not match:
-                    mismatches += 1
-                details.append({"x": val, "numerical": round(numerical_d, 6), "symbolic": round(symbolic_d, 6), "match": match})
-            except Exception:
-                pass
-        verified = mismatches == 0
-        return {"verified": verified, "details": details, "mismatches": mismatches}
-    except Exception as e:
-        return {"verified": None, "message": str(e)}
-
-
-def verify_integral(f_str: str, F_str: str, variable: str = "x") -> dict:
-    """Verify F is an antiderivative of f by differentiating F."""
-    if not SYMPY_AVAILABLE:
-        return {"verified": None, "message": "SymPy unavailable"}
-    try:
-        x = Symbol(variable)
-        f = safe_parse(f_str)
-        F_no_c = re.sub(r'\+\s*[Cc]$', '', F_str.strip())
-        F = safe_parse(F_no_c)
-        if f is None or F is None:
-            return {"verified": None, "message": "Could not parse"}
-        dF = diff(F, x)
-        diff_simplified = simplify(dF - f)
-        verified = diff_simplified == 0
-        return {
-            "verified": verified,
-            "F_prime_latex": sp_latex(dF),
-            "f_latex": sp_latex(f),
-            "diff_latex": sp_latex(diff_simplified),
-            "message": "d/dx(F) = f ✅" if verified else f"d/dx(F) ≠ f, difference = {sp_latex(diff_simplified)}"
-        }
-    except Exception as e:
-        return {"verified": None, "message": str(e)}
+        try: return sympify(expr_str)
+        except Exception: return None
 
 
 # ══════════════════════════════════════════════════
@@ -450,7 +117,7 @@ def clean_response(text: str) -> str:
 def ask_ai(messages, system=None):
     if GROQ_AVAILABLE:
         full = ([{"role": "system", "content": system}] if system else []) + messages
-        if len(full) > 15: full = [full[0]] + full[-13:]
+        if len(full) > 20: full = [full[0]] + full[-18:]
         for model in GROQ_MODELS:
             try:
                 r = groq_client.chat.completions.create(
@@ -502,8 +169,24 @@ def ask_ai_with_image(messages, image_b64=None, image_type=None, system=None):
     return ask_ai(fallback, system=system)
 
 
+def parse_json_block(raw: str):
+    if not raw: return None
+    raw = raw.strip()
+    try: return json.loads(raw)
+    except Exception: pass
+    m = re.search(r"```json\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```", raw)
+    if m:
+        try: return json.loads(m.group(1))
+        except Exception: return None
+    m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw)
+    if m:
+        try: return json.loads(m.group(1))
+        except Exception: return None
+    return None
+
+
 # ══════════════════════════════════════════════════
-# SYSTEM PROMPTS — Upgraded for accuracy
+# SYSTEM PROMPTS
 # ══════════════════════════════════════════════════
 
 SYSTEM_PROMPT = f"""You are MathSphere — an expert Mathematics professor for graduate students, created by Anupam Nigam.
@@ -515,9 +198,8 @@ MATHEMATICAL ACCURACY RULES — ABSOLUTE, NO EXCEPTIONS:
 4. If you are not 100% certain of a result, say so clearly
 5. For calculus: always verify by differentiating your integral result
 6. For algebra: always substitute back to verify solutions
-7. For series: always state radius/interval of convergence
-8. Box the final answer clearly using: \\[\\boxed{{...}}\\]
-9. Never present a single answer when multiple solutions exist
+7. Box the final answer clearly using: \\[\\boxed{{...}}\\]
+8. MAINTAIN CONVERSATION CONTEXT — always refer back to previous questions if relevant
 
 FORMAT EVERY RESPONSE:
 📌 [Topic Name]
@@ -534,6 +216,7 @@ STYLE RULES:
 3. Use warm Hinglish tone: "Dekho...", "Samajh aaya?", "Bohot achha!"
 4. Temperature is set low — be precise, not creative with math facts
 5. HTML tags allowed: <br> <hr>
+6. REMEMBER previous messages in conversation for follow-up questions
 
 CONFIDENCE LEVELS — always end with one of:
 [CONFIDENCE: HIGH] — you are certain and verified
@@ -544,42 +227,89 @@ CONFIDENCE LEVELS — always end with one of:
 ASK_ANUPAM_PROMPT = f"""You are Ask Anupam — an all-purpose AI tutor by Anupam Nigam.
 
 ACCURACY RULES:
-1. For ANY mathematical calculation: compute it carefully, then verify by substituting back
+1. For ANY mathematical calculation: compute carefully, then verify by substituting back
 2. NEVER use asterisks in output
 3. Show Step 1, Step 2, Step 3... for every math problem
 4. Box every final mathematical answer: \\[\\boxed{{...}}\\]
 5. ALL math expressions MUST be in proper LaTeX notation
 6. If image uploaded: read carefully, state what you see, then solve step by step
 7. State confidence: [CONFIDENCE: HIGH/MEDIUM/LOW] at end of math solutions
-8. For definitions/concepts: be concise. For calculations: be thorough.
+8. MAINTAIN CONTEXT: Always read the full conversation history and answer follow-up questions in context
+9. If a follow-up question refers to previous work (e.g., "what about x=2?" or "now integrate this"), connect it to the previous answer
 
-TONE: Friendly, precise, and confident. Like a helpful older sibling who is a math professor."""
-
-
-VERIFIER_PROMPT = """You are a mathematical answer verifier. Your ONLY job is to:
-1. Check if the student's answer is mathematically correct
-2. Identify the EXACT step where an error occurs if wrong
-3. Provide the correct answer with full working
-
-Be extremely precise. Do not be encouraging — be accurate.
-Format: Step-by-step verification with LaTeX. Final verdict: CORRECT or INCORRECT.
-Box the correct answer: \\[\\boxed{...}\\]"""
+TONE: Friendly, precise, confident. Like a helpful older sibling who is a math professor."""
 
 
-ERROR_ANALYSIS_PROMPT = """You are a mathematical error analyst — like a professor marking exam scripts.
-Your job:
-1. Read the student's solution carefully
-2. Identify EVERY error, no matter how small
-3. Classify each error (conceptual/arithmetic/sign/notation/missing step)
-4. Show the correct version of each wrong step
-5. Give an overall assessment
+FORMULA_PROMPT = """You are a mathematical formula sheet generator. Your ONLY job is to output a CLEAN, COMPLETE formula sheet.
 
-Be specific. "Error in Step 3: you applied product rule but forgot the second term."
-Use LaTeX for all mathematics."""
+STRICT RULES:
+1. Output ONLY formulas — no lengthy explanations
+2. Each formula must be in LaTeX: \\[ formula \\] or \\( formula \\)
+3. One short label per formula (3-5 words max)
+4. Group by sub-topic with a heading
+5. ABSOLUTELY NO paragraphs, NO long descriptions
+6. Include ALL standard formulas for the topic and exam level
+7. Format example:
+   DERIVATIVES
+   \\[ \\frac{d}{dx}(x^n) = nx^{n-1} \\]  Power Rule
+   \\[ \\frac{d}{dx}(\\sin x) = \\cos x \\]  Sine Derivative
+   
+8. Be COMPREHENSIVE — minimum 25 formulas
+9. No introduction text, no conclusion text — just the formulas"""
+
+
+CONCEPT_MAP_PROMPT = """You are a mathematical concept map generator. Create a STRUCTURED, VISUAL concept map.
+
+FORMAT (strictly follow this):
+Use this exact structure for each node:
+
+CORE CONCEPT
+└── [Precise definition in 1 line with LaTeX formula]
+
+PREREQUISITES
+├── [Concept 1] → [Why needed]
+├── [Concept 2] → [Why needed]
+
+KEY SUB-TOPICS
+├── [Sub-topic 1]
+│   ├── Definition: [LaTeX]
+│   ├── Key Formula: \\[ formula \\]
+│   └── Example: [one line]
+├── [Sub-topic 2]
+│   ├── Definition: [LaTeX]
+│   └── Key Formula: \\[ formula \\]
+
+CONNECTIONS
+├── [This concept] → uses → [Other concept]
+├── [This concept] → leads to → [Advanced topic]
+
+KEY THEOREMS
+├── [Theorem name]: \\[ statement \\]
+
+REAL APPLICATIONS
+├── [Application 1]: [Company/field]
+├── [Application 2]: [Company/field]
+
+EXAM RELEVANCE (JAM/GATE/CSIR)
+└── [Which sections, what weightage]
+
+Rules:
+- ALL definitions must include LaTeX formulas
+- Keep each line CONCISE (one line per item)
+- Use tree structure with ├── └── │
+- No long paragraphs anywhere"""
+
+
+GRAPH_PROMPT = """You are a mathematical graph assistant. When given a function or equation to plot:
+1. Identify the function type
+2. Give key features: domain, range, asymptotes, intercepts, critical points
+3. Provide the function in a format suitable for plotting
+4. Describe the shape briefly
+All math in LaTeX."""
 
 
 # ══════════════════════════════════════════════════
-# MATHEMATICIANS DATA
+# STATIC DATA
 # ══════════════════════════════════════════════════
 
 MATHEMATICIANS = {
@@ -590,336 +320,187 @@ MATHEMATICIANS = {
         "keyresults": "Ramanujan tau function, Hardy-Ramanujan number 1729, Rogers-Ramanujan identities, mock theta functions",
         "quote": "An equation for me has no meaning unless it expresses a thought of God",
         "image": "https://upload.wikimedia.org/wikipedia/commons/0/02/Srinivasa_Ramanujan_-_OPC_-_1.jpg",
-        "impact": "Black hole physics, string theory, partition function applications worth billions in research",
-        "resources": ["Wikipedia: https://en.wikipedia.org/wiki/Srinivasa_Ramanujan",
-                      "MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Ramanujan.html"]
+        "impact": "Black hole physics, string theory, partition function applications",
+        "wiki": "https://en.wikipedia.org/wiki/Srinivasa_Ramanujan"
     },
     "Leonhard Euler": {
         "period": "1707–1783", "country": "Switzerland",
         "fields": ["Analysis", "Graph Theory", "Number Theory", "Topology"],
         "contribution": "Most prolific mathematician ever: 800+ papers. Founded graph theory, created e, π, i notation, solved Basel problem.",
-        "keyresults": "Euler identity \\(e^{i\\pi}+1=0\\), Euler formula V-E+F=2, Basel problem \\(\\sum 1/n^2 = \\pi^2/6\\), Königsberg bridges",
+        "keyresults": "Euler identity \\(e^{i\\pi}+1=0\\), Euler formula V-E+F=2, Basel problem \\(\\sum 1/n^2 = \\pi^2/6\\)",
         "quote": "Mathematics is the queen of sciences",
         "image": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Leonhard_Euler.jpg",
-        "impact": "Internet networking, electrical engineering, quantum mechanics, every branch of modern math",
-        "resources": ["Euler Archive: https://scholarlycommons.pacific.edu/euler/"]
+        "impact": "Internet networking, electrical engineering, quantum mechanics",
+        "wiki": "https://en.wikipedia.org/wiki/Leonhard_Euler"
     },
     "Carl Friedrich Gauss": {
         "period": "1777–1855", "country": "Germany",
         "fields": ["Number Theory", "Statistics", "Differential Geometry", "Algebra"],
-        "contribution": "Prince of Mathematics. Proved Fundamental Theorem of Algebra at age 21. Invented least squares, Gaussian distribution, modular arithmetic.",
-        "keyresults": "FTA, bell curve \\(N(\\mu,\\sigma^2)\\), Gauss-Bonnet theorem, quadratic reciprocity, prime number estimates",
+        "contribution": "Prince of Mathematics. Proved Fundamental Theorem of Algebra at age 21.",
+        "keyresults": "FTA, bell curve \\(N(\\mu,\\sigma^2)\\), Gauss-Bonnet theorem, quadratic reciprocity",
         "quote": "Mathematics is the queen of the sciences and number theory is the queen of mathematics",
         "image": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Gauss_1840_by_Jensen.jpg",
-        "impact": "MRI scanners, GPS systems, machine learning, $1T+ in annual economic applications",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Gauss.html"]
+        "impact": "MRI scanners, GPS systems, machine learning",
+        "wiki": "https://en.wikipedia.org/wiki/Carl_Friedrich_Gauss"
     },
     "Emmy Noether": {
         "period": "1882–1935", "country": "Germany",
         "fields": ["Abstract Algebra", "Theoretical Physics", "Ring Theory"],
-        "contribution": "Revolutionised abstract algebra. Noether's theorem connecting symmetry to conservation laws is arguably the most important result in theoretical physics.",
-        "keyresults": "Noether's Theorem, Noetherian rings, ascending chain condition, ideal theory, invariant theory",
-        "quote": "My methods are really methods of working and thinking; this is why they have crept in everywhere anonymously",
+        "contribution": "Revolutionised abstract algebra. Noether's theorem connecting symmetry to conservation laws.",
+        "keyresults": "Noether's Theorem, Noetherian rings, ascending chain condition",
+        "quote": "My methods are really methods of working and thinking",
         "image": "https://upload.wikimedia.org/wikipedia/commons/e/e9/Emmy_Noether_%281882-1935%29.jpg",
-        "impact": "All modern physics, conservation of energy/momentum, quantum mechanics, general relativity",
-        "resources": ["Stanford Encyclopedia: https://plato.stanford.edu/entries/noether/"]
+        "impact": "All modern physics, conservation laws, quantum mechanics",
+        "wiki": "https://en.wikipedia.org/wiki/Emmy_Noether"
     },
     "Isaac Newton": {
         "period": "1642–1727", "country": "England",
-        "fields": ["Calculus", "Physics", "Classical Mechanics", "Optics"],
+        "fields": ["Calculus", "Physics", "Classical Mechanics"],
         "contribution": "Invented calculus, discovered gravity, formulated three laws of motion.",
-        "keyresults": "Calculus, F=ma, universal gravitation \\(F=Gm_1m_2/r^2\\), binomial theorem, Principia Mathematica",
+        "keyresults": "Calculus, F=ma, universal gravitation \\(F=Gm_1m_2/r^2\\), binomial theorem",
         "quote": "If I have seen further, it is by standing on the shoulders of giants",
         "image": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Principia_Mathematica_1687.jpg",
-        "impact": "All classical mechanics, aerospace, civil engineering, space exploration",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Newton.html"]
+        "impact": "Aerospace, civil engineering, space exploration",
+        "wiki": "https://en.wikipedia.org/wiki/Isaac_Newton"
     },
     "Bernhard Riemann": {
         "period": "1826–1866", "country": "Germany",
         "fields": ["Complex Analysis", "Riemannian Geometry", "Number Theory"],
-        "contribution": "Riemann hypothesis (still unsolved!). Riemann integral. Differential geometry enabling Einstein's general relativity.",
-        "keyresults": "Riemann hypothesis, Riemann integral, Riemann surfaces, curvature tensor, zeta function",
+        "contribution": "Riemann hypothesis (still unsolved). Riemann integral. Differential geometry enabling Einstein's general relativity.",
+        "keyresults": "Riemann hypothesis, Riemann integral, Riemann surfaces, zeta function",
         "quote": "If only I had the theorems! Then I could find the proofs easily enough",
         "image": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Georg_Friedrich_Bernhard_Riemann.jpg",
-        "impact": "Internet cryptography, quantum physics, general relativity, $1M Millennium Prize still unclaimed",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Riemann.html"]
-    },
-    "David Hilbert": {
-        "period": "1862–1943", "country": "Germany",
-        "fields": ["Functional Analysis", "Mathematical Logic", "Abstract Algebra"],
-        "contribution": "Led formalism movement. His 23 unsolved problems shaped all of 20th-century mathematics.",
-        "keyresults": "Hilbert spaces, Hilbert's 23 problems (1900), formalism, metamathematics, spectral theory",
-        "quote": "We must know, we will know",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/d/da/Hilbert.jpg",
-        "impact": "Quantum mechanics foundation, optimization, AI/ML mathematical basis",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Hilbert.html"]
-    },
-    "Georg Cantor": {
-        "period": "1845–1918", "country": "Germany",
-        "fields": ["Set Theory", "Mathematical Logic", "Foundations of Mathematics"],
-        "contribution": "Invented set theory. Proved there are different sizes of infinity.",
-        "keyresults": "Set theory, transfinite cardinals \\(\\aleph_0, \\aleph_1\\), diagonal argument, continuum hypothesis, power sets",
-        "quote": "The true infinite, the truly infinite, is the Deity",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Georg_Cantor2.jpg",
-        "impact": "Foundations of all mathematics, computer science theory, philosophy of infinity",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Cantor.html"]
-    },
-    "Terence Tao": {
-        "period": "1975–present", "country": "Australia",
-        "fields": ["Number Theory", "Harmonic Analysis", "PDE", "Combinatorics"],
-        "contribution": "Mozart of mathematics. Fields Medal 2006. Solved Green-Tao theorem on primes in arithmetic progressions.",
-        "keyresults": "Green-Tao theorem, compressed sensing, Navier-Stokes regularity progress",
-        "quote": "What mathematics achieves is remarkable — it describes all patterns of the universe",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Terence_Tao.jpg",
-        "impact": "Medical imaging, signal processing, AI mathematics, number theory",
-        "resources": ["Tao's Blog: https://terrytao.wordpress.com/"]
-    },
-    "Maryam Mirzakhani": {
-        "period": "1977–2017", "country": "Iran",
-        "fields": ["Differential Geometry", "Topology", "Teichmüller Theory"],
-        "contribution": "FIRST WOMAN to win Fields Medal (2014). Revolutionary work on dynamics and geometry of Riemann surfaces.",
-        "keyresults": "Weil-Petersson volume formulas, moduli space dynamics, Teichmüller geodesics",
-        "quote": "The beauty of mathematics only shows itself to more patient followers",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Maryam_Mirzakhani.jpg",
-        "impact": "String theory, quantum gravity, breaking gender barriers — inspired millions",
-        "resources": ["Wikipedia: https://en.wikipedia.org/wiki/Maryam_Mirzakhani"]
+        "impact": "Internet cryptography, general relativity, $1M Millennium Prize unclaimed",
+        "wiki": "https://en.wikipedia.org/wiki/Bernhard_Riemann"
     },
     "Alan Turing": {
         "period": "1912–1954", "country": "England",
         "fields": ["Computability Theory", "Cryptography", "Artificial Intelligence"],
-        "contribution": "Father of computer science. Turing machine defines computation. Cracked Enigma code in WWII.",
-        "keyresults": "Turing machine, halting problem undecidability, Turing test, Enigma decryption",
+        "contribution": "Father of computer science. Turing machine defines computation. Cracked Enigma in WWII.",
+        "keyresults": "Turing machine, halting problem undecidability, Turing test",
         "quote": "We can only see a short distance ahead, but we can see plenty there that needs to be done",
         "image": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Alan_Turing_Aged_16.jpg",
-        "impact": "All computation, software industry, AI, cybersecurity, saved 14M+ WWII lives",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Turing.html"]
+        "impact": "All computation, software industry, AI, cybersecurity",
+        "wiki": "https://en.wikipedia.org/wiki/Alan_Turing"
+    },
+    "Terence Tao": {
+        "period": "1975–present", "country": "Australia",
+        "fields": ["Number Theory", "Harmonic Analysis", "PDE", "Combinatorics"],
+        "contribution": "Fields Medal 2006. Solved Green-Tao theorem on primes in arithmetic progressions.",
+        "keyresults": "Green-Tao theorem, compressed sensing, Navier-Stokes progress",
+        "quote": "What mathematics achieves is remarkable — it describes all patterns of the universe",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Terence_Tao.jpg",
+        "impact": "Medical imaging, signal processing, AI mathematics",
+        "wiki": "https://en.wikipedia.org/wiki/Terence_Tao"
+    },
+    "Maryam Mirzakhani": {
+        "period": "1977–2017", "country": "Iran",
+        "fields": ["Differential Geometry", "Topology", "Teichmüller Theory"],
+        "contribution": "FIRST WOMAN to win Fields Medal (2014). Revolutionary work on dynamics of Riemann surfaces.",
+        "keyresults": "Weil-Petersson volumes, moduli space dynamics",
+        "quote": "The beauty of mathematics only shows itself to more patient followers",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Maryam_Mirzakhani.jpg",
+        "impact": "String theory, quantum gravity, inspiring millions",
+        "wiki": "https://en.wikipedia.org/wiki/Maryam_Mirzakhani"
     },
     "Kurt Gödel": {
-        "period": "1906–1978", "country": "Austria-Hungary / USA",
+        "period": "1906–1978", "country": "Austria/USA",
         "fields": ["Mathematical Logic", "Set Theory", "Foundations"],
         "contribution": "Incompleteness theorems proved some truths are unprovable within any consistent formal system.",
-        "keyresults": "First and Second Incompleteness Theorems, Gödel completeness theorem, constructible universe L",
+        "keyresults": "First and Second Incompleteness Theorems, constructible universe L",
         "quote": "Either mathematics is too big for the human mind, or the human mind is more than a machine",
         "image": "https://upload.wikimedia.org/wikipedia/commons/8/84/KurtGodel.jpg",
-        "impact": "Limits of artificial intelligence, philosophy of mind, halting problem",
-        "resources": ["Stanford Encyclopedia: https://plato.stanford.edu/entries/goedel/"]
+        "impact": "Limits of AI, philosophy of mind, halting problem",
+        "wiki": "https://en.wikipedia.org/wiki/Kurt_G%C3%B6del"
     },
-    "Henri Poincaré": {
-        "period": "1854–1912", "country": "France",
-        "fields": ["Topology", "Dynamical Systems", "Celestial Mechanics"],
-        "contribution": "Last universal mathematician. Founded topology, chaos theory.",
-        "keyresults": "Poincaré conjecture (solved 2003), algebraic topology, chaos theory, homology groups",
-        "quote": "Mathematics is the art of giving the same name to different things",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Poincare1.jpg",
-        "impact": "General relativity, weather prediction (chaos), GPS systems",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Poincare.html"]
-    },
-    "Ada Lovelace": {
-        "period": "1815–1852", "country": "England",
-        "fields": ["Algorithm Design", "Computing", "Mathematical Logic"],
-        "contribution": "World's first computer programmer. Wrote the first algorithm for Babbage's Analytical Engine.",
-        "keyresults": "First computer program, loop and conditional concepts, algorithm for Bernoulli numbers",
-        "quote": "The Analytical Engine has no pretensions whatever to originate anything.",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Ada_Lovelace_portrait.jpg",
-        "impact": "All of computer science, software industry, AI, every program ever written",
-        "resources": ["Wikipedia: https://en.wikipedia.org/wiki/Ada_Lovelace"]
-    },
-    "Augustin-Louis Cauchy": {
-        "period": "1789–1857", "country": "France",
-        "fields": ["Real Analysis", "Complex Analysis", "Mathematical Rigour"],
-        "contribution": "Brought rigour to calculus. Established epsilon-delta definitions. Cauchy sequences, integral formula, residue theorem.",
-        "keyresults": "Cauchy sequences, Cauchy integral theorem, \\(\\epsilon\\)-\\(\\delta\\) definitions, Cauchy-Schwarz inequality",
-        "quote": "I prefer the man of genius who laboreth without ceasing to perfect his works",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Augustin-Louis_Cauchy_1901.jpg",
-        "impact": "Foundation of all modern rigorous mathematics",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Cauchy.html"]
-    },
-    "Gottfried Leibniz": {
-        "period": "1646–1716", "country": "Germany",
-        "fields": ["Calculus", "Logic", "Philosophy", "Combinatorics"],
-        "contribution": "Co-invented calculus. Invented ∫ integral notation, d/dx derivative notation, and ∞ symbol.",
-        "keyresults": "Calculus notation (\\(\\int\\), \\(\\frac{d}{dx}\\)), Leibniz rule, binary number system",
-        "quote": "There are no wholly useless truths",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/6/6a/Gottfried_Wilhelm_Leibniz%2C_Bernhard_Christoph_Francke.jpg",
-        "impact": "All mathematics notation, computer science (binary), programming foundations",
-        "resources": ["MacTutor: http://www-history.mcs.st-and.ac.uk/Biographies/Leibniz.html"]
-    }
 }
-
-
-# ══════════════════════════════════════════════════
-# MATH PROJECTS
-# ══════════════════════════════════════════════════
-
-MATH_PROJECTS = [
-    {"id":1,"title":"Machine Learning Classification using Linear Algebra","math":["Linear Algebra","Eigenvalues","SVD","Gradient Descent"],"desc":"Build a complete ML classifier using SVD for dimensionality reduction and linear regression for prediction.","real":"Google Search ranking, Netflix recommendations, Amazon product suggestions","companies":"Google, Netflix, Amazon, IBM Watson, Microsoft Azure ML","salary":"Data Scientist $120K+ | ML Engineer $140K+ | AI Researcher $150K+","difficulty":"Advanced"},
-    {"id":2,"title":"Cryptography: RSA Encryption with Number Theory","math":["Number Theory","Prime Numbers","Modular Arithmetic","Euler's Theorem"],"desc":"Implement full RSA encryption using prime factorization. Generate key pairs, encrypt and decrypt messages.","real":"HTTPS (all of internet), WhatsApp E2E encryption, banking","companies":"Apple, Google, Microsoft, all banks, NSA","salary":"Cryptographer $115K+ | Security Engineer $130K+ | CISO $200K+","difficulty":"Intermediate"},
-    {"id":3,"title":"3D Graphics Engine using Matrix Transformations","math":["Rotation Matrices","Homogeneous Coordinates","Quaternions","Projections"],"desc":"Build a software 3D renderer using transformation matrices. Implement rotation, scaling, projection and lighting.","real":"Video games (Unity, Unreal Engine), Pixar/DreamWorks films, VR/AR headsets","companies":"Unity, Epic Games, Pixar, Valve, Meta VR, NVIDIA","salary":"Game Developer $110K+ | Graphics Programmer $135K+ | VR Engineer $125K+","difficulty":"Advanced"},
-    {"id":4,"title":"Signal Processing: Audio Analysis with Fourier Transform","math":["Fourier Analysis","FFT Algorithm","Complex Numbers","Convolution"],"desc":"Use FFT to analyse audio signals. Build noise filters, equalizers, pitch detection.","real":"Spotify audio processing, noise-cancelling headphones, MRI scanners","companies":"Spotify, Apple, Bose, Sony, Siemens Healthcare","salary":"Audio Engineer $100K+ | DSP Engineer $125K+ | Biomedical Engineer $105K+","difficulty":"Advanced"},
-    {"id":5,"title":"Portfolio Optimisation using Lagrange Multipliers","math":["Calculus","Lagrange Multipliers","Convex Optimisation","Covariance Matrices"],"desc":"Maximise portfolio returns while minimising risk using Markowitz mean-variance optimisation.","real":"Goldman Sachs, JP Morgan, BlackRock ($10T AUM), all hedge funds","companies":"Goldman Sachs, JP Morgan, BlackRock, Citadel, Renaissance Technologies","salary":"Quant Analyst $150K+ | Portfolio Manager $200K+ | Hedge Fund Manager $500K+","difficulty":"Intermediate"},
-    {"id":6,"title":"Disease Spread Modelling using Differential Equations (SIR)","math":["ODE Systems","SIR/SEIR Models","Numerical Integration","Phase Portraits"],"desc":"Build SIR/SEIR epidemic models using differential equations. Simulate vaccine distribution.","real":"COVID-19 modelling (WHO, CDC, governments worldwide)","companies":"WHO, CDC, ICMR, NIH, McKinsey Health","salary":"Epidemiologist $85K+ | Public Health Modeller $95K+ | Research Scientist $105K+","difficulty":"Intermediate"},
-    {"id":7,"title":"PageRank Algorithm using Eigenvalues and Markov Chains","math":["Graph Theory","Eigenvalues/Eigenvectors","Markov Chains","Power Iteration"],"desc":"Implement Google's PageRank. Build a web graph and use power iteration to find the principal eigenvector.","real":"Google Search (handles 99B+ searches/day), Microsoft Bing","companies":"Google, Microsoft, Baidu, Yandex","salary":"Search Engineer $145K+ | Ranking Scientist $155K+ | Graph Data Scientist $130K+","difficulty":"Advanced"},
-    {"id":8,"title":"Numerical ODE Solver: Runge-Kutta Methods","math":["Numerical Analysis","RK4","Error Analysis","Stability Theory"],"desc":"Implement and compare Euler, RK2, RK4 ODE solvers. Analyse accuracy vs step-size.","real":"Weather forecasting, aircraft simulation, drug pharmacokinetics","companies":"Boeing, Airbus, NOAA, NASA","salary":"Computational Scientist $120K+ | CFD Engineer $135K+ | Simulation Engineer $125K+","difficulty":"Advanced"},
-    {"id":9,"title":"Natural Language Processing using Probability and Vector Spaces","math":["Vector Spaces","Probability Theory","Bayes Theorem","Information Theory"],"desc":"Build text classifier using TF-IDF, Naive Bayes, and word embeddings.","real":"ChatGPT (OpenAI), Gmail spam filter, Google Translate, Siri/Alexa","companies":"OpenAI, Google, Meta AI, Amazon Alexa","salary":"NLP Engineer $135K+ | AI Researcher $155K+ | Conversational AI Lead $165K+","difficulty":"Advanced"},
-    {"id":10,"title":"Quantum Computing using Linear Algebra and Complex Numbers","math":["Complex Vector Spaces","Unitary Matrices","Tensor Products","Quantum Gates"],"desc":"Simulate quantum circuits using matrix multiplication. Implement Hadamard, CNOT gates.","real":"IBM Quantum Network, Google Sycamore (quantum supremacy), drug discovery","companies":"IBM, Google Quantum AI, IonQ, Microsoft Azure Quantum","salary":"Quantum Engineer $185K+ | Quantum Researcher $175K+","difficulty":"Very Advanced"},
-]
-
-
-# ══════════════════════════════════════════════════
-# THEOREMS
-# ══════════════════════════════════════════════════
 
 THEOREMS = {
     "Pythagorean Theorem": {
         "statement": "In a right triangle with legs \\(a, b\\) and hypotenuse \\(c\\): \\[a^2 + b^2 = c^2\\]",
-        "proof_sketch": "Construct squares on each side. The two large squares (side a+b) have equal area. Rearranging the inner triangles proves the result. Alternatively: similar triangles formed by the altitude from the right angle each satisfy the relation.",
-        "formal_proof": "Let \\(\\triangle ABC\\) have right angle at \\(C\\). Drop altitude \\(CD\\) to hypotenuse. Then \\(\\triangle ACD \\sim \\triangle ABC\\), giving \\(AC^2 = AD \\cdot AB\\). Similarly \\(BC^2 = DB \\cdot AB\\). Adding: \\(AC^2 + BC^2 = AB \\cdot (AD+DB) = AB^2\\). ✅",
-        "applications": "Distance formula in \\(\\mathbb{R}^n\\), complex modulus, physics (Pythagoras in energy), GPS triangulation",
+        "proof_sketch": "Construct squares on each side. The two large squares have equal area. Rearranging the inner triangles proves the result.",
+        "formal_proof": "Let \\(\\triangle ABC\\) have right angle at \\(C\\). Drop altitude \\(CD\\) to hypotenuse. \\(\\triangle ACD \\sim \\triangle ABC\\), giving \\(AC^2 = AD \\cdot AB\\). Similarly \\(BC^2 = DB \\cdot AB\\). Adding: \\(AC^2 + BC^2 = AB^2\\). ✅",
+        "applications": "Distance formula in \\(\\mathbb{R}^n\\), complex modulus, GPS triangulation",
         "difficulty": "Basic",
-        "exam_relevance": "JAM, GATE, CSIR — appears in geometry, vector spaces, metric spaces"
+        "exam_relevance": "JAM, GATE, CSIR — geometry, vector spaces, metric spaces"
     },
     "Fundamental Theorem of Calculus": {
         "statement": "If \\(f\\) is continuous on \\([a,b]\\) and \\(F'=f\\), then \\[\\int_a^b f(x)\\,dx = F(b) - F(a)\\]",
-        "proof_sketch": "Define \\(G(x) = \\int_a^x f(t)\\,dt\\). Show \\(G'(x) = f(x)\\) using the mean value theorem for integrals. Then \\(G = F + C\\), so \\(\\int_a^b f = G(b)-G(a) = F(b)-F(a)\\).",
-        "formal_proof": "By MVT: \\(\\frac{G(x+h)-G(x)}{h} = \\frac{1}{h}\\int_x^{x+h}f(t)\\,dt = f(c_h)\\) for some \\(c_h \\in (x,x+h)\\). As \\(h\\to 0\\), \\(c_h\\to x\\), and by continuity \\(G'(x)=f(x)\\). ✅",
-        "applications": "All of integral calculus, physics (work = ∫F·dx), economics (revenue from marginal revenue)",
+        "proof_sketch": "Define \\(G(x) = \\int_a^x f(t)\\,dt\\). Show \\(G'(x) = f(x)\\) using MVT. Then \\(G = F + C\\).",
+        "formal_proof": "By MVT: \\(G'(x) = \\lim_{h\\to0}\\frac{1}{h}\\int_x^{x+h}f(t)\\,dt = f(c_h) \\to f(x)\\). ✅",
+        "applications": "All integral calculus, physics (work = ∫F·dx), economics",
         "difficulty": "Core",
         "exam_relevance": "CRITICAL for JAM Section A, GATE MA, CSIR Part B — appears every year"
     },
     "Euler's Identity": {
-        "statement": "\\[e^{i\\pi} + 1 = 0\\] connecting the five fundamental constants: \\(e, i, \\pi, 1, 0\\).",
-        "proof_sketch": "Taylor series: \\(e^x = \\sum x^n/n!\\). Substitute \\(x = i\\theta\\). Real parts give \\(\\cos\\theta\\), imaginary parts give \\(i\\sin\\theta\\). So \\(e^{i\\theta} = \\cos\\theta + i\\sin\\theta\\). At \\(\\theta=\\pi\\): \\(e^{i\\pi} = -1\\). ✅",
-        "formal_proof": "\\(e^{i\\pi} = \\sum_{n=0}^\\infty \\frac{(i\\pi)^n}{n!} = \\cos\\pi + i\\sin\\pi = -1 + 0i = -1\\). ✅",
-        "applications": "Complex analysis (Cauchy's theorem), quantum mechanics (wave functions \\(\\psi=Ae^{i\\omega t}\\)), signal processing",
+        "statement": "\\[e^{i\\pi} + 1 = 0\\]",
+        "proof_sketch": "Taylor series: \\(e^{i\\theta} = \\cos\\theta + i\\sin\\theta\\) (Euler's formula). At \\(\\theta=\\pi\\): \\(e^{i\\pi} = -1\\). ✅",
+        "formal_proof": "\\(e^{i\\pi} = \\sum_{n=0}^\\infty \\frac{(i\\pi)^n}{n!} = \\cos\\pi + i\\sin\\pi = -1\\). ✅",
+        "applications": "Complex analysis, quantum mechanics, signal processing",
         "difficulty": "Advanced",
-        "exam_relevance": "Complex Analysis for JAM, GATE, CSIR — direct formula applications and residue theorem"
+        "exam_relevance": "Complex Analysis for JAM, GATE, CSIR"
     },
     "Cauchy-Schwarz Inequality": {
-        "statement": "For vectors \\(u, v\\) in an inner product space: \\[|\\langle u, v \\rangle|^2 \\leq \\langle u, u \\rangle \\cdot \\langle v, v \\rangle\\] Equality iff \\(u, v\\) are linearly dependent.",
-        "proof_sketch": "Consider \\(f(t) = \\langle u - tv, u - tv \\rangle \\geq 0\\) for all real \\(t\\). This quadratic in \\(t\\) has non-negative values, so its discriminant \\(\\leq 0\\). Expanding gives the inequality.",
-        "formal_proof": "\\(0 \\leq \\|u-tv\\|^2 = \\|u\\|^2 - 2t\\langle u,v\\rangle + t^2\\|v\\|^2\\). Setting \\(t = \\frac{\\langle u,v\\rangle}{\\|v\\|^2}\\) gives \\(0 \\leq \\|u\\|^2 - \\frac{|\\langle u,v\\rangle|^2}{\\|v\\|^2}\\). ✅",
-        "applications": "Linear algebra, quantum mechanics (Heisenberg uncertainty principle), statistics (correlation ≤ 1), ML (cosine similarity)",
+        "statement": "\\[|\\langle u, v \\rangle|^2 \\leq \\langle u, u \\rangle \\cdot \\langle v, v \\rangle\\]",
+        "proof_sketch": "Consider \\(f(t) = \\langle u - tv, u - tv \\rangle \\geq 0\\). Discriminant of this quadratic \\(\\leq 0\\).",
+        "formal_proof": "Setting \\(t = \\frac{\\langle u,v\\rangle}{\\|v\\|^2}\\): \\(0 \\leq \\|u\\|^2 - \\frac{|\\langle u,v\\rangle|^2}{\\|v\\|^2}\\). ✅",
+        "applications": "Quantum mechanics (Heisenberg uncertainty), statistics, ML",
         "difficulty": "Intermediate",
-        "exam_relevance": "EXTREMELY important for JAM, GATE, CSIR — appears in linear algebra, functional analysis, probability"
+        "exam_relevance": "EXTREMELY important for JAM, GATE, CSIR — linear algebra and functional analysis"
     },
     "Banach Fixed Point Theorem": {
-        "statement": "Let \\((X, d)\\) be a complete metric space and \\(T: X \\to X\\) a contraction (\\(d(Tx, Ty) \\leq k\\,d(x,y)\\) for \\(k < 1\\)). Then \\(T\\) has a UNIQUE fixed point.",
-        "proof_sketch": "Start with any \\(x_0\\). Define \\(x_{n+1} = T(x_n)\\). The sequence is Cauchy: \\(d(x_m, x_n) \\leq \\frac{k^n}{1-k}d(x_1, x_0)\\to 0\\). By completeness it converges to some \\(x^*\\). Continuity of \\(T\\) gives \\(T(x^*) = x^*\\). ✅",
-        "formal_proof": "Uniqueness: if \\(Tp=p, Tq=q\\) then \\(d(p,q) = d(Tp,Tq) \\leq k\\,d(p,q)\\), so \\((1-k)d(p,q) \\leq 0\\), hence \\(d(p,q)=0\\). ✅",
-        "applications": "Newton-Raphson convergence, Picard's existence theorem for ODEs, iterative linear system solvers, fractal geometry",
+        "statement": "Let \\((X, d)\\) be complete and \\(T: X \\to X\\) a contraction (\\(k < 1\\)). Then \\(T\\) has a UNIQUE fixed point.",
+        "proof_sketch": "Start \\(x_0\\), iterate \\(x_{n+1}=T(x_n)\\). Sequence is Cauchy → converges to \\(x^*\\) with \\(T(x^*)=x^*\\).",
+        "formal_proof": "Uniqueness: \\(d(p,q) = d(Tp,Tq) \\leq k\\,d(p,q)\\) with \\(k<1\\) forces \\(d(p,q)=0\\). ✅",
+        "applications": "Newton-Raphson convergence, Picard's ODE existence, iterative solvers",
         "difficulty": "Hard",
-        "exam_relevance": "CSIR Part B/C, GATE — appears in functional analysis, metric spaces, ODE existence"
+        "exam_relevance": "CSIR Part B/C, GATE — functional analysis, metric spaces"
     },
     "Prime Number Theorem": {
-        "statement": "Let \\(\\pi(x)\\) = number of primes \\(\\leq x\\). Then \\[\\pi(x) \\sim \\frac{x}{\\ln x} \\quad \\text{as } x \\to \\infty\\]",
-        "proof_sketch": "Deep analytic proof via Riemann zeta function \\(\\zeta(s) = \\sum n^{-s}\\). Analytic continuation. The non-vanishing of \\(\\zeta(s)\\) on \\(\\text{Re}(s)=1\\) (proved by Hadamard and de la Vallée Poussin in 1896) is the key.",
-        "formal_proof": "Proved in 1896. Key step: \\(\\zeta(1+it) \\neq 0\\) for real \\(t \\neq 0\\), proved using \\(3+4\\cos\\theta+\\cos 2\\theta \\geq 0\\).",
-        "applications": "RSA key generation (prime density), randomised primality testing, cryptographic protocol design",
+        "statement": "\\[\\pi(x) \\sim \\frac{x}{\\ln x} \\quad \\text{as } x \\to \\infty\\]",
+        "proof_sketch": "Via Riemann zeta function \\(\\zeta(s)\\). Non-vanishing of \\(\\zeta(s)\\) on \\(\\text{Re}(s)=1\\) proved by Hadamard (1896).",
+        "formal_proof": "Key: \\(\\zeta(1+it) \\neq 0\\) for \\(t \\neq 0\\), proved using \\(3+4\\cos\\theta+\\cos 2\\theta \\geq 0\\).",
+        "applications": "RSA key generation, prime density, cryptographic protocols",
         "difficulty": "Very Hard",
-        "exam_relevance": "CSIR Part C — concept and implications. Number theory sections in JAM/GATE."
+        "exam_relevance": "CSIR Part C, number theory sections"
     }
 }
-
-
-# ══════════════════════════════════════════════════
-# COMPETITION PROBLEMS
-# ══════════════════════════════════════════════════
 
 COMPETITION_PROBLEMS = {
     "IMO": [
-        {"year": 2019, "number": 1, "problem": "Determine all functions \\(f: \\mathbb{Z} \\to \\mathbb{Z}\\) such that \\[f(2a)+2f(b)=f(f(a+b))\\] for all integers \\(a, b\\).", "difficulty": "Hard", "hint": "Substituting \\(a=0,b=0\\) gives \\(f(0)+2f(0)=f(f(0))\\). Try \\(f\\equiv c\\) (constant) and \\(f(x)=2x+c\\).", "answer": "\\(f(x) = 2x+c\\) for any constant \\(c \\in \\mathbb{Z}\\), or \\(f \\equiv 0\\)."},
-        {"year": 2021, "number": 2, "problem": "Show that the equation \\(x^6 + x^3 + 1 = 3y^2\\) has no integer solutions.", "difficulty": "Hard", "hint": "Consider both sides modulo 9. Cubes mod 9 are only \\(\\{0, 1, 8\\}\\).", "answer": "The LHS mod 9 is never a quadratic residue times 3 mod 9 — contradiction shows no solutions exist."},
-        {"year": 2022, "number": 1, "problem": "Let \\(ABCDE\\) be a convex pentagon such that \\(BC=DE\\). Assume that there is a point \\(T\\) inside the pentagon such that \\(TB=TD\\), \\(TC=TE\\) and \\(\\angle ABT = \\angle CDT = \\angle EAT\\). Prove that line \\(AB\\) is parallel to \\(CD\\).", "difficulty": "Medium", "hint": "Use the angle condition to show spiral similarities. Triangles ABT and CDT are similar.", "answer": "The equal angle conditions imply \\(\\triangle ABT \\sim \\triangle CDT\\). This forces AB ∥ CD."}
+        {"year": 2023, "number": 1, "problem": "Determine all composite integers \\(n>1\\) that satisfy the following property: if \\(d_1, d_2, \\ldots, d_k\\) are all the positive divisors of \\(n\\) with \\(1 = d_1 < d_2 < \\cdots < d_k = n\\), then \\(d_i\\) divides \\(d_{i+1} + d_{i+2}\\) for every \\(1 \\leq i \\leq k-2\\).", "difficulty": "Hard", "hint": "Try small composites. Check \\(n = 4, 8, p^2\\). The key is what happens with prime power divisors.", "answer": "All prime squares \\(p^2\\) and \\(p^3\\) for prime \\(p\\), plus \\(n=1\\)."},
+        {"year": 2022, "number": 2, "problem": "Let \\(\\mathbb{R}^+\\) denote the set of positive reals. Find all functions \\(f: \\mathbb{R}^+ \\to \\mathbb{R}^+\\) such that for each \\(x \\in \\mathbb{R}^+\\), there is exactly one \\(y \\in \\mathbb{R}^+\\) satisfying \\[xf(y) + yf(x) \\leq 2\\]", "difficulty": "Hard", "hint": "Try \\(f(x) = 1/x\\). Substitute and check AM-GM.", "answer": "\\(f(x) = \\frac{1}{x}\\) is the only solution."},
+        {"year": 2021, "number": 1, "problem": "Let \\(n \\geq 100\\) be an integer. Ivan writes the numbers \\(n, n+1, \\ldots, 2n\\) each on different cards. He then shuffles these \\(n+1\\) cards, and divides them into two non-empty groups. Prove that at least one of the two groups contains two cards whose numbers sum to a perfect square.", "difficulty": "Medium", "hint": "Use pigeonhole. Find pairs that sum to squares among \\(\\{n, n+1, \\ldots, 2n\\}\\).", "answer": "Use that consecutive integers \\((2k-1)^2\\) and \\((2k)^2\\) both lie in range \\([2n, 4n]\\)."},
     ],
     "PUTNAM": [
-        {"year": 2020, "session": "A1", "problem": "How many positive integers \\(N\\) satisfy both: (i) \\(N\\) is a multiple of 5 (ii) The decimal representation of \\(N\\) contains no digit other than 5 or 0?", "difficulty": "Medium", "hint": "Such numbers look like 5, 50, 55, 500, 505, 550, 555, ... Count by number of digits.", "answer": "There are 31 such positive integers."},
-        {"year": 2019, "session": "B3", "problem": "Let \\(f: [0,1]\\to\\mathbb{R}\\) be continuous with \\(\\int_0^1 f(x)\\,dx = 0\\). Prove: \\[\\int_0^1 f(x)^2\\,dx \\geq 3\\left(\\int_0^1 xf(x)\\,dx\\right)^2\\]", "difficulty": "Very Hard", "hint": "Use Cauchy-Schwarz with Legendre polynomials on [0,1].", "answer": "Write \\(f = c(2x-1) + g\\) where \\(\\int g = \\int g(2x-1) = 0\\). Apply Pythagoras in \\(L^2[0,1]\\)."},
-        {"year": 2018, "session": "A2", "problem": "Let \\(S_1, S_2, \\ldots, S_{2^n-1}\\) be the nonempty subsets of \\(\\{1,2,\\ldots,n\\}\\). Find \\[\\sum_{i=1}^{2^n-1} (-1)^{|S_i|+1} \\frac{1}{\\max(S_i)}\\]", "difficulty": "Hard", "hint": "Group subsets by their maximum element \\(k\\).", "answer": "The sum equals \\(H_n = 1 + \\frac{1}{2} + \\cdots + \\frac{1}{n}\\), the \\(n\\)th harmonic number."}
+        {"year": 2023, "session": "A1", "problem": "For a positive integer \\(n\\), let \\(f(n)\\) be the number of pairs \\((a,b)\\) of positive integers such that \\[\\frac{a}{b} = \\frac{n+2}{n}\\] Compute \\(\\sum_{n=1}^{100} f(n)\\).", "difficulty": "Medium", "hint": "Write \\(\\frac{a}{b}=\\frac{n+2}{n}\\) in lowest terms. The pair count depends on \\(\\gcd(n,n+2) = \\gcd(n,2)\\).", "answer": "The answer is \\(150\\)."},
+        {"year": 2022, "session": "B3", "problem": "Let \\(p(x) = x^5 + x^4 + x^3 + x^2 + x + 1\\). Show that for each integer \\(n \\geq 0\\), \\(p(x^n) \\cdot p(x^{n+1}) \\cdots p(x^{n+5})\\) is divisible by \\(p(x^{n+5})\\) in \\(\\mathbb{Z}[x]\\).", "difficulty": "Hard", "hint": "Note \\(p(x) = (x^6-1)/(x-1)\\). Use cyclotomic factorization.", "answer": "Factor via 6th roots of unity and use divisibility of cyclotomic polynomials."},
     ],
     "AIME": [
-        {"year": 2021, "number": 1, "problem": "Zou and Ceci both roll a fair six-sided die. What is the probability that they both roll the same number?", "difficulty": "Easy", "hint": "Fix Zou's roll. What is the probability Ceci matches?", "answer": "\\(\\frac{1}{6}\\)"},
-        {"year": 2020, "number": 10, "problem": "There is a unique angle \\(\\theta\\) between \\(0°\\) and \\(90°\\) such that \\(\\tan(2^n\\theta)\\) is positive when \\(n\\) is a multiple of 3 and negative otherwise. Find \\(\\theta\\) as \\(p/q\\) degrees in lowest terms, and find \\(p+q\\).", "difficulty": "Hard", "hint": "Think about the angle doubling map on \\(\\mathbb{R}/180°\\mathbb{Z}\\). You need a periodic orbit of length 3.", "answer": "\\(\\theta = \\frac{400}{7}\\) degrees, so \\(p+q = 407\\)."},
-        {"year": 2019, "number": 15, "problem": "Line segment \\(\\overline{AD}\\) is trisected by points \\(B\\) and \\(C\\) so that \\(AB=BC=CD=2\\). Three semicircles of radius 1 have their diameters on \\(\\overline{AD}\\). A circle of radius 2 has its center on \\(F\\). The area of the region inside the large circle but outside the three semicircles is \\(\\frac{m}{n}\\pi\\). Find \\(m+n\\).", "difficulty": "Very Hard", "hint": "Use inclusion-exclusion. Compute overlap areas of the large circle with the semicircles.", "answer": "\\(m+n = 32\\)"}
+        {"year": 2024, "number": 1, "problem": "Every morning Aya goes for a \\(9\\)-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of \\(s\\) km/hr, the walk takes 4 hours, including \\(t\\) minutes spent in the coffee shop. When she walks at \\(s+2\\) km/hr, the walk takes 2 hours and 24 minutes, including \\(t\\) minutes in the shop. Suppose Aya decides to walk at \\(s+\\frac{1}{2}\\) km/hr. Find the number of minutes the walk takes, including the \\(t\\) minutes in the shop.", "difficulty": "Medium", "hint": "Set up two equations. Walking time = distance/speed. Solve for \\(s\\) and \\(t\\).", "answer": "\\(204\\) minutes"},
+        {"year": 2024, "number": 5, "problem": "Rectangles \\(ABCD\\) and \\(EFGH\\) are drawn such that \\(D, E, C, F\\) are collinear. Also, \\(A, D, H, G\\) all lie on a circle, \\(\\angle{ABC} = \\angle{EFG} = 90°\\), \\(AB = 4\\), \\(BC = 3\\), and \\(EF = 12\\). Find the length of \\(BE\\).", "difficulty": "Hard", "hint": "Use power of a point for the circle through \\(A, D, H, G\\).", "answer": "\\(BE = \\frac{30}{\\sqrt{13}}\\)"},
     ]
 }
 
-
-# ══════════════════════════════════════════════════
-# LEARNING PATHS
-# ══════════════════════════════════════════════════
-
-LEARNING_PATHS = {
-    "Undergraduate to PhD": {
-        "overview": "BSc Mathematics → IIT JAM → MSc IIT → CSIR NET JRF → PhD → Research/Faculty",
-        "total_time": "Typically 10–12 years from BSc to independent researcher",
-        "salary_journey": "₹0 (student) → ₹4–6L (MSc TA) → ₹31K/month (JRF) → ₹70K/month (SRF) → ₹60–150L (faculty)",
-        "stages": [
-            {"name": "Bachelor's Degree (3–4 years)", "goal": "Build solid foundation in core mathematics", "subjects": ["Calculus & Analysis", "Linear Algebra", "Abstract Algebra", "Complex Analysis", "Topology", "Differential Equations"], "tips": "Maintain 70%+ marks. Start reading classic texts (Rudin, Artin) from 2nd year.", "outcome": "BSc Mathematics degree"},
-            {"name": "IIT JAM Preparation (6–12 months)", "goal": "Clear IIT JAM for MSc at IIT/IISc", "subjects": ["Real Analysis (25%)", "Linear Algebra (20%)", "Calculus (20%)", "Group Theory (15%)", "Statistics (10%)"], "tips": "Solve last 15 years PYQs. Focus on Real Analysis and LA first. Do 3 mock tests per week in final 2 months.", "outcome": "Admission to IIT/IISc MSc"},
-            {"name": "MSc at IIT/IISc (2 years)", "goal": "Master advanced mathematics and begin research exposure", "subjects": ["Functional Analysis", "Topology", "PDE", "Numerical Analysis", "Algebra", "Research Project"], "tips": "Attend seminars. Meet professors early. Start reading research papers. Aim for CGPA > 8.", "outcome": "MSc degree + research exposure"},
-            {"name": "CSIR-UGC NET JRF (during/after MSc)", "goal": "Get fellowship for PhD funding", "subjects": ["All MSc topics", "Topology", "Functional Analysis", "Complex Analysis", "Part C proof-writing"], "tips": "CSIR Part C is the key differentiator — practice proof writing. Joint JRF gives ₹31,000/month.", "outcome": "JRF fellowship (₹31K/month) + Lectureship eligibility"},
-            {"name": "PhD Research (4–5 years)", "goal": "Produce original mathematical research", "subjects": ["Specialised coursework", "Research problem", "Paper writing", "Conference presentations"], "tips": "Choose advisor carefully. Publish at least 2 papers. Collaborate internationally.", "outcome": "PhD degree + published research"},
-            {"name": "Postdoc / Faculty / Industry", "goal": "Independent career in mathematics", "subjects": ["Independent research", "Grants", "Teaching", "Collaboration"], "tips": "Apply to 20+ positions. TIFR, IIT, IISER, ICTS are top choices.", "outcome": "Faculty (₹80–150L CTC) or Industry (₹60–200L CTC)"}
-        ]
-    },
-    "JAM Fast Track": {
-        "overview": "Focused 1-year JAM preparation for working/final-year students",
-        "total_time": "8–12 months intensive preparation",
-        "salary_journey": "₹0 → IIT MSc → ₹31K JRF → ₹40–80L career",
-        "stages": [
-            {"name": "Month 1–2: Foundation", "goal": "Revise BSc syllabus systematically", "subjects": ["Real Analysis basics", "Linear Algebra", "Calculus", "Group Theory fundamentals"], "tips": "Make formula cards. Solve 20 problems per day minimum.", "outcome": "Solid conceptual foundation"},
-            {"name": "Month 3–5: Topic Mastery", "goal": "Deep dive into high-weightage topics", "subjects": ["Real Analysis (sequences, series, continuity, Riemann integral)", "Linear Algebra (all topics)", "Complex Analysis basics"], "tips": "Solve Arora & Sharma JAM book completely.", "outcome": "Mastery of 80% of JAM syllabus"},
-            {"name": "Month 6–8: Previous Year Papers", "goal": "Analyse and solve last 15 years JAM PYQs", "subjects": ["Timed PYQ practice", "Error analysis", "Weak area revision"], "tips": "Note every mistake. Revise that topic immediately.", "outcome": "Pattern recognition and exam readiness"},
-            {"name": "Month 9–12: Mock Tests & Revision", "goal": "Exam simulation and final preparation", "subjects": ["Full mock tests (weekly)", "Rapid revision", "Last-minute formula sheets"], "tips": "Take test in exam-like conditions. Aim for 70+ marks.", "outcome": "JAM score → IIT MSc admission"}
-        ]
-    },
-    "GATE Mathematics Track": {
-        "overview": "GATE MA → PSU jobs / IIT MTech / research positions",
-        "total_time": "1 year prep → career of 30+ years",
-        "salary_journey": "₹0 → ₹15–20L (PSU/MTech entry) → ₹30–50L (5 years) → ₹60–100L (10 years)",
-        "stages": [
-            {"name": "GATE Preparation (8–12 months)", "goal": "Score 650+ in GATE MA", "subjects": ["Calculus (30%)", "Linear Algebra (20%)", "Complex Analysis (15%)", "Probability (15%)", "Numerical Analysis (10%)", "ODE/PDE (10%)"], "tips": "GATE has NAT questions — no negative marking for these. Use NPTEL courses.", "outcome": "GATE score for PSU / IIT MTech"},
-            {"name": "Entry Level (2–5 years)", "goal": "Build technical expertise", "subjects": ["Domain-specific mathematics", "Programming (Python/R)", "Data Analysis"], "tips": "PSUs: BHEL, GAIL, ONGC hire GATE scorers. ₹15–20L starting.", "outcome": "Career with ₹15–25L CTC"},
-            {"name": "Mid-Career Growth (5–10 years)", "goal": "Senior technical or managerial roles", "subjects": ["Advanced analytics", "Team leadership", "Specialisation"], "tips": "Switch to data science / quant finance for high salaries.", "outcome": "₹30–60L CTC in core or ₹60–100L in data/quant"}
-        ]
-    }
-}
-
-EXAM_FORMULAS = {
-    "Calculus": {
-        "JAM": [
-            "Derivative: \\(f'(x) = \\lim_{h\\to0}\\frac{f(x+h)-f(x)}{h}\\)",
-            "Product Rule: \\((uv)' = u'v + uv'\\)",
-            "Quotient Rule: \\(\\left(\\frac{u}{v}\\right)' = \\frac{u'v-uv'}{v^2}\\)",
-            "Chain Rule: \\(\\frac{dy}{dx} = \\frac{dy}{du}\\cdot\\frac{du}{dx}\\)",
-            "Power Rule: \\(\\int x^n\\,dx = \\frac{x^{n+1}}{n+1}+C\\quad (n\\neq-1)\\)",
-            "Integration by Parts: \\(\\int u\\,dv = uv - \\int v\\,du\\)",
-            "MVT: \\(f'(c) = \\frac{f(b)-f(a)}{b-a}\\) for some \\(c\\in(a,b)\\)",
-            "FTC: \\(\\int_a^b f'(x)\\,dx = f(b)-f(a)\\)",
-            "Taylor: \\(f(x) = \\sum_{n=0}^\\infty \\frac{f^{(n)}(a)}{n!}(x-a)^n\\)",
-        ],
-        "GATE": [
-            "Green's Theorem: \\(\\oint_C(P\\,dx+Q\\,dy)=\\iint_D\\left(\\frac{\\partial Q}{\\partial x}-\\frac{\\partial P}{\\partial y}\\right)dA\\)",
-            "Stokes: \\(\\iint_S(\\nabla\\times\\mathbf{F})\\cdot d\\mathbf{S}=\\oint_C\\mathbf{F}\\cdot d\\mathbf{r}\\)",
-            "Lagrange Multipliers: \\(\\nabla f = \\lambda\\nabla g\\) at constrained extrema",
-        ]
-    }
-}
-
 REALWORLD = [
-    {"concept": "Fourier Transform", "application": "MRI Medical Imaging", "explanation": "MRI scanners record raw k-space data (Fourier-encoded radio frequency signals from hydrogen atoms). The Fourier Transform reconstructs this into detailed 3D anatomical images in milliseconds.", "companies": "Siemens Healthineers, GE Healthcare, Philips, Canon Medical", "impact": "Diagnoses cancer, brain tumours, spinal injuries without ionising radiation. ~100M MRI scans performed globally per year.", "salary": "Biomedical Engineer $105K+ | MRI Physicist $120K+"},
-    {"concept": "Eigenvalues and Linear Algebra", "application": "Google PageRank", "explanation": "Google models the web as a directed graph. PageRank is the principal eigenvector of a massive stochastic matrix. The power iteration method computes it iteratively.", "companies": "Google, Microsoft Bing, DuckDuckGo, Baidu", "impact": "Handles 8.5 billion searches per day.", "salary": "Search Quality Engineer $145K+ | Ranking Scientist $160K+"},
-    {"concept": "Differential Equations", "application": "COVID-19 Pandemic Modelling", "explanation": "Governments used SIR/SEIR systems of ODEs to model disease spread. Parameters: β (transmission rate), γ (recovery rate). R₀ = β/γ determines epidemic vs endemic.", "companies": "WHO, CDC, NHS, ICMR, McKinsey Health", "impact": "Directly shaped lockdown decisions affecting billions. Estimated to have saved 10–50 million lives.", "salary": "Epidemiologist $90K+ | Public Health Analyst $100K+"},
-    {"concept": "Number Theory and RSA", "application": "Internet Security (HTTPS/TLS)", "explanation": "RSA encryption relies on the hardness of factoring large semiprime numbers. If p, q are large primes, computing p×q is easy but recovering p, q from N=pq is infeasible.", "companies": "Apple, Google, Amazon, all banks, NSA", "impact": "Protects every online transaction. Global e-commerce ($6T+/year) depends on it.", "salary": "Cryptographer $115K+ | Security Engineer $135K+"},
-    {"concept": "Optimisation Calculus", "application": "Quantitative Finance", "explanation": "Markowitz mean-variance optimisation uses Lagrange multipliers to find minimum-variance portfolio for a given expected return. The efficient frontier is a parabola in (σ, μ) space.", "companies": "Goldman Sachs, Citadel, Renaissance Technologies, BlackRock", "impact": "Controls $100+ trillion in global financial assets.", "salary": "Quantitative Analyst $160K+ | Portfolio Manager $300K+"},
+    {"concept": "Fourier Transform", "application": "MRI Medical Imaging", "explanation": "MRI scanners record raw k-space data — Fourier-encoded radio frequency signals from hydrogen atoms. The Fourier Transform reconstructs this into detailed 3D anatomical images. The key formula is \\(\\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x)e^{-2\\pi i x\\xi}\\,dx\\).", "companies": "Siemens Healthineers, GE Healthcare, Philips", "impact": "~100M MRI scans globally per year. Diagnoses cancer, brain tumours without radiation.", "salary": "Biomedical Engineer ₹12L+ | MRI Physicist $120K+"},
+    {"concept": "Eigenvalues & Linear Algebra", "application": "Google PageRank", "explanation": "Google models the web as a directed graph. PageRank is the principal eigenvector of a stochastic matrix \\(A\\). Power iteration: \\(\\mathbf{r}_{k+1} = A\\mathbf{r}_k\\) until convergence.", "companies": "Google, Microsoft Bing, Baidu", "impact": "8.5 billion searches per day.", "salary": "Search Engineer $145K+ | Ranking Scientist $160K+"},
+    {"concept": "Differential Equations (SIR Model)", "application": "Epidemic Modelling", "explanation": "\\(\\frac{dS}{dt} = -\\beta SI\\), \\(\\frac{dI}{dt} = \\beta SI - \\gamma I\\), \\(\\frac{dR}{dt} = \\gamma I\\). Basic reproduction number \\(R_0 = \\beta/\\gamma\\) determines pandemic vs endemic.", "companies": "WHO, CDC, ICMR, NIH", "impact": "Shaped COVID-19 lockdown decisions. Estimated 10–50M lives saved.", "salary": "Epidemiologist ₹8L+ | Public Health Analyst $100K+"},
+    {"concept": "Number Theory & RSA", "application": "Internet Security (HTTPS)", "explanation": "RSA: choose primes \\(p, q\\). Set \\(n=pq\\), \\(\\phi(n)=(p-1)(q-1)\\). Public key \\(e\\), private \\(d = e^{-1} \\pmod{\\phi(n)}\\). Encrypt: \\(c = m^e \\pmod{n}\\).", "companies": "Apple, Google, Amazon, all banks", "impact": "Protects every HTTPS transaction. Global e-commerce \\$6T+/year.", "salary": "Cryptographer ₹15L+ | Security Engineer $135K+"},
+    {"concept": "Optimisation & Lagrange Multipliers", "application": "Portfolio Optimisation", "explanation": "Minimise variance \\(\\sigma_p^2 = \\mathbf{w}^T\\Sigma\\mathbf{w}\\) subject to \\(\\mathbf{w}^T\\mathbf{\\mu} = \\mu_p\\) and \\(\\mathbf{1}^T\\mathbf{w}=1\\). The efficient frontier is a parabola in \\((\\sigma, \\mu)\\) space.", "companies": "Goldman Sachs, BlackRock, Citadel, Renaissance Technologies", "impact": "Controls $100+ trillion in global financial assets.", "salary": "Quant Analyst ₹25L+ | Portfolio Manager $300K+"},
 ]
 
 RESEARCH_HUB = {
     "Pure Mathematics": ["Analytic Number Theory and the Riemann Hypothesis", "Abstract Algebra: Groups, Rings, Fields and Galois Theory", "Algebraic Topology and Homotopy Theory", "Differential Geometry and Riemannian Manifolds", "Algebraic Geometry (Schemes, Sheaves, Cohomology)", "Category Theory and Homological Algebra", "Mathematical Logic, Model Theory and Set Theory", "Representation Theory of Lie Groups"],
-    "Applied Mathematics": ["Numerical Methods for PDEs (FEM, FDM, Spectral Methods)", "Convex and Non-Convex Optimisation Theory", "Dynamical Systems, Ergodic Theory and Chaos", "Fluid Dynamics (Navier-Stokes, Turbulence)", "Mathematical Biology (Reaction-Diffusion, Population Dynamics)", "Financial Mathematics (Stochastic Calculus, Black-Scholes)", "Control Theory and Optimal Control", "Mathematical Imaging and Compressed Sensing"],
-    "Probability and Statistics": ["Stochastic Processes and Brownian Motion", "Statistical Learning Theory and PAC Learning", "Bayesian Non-Parametrics and Gaussian Processes", "High-Dimensional Statistics and Random Matrix Theory", "Causal Inference and Potential Outcomes", "Information Theory (Shannon Entropy, Channel Capacity)", "Extreme Value Theory and Heavy-Tailed Distributions", "Spatial Statistics and Geostatistics"],
-    "Computational Mathematics": ["Quantum Algorithms (Shor, Grover, HHL)", "Algorithmic Game Theory and Mechanism Design", "Compressed Sensing and Sparse Recovery", "Topological Data Analysis and Persistent Homology", "Geometric Deep Learning (Graph Neural Networks)", "Scientific Machine Learning (Physics-Informed NNs)", "High Performance Computing and Parallel Algorithms", "Symbolic Computation and Computer Algebra Systems"],
-    "Analysis and Geometry": ["Harmonic Analysis and Wavelets", "Partial Differential Equations (Existence, Regularity)", "Functional Analysis and Operator Algebras (C*-algebras)", "Complex Analysis in Several Variables", "Symplectic Geometry and Mirror Symmetry", "Sub-Riemannian Geometry", "Geometric Measure Theory", "Metric Geometry and Alexandrov Spaces"]
+    "Applied Mathematics": ["Numerical Methods for PDEs (FEM, FDM, Spectral)", "Convex and Non-Convex Optimisation", "Dynamical Systems, Ergodic Theory and Chaos", "Fluid Dynamics (Navier-Stokes, Turbulence)", "Mathematical Biology (Reaction-Diffusion)", "Financial Mathematics (Stochastic Calculus, Black-Scholes)", "Control Theory and Optimal Control", "Mathematical Imaging and Compressed Sensing"],
+    "Probability and Statistics": ["Stochastic Processes and Brownian Motion", "Statistical Learning Theory", "Bayesian Non-Parametrics", "High-Dimensional Statistics and Random Matrix Theory", "Causal Inference", "Information Theory (Shannon Entropy)", "Extreme Value Theory", "Spatial Statistics"],
+    "Computational Mathematics": ["Quantum Algorithms (Shor, Grover, HHL)", "Algorithmic Game Theory", "Topological Data Analysis", "Geometric Deep Learning (Graph Neural Networks)", "Scientific Machine Learning (Physics-Informed NNs)", "Symbolic Computation and CAS", "High Performance Computing"],
+}
+
+EXAM_INFO = {
+    "JAM": {"full_name": "IIT JAM Mathematics", "conducting_body": "IITs (rotational)", "eligibility": "Bachelor's degree with Mathematics in at least 2 years", "pattern": "3 hours · 60 questions · 100 marks\nSection A: 30 MCQ (1 & 2 marks, ⅓ negative)\nSection B: 10 MSQ (2 marks, NO negative)\nSection C: 20 NAT (1 & 2 marks, NO negative)", "syllabus": "Real Analysis · Linear Algebra · Calculus · Differential Equations · Group Theory · Complex Analysis · Numerical Analysis · Statistics", "weightage": "Real Analysis 25% · Linear Algebra 20% · Calculus 20% · Group Theory 15% · Statistics 10%", "top_books": ["Rudin — Principles of Mathematical Analysis","Artin — Algebra","Churchill — Complex Variables","Apostol — Calculus Vol 1 & 2"], "strategy": "Solve 15 years PYQs. Strong in Real Analysis = 60% of rank. Take 1 full mock test per week in last 3 months.", "website": "https://jam.iitd.ac.in"},
+    "GATE": {"full_name": "GATE Mathematics (MA)", "conducting_body": "IITs / IISc (rotational)", "eligibility": "Bachelor's in Mathematics/Statistics/CS or related", "pattern": "3 hours · 65 questions · 100 marks\nGeneral Aptitude: 15 marks\nCore MA: 85 marks (MCQ + MSQ + NAT)", "syllabus": "Calculus · Linear Algebra · Real Analysis · Complex Analysis · ODE · PDE · Abstract Algebra · Functional Analysis · Numerical Analysis · Probability", "weightage": "Calculus + LA: 30% · Real Analysis: 20% · Complex: 15% · Algebra: 15%", "top_books": ["Apostol — Calculus","Hoffman-Kunze — Linear Algebra","Conway — Complex Analysis","Dummit-Foote — Abstract Algebra"], "strategy": "NAT questions have no negative marking — attempt all. NPTEL videos are excellent.", "website": "https://gate.iitd.ac.in"},
+    "CSIR": {"full_name": "CSIR UGC NET Mathematics", "conducting_body": "NTA", "eligibility": "Master's in Mathematics with 55%", "pattern": "3 hours · 200 marks total\nPart A: 20Q (General Science, 30 marks)\nPart B: 40Q (Core math, 70 marks, ⅓ negative)\nPart C: 60Q (Advanced, 100 marks, proof-based)", "syllabus": "Analysis (Real+Complex+Functional) · Algebra (Linear+Abstract) · Topology · ODE · PDE · Numerical · Probability", "weightage": "Analysis: 30% · Algebra: 25% · Complex: 20% · Topology: 10%", "top_books": ["Rudin — Real & Complex Analysis","Dummit-Foote — Abstract Algebra","Munkres — Topology","Conway — Functions of One Complex Variable"], "strategy": "Part C is the key differentiator. Master proof writing. JRF = ₹31,000/month for PhD.", "website": "https://csirnet.nta.nic.in"}
 }
 
 
@@ -930,42 +511,9 @@ RESEARCH_HUB = {
 def normalize_name(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", (value or "").lower())
 
-def parse_json_block(raw: str):
-    if not raw: return None
-    raw = raw.strip()
-    try: return json.loads(raw)
-    except Exception: pass
-    m = re.search(r"```json\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*```", raw)
-    if m:
-        try: return json.loads(m.group(1))
-        except Exception: return None
-    m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw)
-    if m:
-        try: return json.loads(m.group(1))
-        except Exception: return None
-    return None
-
-def ai_dynamic_mathematicians(count=18):
-    prompt = f"""Return ONLY valid JSON array with {count} mathematicians from diverse eras and countries.
-Each item keys: name, period, country, fields (array of 3-5), contribution, keyresults, quote, image, impact, resources (array of 'Label: URL').
-Use real public links. No markdown, no extra text."""
-    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
-    data = parse_json_block(raw)
-    if isinstance(data, list) and data: return data
-    return []
-
-def ai_dynamic_projects(count=24):
-    prompt = f"""Return ONLY valid JSON array with {count} mathematics projects useful for students.
-Each item keys: title, difficulty, math (array), desc, real, companies, salary, links (array of 'Label: URL').
-No markdown, no extra text."""
-    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
-    data = parse_json_block(raw)
-    if isinstance(data, list) and data: return data
-    return []
-
 
 # ══════════════════════════════════════════════════
-# ROUTES — Original
+# ROUTES
 # ══════════════════════════════════════════════════
 
 @app.route("/")
@@ -980,11 +528,11 @@ def health():
         "gemini": GEMINI_AVAILABLE,
         "sympy": SYMPY_AVAILABLE,
         "mathematicians": len(MATHEMATICIANS),
-        "projects": len(MATH_PROJECTS),
-        "theorems": len(THEOREMS)
+        "theorems": len(THEOREMS),
+        "version": "7.0"
     })
 
-# ── Chat ─────────────────────────────────────────
+# ── Chat (with full memory) ───────────────────────
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -996,18 +544,18 @@ def chat():
         image_type = data.get("image_type")
         if not messages:
             return jsonify({"error": "messages required"}), 400
+        
+        # Keep last 20 messages for full conversation memory
         clean = [{"role": m["role"], "content": str(m["content"])}
                  for m in messages if m.get("role") in ("user","assistant") and m.get("content")]
-        if len(clean) > 16: clean = clean[-14:]
+        if len(clean) > 20: clean = clean[-20:]
+        
         system = ASK_ANUPAM_PROMPT if mode == "ask_anupam" else SYSTEM_PROMPT
         answer = ask_ai_with_image(clean, image_b64=image_b64, image_type=image_type, system=system)
 
-        # Extract confidence level
         confidence = "HIGH"
-        if "[CONFIDENCE: MEDIUM]" in answer:
-            confidence = "MEDIUM"
-        elif "[CONFIDENCE: LOW]" in answer:
-            confidence = "LOW"
+        if "[CONFIDENCE: MEDIUM]" in answer: confidence = "MEDIUM"
+        elif "[CONFIDENCE: LOW]" in answer: confidence = "LOW"
         answer = re.sub(r'\[CONFIDENCE: (HIGH|MEDIUM|LOW)\]', '', answer).strip()
 
         return jsonify({"answer": answer, "confidence": confidence})
@@ -1015,364 +563,256 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
-# ══════════════════════════════════════════════════
-# NEW ROUTES — SymPy Verification Engine
-# ══════════════════════════════════════════════════
+# ── Formula Sheet (pure formulas, no fluff) ──────
 
-@app.route("/api/sympy/compute", methods=["POST"])
-def sympy_compute_route():
-    """Direct SymPy computation endpoint."""
-    if not SYMPY_AVAILABLE:
-        return jsonify({"error": "SymPy not available on this server. Install: pip install sympy"}), 503
+@app.route("/api/formula", methods=["POST"])
+def formula():
+    data  = request.get_json()
+    topic = data.get("topic", "Calculus")
+    exam  = data.get("exam", "JAM")
+    prompt = f"""Generate a COMPLETE, exam-ready formula sheet.
+Topic: {topic}
+Exam: {exam}
+
+Output ONLY formulas grouped by sub-topic. No paragraphs. No long explanations.
+Each formula: LaTeX on its own line + short label (3-5 words).
+Minimum 30 formulas. Start immediately with the first sub-topic heading.
+Example format:
+DERIVATIVES
+\\[ \\frac{{d}}{{dx}}(x^n) = nx^{{n-1}} \\]  Power Rule
+\\[ \\frac{{d}}{{dx}}(\\sin x) = \\cos x \\]  Sine Derivative
+
+Now generate for {topic} ({exam}):"""
+    return jsonify({"answer": ask_simple(prompt, system=FORMULA_PROMPT)})
+
+
+# ── Concept Map ──────────────────────────────────
+
+@app.route("/api/conceptmap", methods=["POST"])
+def conceptmap():
+    topic = request.get_json().get("topic", "Calculus")
+    prompt = f"""Create a precise mathematical concept map for: {topic}
+
+Use tree structure with ├── └── │ symbols.
+Include exact definitions with LaTeX, key formulas, connections to other topics.
+Exam relevance for JAM/GATE/CSIR.
+Be concise — one line per item. No long paragraphs."""
+    return jsonify({"answer": ask_simple(prompt, system=CONCEPT_MAP_PROMPT)})
+
+
+# ── Projects — Dynamic by topic ──────────────────
+
+@app.route("/api/projects/topic", methods=["POST"])
+def projects_by_topic():
+    """Generate dynamic projects for any topic the user enters."""
     data = request.get_json()
-    problem_type = data.get("type", "simplify")
-    expression   = data.get("expression", "")
-    variable     = data.get("variable", "x")
-    extra        = data.get("extra", {})
-    if not expression:
-        return jsonify({"error": "expression required"}), 400
-    result = sympy_compute(problem_type, expression, variable, extra)
-    return jsonify(result)
+    topic = data.get("topic", "")
+    if not topic:
+        return jsonify({"error": "topic required"}), 400
+    
+    prompt = f"""Generate 5 real-world projects for the mathematics topic: {topic}
+
+Return ONLY valid JSON array. Each item:
+{{
+  "title": "Project title",
+  "difficulty": "Beginner/Intermediate/Advanced",
+  "math_used": ["topic1", "topic2"],
+  "description": "2-sentence description of what you build",
+  "real_world": "Specific company/industry that uses this",
+  "steps": ["Step 1", "Step 2", "Step 3", "Step 4"],
+  "tools": ["Python/NumPy", "etc"],
+  "salary": "Relevant job + salary range",
+  "wiki_search": "Wikipedia search term for the core concept"
+}}
+
+No markdown, no extra text. Valid JSON only."""
+    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
+    data_out = parse_json_block(raw)
+    if isinstance(data_out, list) and data_out:
+        return jsonify({"projects": data_out, "topic": topic})
+    return jsonify({"projects": [], "topic": topic, "raw": raw})
 
 
-@app.route("/api/verify/answer", methods=["POST"])
-def verify_answer():
-    """
-    Verify a student's answer against a problem.
-    Three-layer check: SymPy symbolic → numerical → AI explanation.
-    """
-    data            = request.get_json()
-    problem         = data.get("problem", "")
-    student_answer  = data.get("student_answer", "")
-    problem_type    = data.get("problem_type", "")  # differentiate, integrate, solve, etc.
-    expression      = data.get("expression", "")
-    variable        = data.get("variable", "x")
-
-    result = {
-        "sympy_verified": None,
-        "sympy_result": None,
-        "sympy_steps": [],
-        "numerical_verified": None,
-        "ai_explanation": "",
-        "final_verdict": "UNVERIFIED",
-        "correct_answer_latex": "",
-        "error_location": ""
-    }
-
-    # Layer 1: SymPy symbolic check
-    if SYMPY_AVAILABLE and expression and problem_type:
-        try:
-            computed = sympy_compute(problem_type, expression, variable)
-            if computed.get("success"):
-                result["correct_answer_latex"] = computed["result_latex"]
-                result["sympy_steps"]          = computed.get("steps", [])
-
-                # Verify student answer against computed
-                correct_expr_str = computed["result_str"].replace(" + C", "").strip()
-                verify = sympy_compute("verify_answer", expression, variable, {
-                    "student_answer": student_answer,
-                    "computed": correct_expr_str
-                })
-                if verify.get("success"):
-                    result["sympy_verified"] = verify.get("is_correct", False)
-
-                # Layer 2: Numerical check for calculus
-                if problem_type == "integrate":
-                    f_str   = expression
-                    F_str   = student_answer
-                    num_check = verify_integral(f_str, F_str, variable)
-                    result["numerical_verified"] = num_check.get("verified")
-                    result["numerical_details"]  = num_check
-
-                elif problem_type == "differentiate":
-                    df_str    = student_answer
-                    num_check = numerical_verify_derivative(expression, df_str, variable)
-                    result["numerical_verified"] = num_check.get("verified")
-                    result["numerical_details"]  = num_check
-
-        except Exception as e:
-            result["sympy_error"] = str(e)
-
-    # Determine verdict
-    sv = result["sympy_verified"]
-    nv = result["numerical_verified"]
-    if sv is True or nv is True:
-        result["final_verdict"] = "CORRECT"
-    elif sv is False or nv is False:
-        result["final_verdict"] = "INCORRECT"
-    else:
-        result["final_verdict"] = "UNVERIFIED"
-
-    # Layer 3: AI explanation
-    prompt = f"""Problem: {problem}
-Student's answer: {student_answer}
-SymPy computed answer: {result.get('correct_answer_latex', 'N/A')}
-Symbolic verification: {result['sympy_verified']}
-Numerical verification: {result['numerical_verified']}
-
-Provide:
-1. Clear verdict: CORRECT or INCORRECT
-2. If incorrect: exactly where the student went wrong (step by step)
-3. The correct complete solution with all steps shown
-4. The boxed final answer: \\[\\boxed{{...}}\\]
-5. One key tip to avoid this error in future
-
-Use LaTeX for all math. Be precise, not vague."""
-
-    result["ai_explanation"] = ask_simple(prompt, system=VERIFIER_PROMPT)
-    return jsonify(result)
-
-
-@app.route("/api/verify/steps", methods=["POST"])
-def verify_steps():
-    """Validate a student's step-by-step solution."""
-    data            = request.get_json()
-    problem         = data.get("problem", "")
-    student_steps   = data.get("steps", [])  # list of step strings
-
-    if not student_steps:
-        return jsonify({"error": "steps required"}), 400
-
-    steps_text = "\n".join([f"Step {i+1}: {s}" for i, s in enumerate(student_steps)])
-
-    prompt = f"""A student is solving this problem:
-{problem}
-
-Their step-by-step work:
-{steps_text}
-
-Analyse EVERY step carefully:
-1. For each step: state CORRECT or ERROR with specific reason
-2. If ERROR: show the correct version of that step with full LaTeX working
-3. Classify each error: [CONCEPTUAL | ARITHMETIC | SIGN | NOTATION | MISSING STEP | WRONG RULE]
-4. Give overall score: X/{len(student_steps)} steps correct
-5. Final correct solution from scratch
-6. Top 2 things this student needs to review
-
-Format each step analysis as:
-Step N: [CORRECT / ERROR — Error type]
-[Explanation with LaTeX if needed]"""
-
-    analysis = ask_simple(prompt, system=ERROR_ANALYSIS_PROMPT)
-
-    # Quick SymPy check if first and last steps parseable
-    sympy_checks = []
-    if SYMPY_AVAILABLE and len(student_steps) >= 2:
-        for i, step in enumerate(student_steps):
-            eq_match = re.search(r'=\s*(.+)$', step.strip())
-            if eq_match:
-                expr_str = eq_match.group(1).strip()
-                simplified = safe_parse(expr_str)
-                if simplified is not None:
-                    sympy_checks.append({
-                        "step": i + 1,
-                        "expression": expr_str,
-                        "sympy_parsed": sp_latex(simplified) if SYMPY_AVAILABLE else expr_str
-                    })
-
-    return jsonify({
-        "analysis": analysis,
-        "sympy_checks": sympy_checks,
-        "total_steps": len(student_steps)
-    })
-
-
-@app.route("/api/verify/check", methods=["POST"])
-def quick_check():
-    """
-    Quick answer checker — student says 'I got X for problem Y, is it right?'
-    """
-    data           = request.get_json()
-    problem        = data.get("problem", "")
-    student_answer = data.get("answer", "")
-
-    if not problem or not student_answer:
-        return jsonify({"error": "problem and answer required"}), 400
-
-    # Try to auto-detect and compute with SymPy
-    math_type, expr, extra = detect_math_type(problem)
-    sympy_result = None
-    correct_latex = ""
-
-    if SYMPY_AVAILABLE and math_type and expr:
-        variable = extra.get("variable", "x")
-        computed = sympy_compute(math_type, expr, variable, extra)
-        if computed.get("success"):
-            sympy_result = computed
-            correct_latex = computed["result_latex"]
-
-    # Ask AI to verify with context
-    context = f"\nSymPy computed answer: \\({correct_latex}\\)" if correct_latex else ""
-    prompt = f"""Student problem: {problem}
-Student's answer: {student_answer}{context}
-
-Give:
-1. VERDICT: CORRECT / INCORRECT / PARTIALLY CORRECT
-2. If wrong: exact error and correct answer \\[\\boxed{{...}}\\]
-3. If correct: confirm and add one interesting insight
-4. Confidence in your verdict: HIGH / MEDIUM / LOW
-
-Keep response concise but mathematically precise. All math in LaTeX."""
-
-    ai_response = ask_simple(prompt, system=VERIFIER_PROMPT)
-
-    verdict = "UNVERIFIED"
-    if "CORRECT" in ai_response.upper() and "INCORRECT" not in ai_response.upper():
-        verdict = "CORRECT"
-    elif "INCORRECT" in ai_response.upper():
-        verdict = "INCORRECT"
-    elif "PARTIALLY" in ai_response.upper():
-        verdict = "PARTIAL"
-
-    return jsonify({
-        "verdict": verdict,
-        "correct_answer_latex": correct_latex,
-        "sympy_steps": sympy_result.get("steps", []) if sympy_result else [],
-        "ai_explanation": ai_response,
-        "sympy_available": SYMPY_AVAILABLE and sympy_result is not None
-    })
-
-
-@app.route("/api/analyze/error", methods=["POST"])
-def analyze_error():
-    """Deep error analysis — identify exactly what went wrong in a student's solution."""
-    data           = request.get_json()
-    problem        = data.get("problem", "")
-    wrong_solution = data.get("wrong_solution", "")
-
-    if not problem or not wrong_solution:
-        return jsonify({"error": "problem and wrong_solution required"}), 400
-
-    prompt = f"""Problem: {problem}
-
-Student's complete (wrong) solution:
-{wrong_solution}
-
-Provide a detailed error report:
-1. SUMMARY: What is the main conceptual/procedural issue?
-2. ERROR BREAKDOWN: Go through each step and mark each as CORRECT or WRONG
-3. FIRST ERROR: Identify the very first step that goes wrong
-4. ERROR TYPE: [Conceptual | Arithmetic | Sign | Chain rule | Product rule | Integration constant | Other]
-5. CORRECT SOLUTION: Solve it correctly from scratch, showing every step
-6. CORRECT ANSWER: \\[\\boxed{{...}}\\]
-7. PREVENTION TIP: How to avoid this mistake
-
-All math in LaTeX. Be a professor, not a cheerleader — be precise."""
-
-    analysis = ask_simple(prompt, system=ERROR_ANALYSIS_PROMPT)
-    return jsonify({"analysis": analysis})
-
-
-@app.route("/api/sympy/graph", methods=["POST"])
-def sympy_graph():
-    """Generate data points for graphing a function."""
-    if not SYMPY_AVAILABLE:
-        return jsonify({"error": "SymPy not available"}), 503
-
-    data       = request.get_json()
-    f_str      = data.get("function", "x**2")
-    x_min      = float(data.get("x_min", -10))
-    x_max      = float(data.get("x_max", 10))
-    num_points = min(int(data.get("points", 200)), 500)
-
-    try:
-        x    = Symbol("x")
-        f    = safe_parse(f_str)
-        if f is None:
-            return jsonify({"error": "Could not parse function"}), 400
-
-        points = []
-        step   = (x_max - x_min) / num_points
-        for i in range(num_points + 1):
-            xv = x_min + i * step
-            try:
-                yv = float(f.subs(x, xv))
-                if abs(yv) < 1e10:  # filter asymptotes
-                    points.append({"x": round(xv, 6), "y": round(yv, 6)})
-                else:
-                    points.append({"x": round(xv, 6), "y": None})
-            except Exception:
-                points.append({"x": round(xv, 6), "y": None})
-
-        # Also compute derivative and critical points
-        df         = diff(f, x)
-        df_str     = sp_latex(simplify(df))
-        try:
-            crit = solve(df, x)
-            crit_real = [float(c) for c in crit if c.is_real and x_min <= float(c) <= x_max]
-        except Exception:
-            crit_real = []
-
-        return jsonify({
-            "points": points,
-            "function_latex": sp_latex(f),
-            "derivative_latex": df_str,
-            "critical_points": crit_real,
-            "x_min": x_min,
-            "x_max": x_max
+@app.route("/api/projects", methods=["GET"])
+def projects_list():
+    """Default projects list."""
+    default_topics = ["Machine Learning", "Cryptography", "Computer Graphics", "Signal Processing", "Finance"]
+    projects = []
+    for i, t in enumerate(default_topics):
+        projects.append({
+            "id": i+1, "title": f"{t} with Mathematics",
+            "difficulty": "Intermediate", "math": ["Linear Algebra", "Calculus"],
+            "desc": f"Apply mathematical concepts to {t}",
+            "real": "Industry applications", "companies": "Tech companies",
+            "salary": "₹15-40L+ | $120K+"
         })
+    return jsonify({"projects": projects, "total": len(projects)})
+
+@app.route("/api/project/<int:pid>", methods=["POST"])
+def project_detail(pid):
+    prompt = f"""Explain a mathematics project for project #{pid}.
+Give:
+- Overview
+- Required mathematical concepts with LaTeX formulas
+- Step-by-step implementation guide
+- Real companies using this
+- Learning resources (name + search term for Wikipedia/Google)
+Be detailed and include all formulas."""
+    return jsonify({"explanation": ask_simple(prompt, system=SYSTEM_PROMPT)})
+
+
+# ── Books — with level selector ──────────────────
+
+@app.route("/api/books", methods=["POST"])
+def books_search():
+    d = request.get_json() or {}
+    topic = (d.get("topic") or "").strip()
+    level = (d.get("level") or "undergraduate").strip()
+    exam  = (d.get("exam") or "").strip()
+    
+    if not topic:
+        return jsonify({"needs_input": True, "message": "Please provide a topic"})
+    
+    prompt = f"""List the best books for:
+Topic: {topic}
+Level: {level}
+Exam: {exam or 'General study'}
+
+Return ONLY valid JSON array (8-12 items):
+[{{"name": "Full title", "author": "Author name", "level": "beginner/undergraduate/graduate/research", "why": "One sentence why this book", "isbn": "ISBN if known", "search_term": "Google/Amazon search term to find this book"}}]
+
+No markdown, no extra text."""
+    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
+    data_out = parse_json_block(raw)
+    if isinstance(data_out, list) and data_out:
+        return jsonify({"books": data_out, "total": len(data_out), "topic": topic, "level": level})
+    return jsonify({"books": [], "total": 0})
+
+
+# ── Graph data endpoint ──────────────────────────
+
+@app.route("/api/graph", methods=["POST"])
+def graph_data():
+    """Generate data points for 2D/3D plotting."""
+    if not SYMPY_AVAILABLE:
+        # Fallback: ask AI to describe the graph
+        data = request.get_json()
+        expr = data.get("expression", "x**2")
+        prompt = f"""For the function f(x) = {expr}, describe:
+1. Domain and range
+2. Key features (asymptotes, intercepts, max/min)
+3. Shape description
+All math in LaTeX."""
+        return jsonify({"sympy": False, "description": ask_simple(prompt, system=GRAPH_PROMPT)})
+    
+    data = request.get_json()
+    expr_str = data.get("expression", "x**2")
+    graph_type = data.get("type", "2d")  # 2d or 3d
+    x_min = float(data.get("x_min", -5))
+    x_max = float(data.get("x_max", 5))
+    y_min = float(data.get("y_min", -5))
+    y_max = float(data.get("y_max", 5))
+    
+    try:
+        x = Symbol("x")
+        y = Symbol("y")
+        
+        if graph_type == "3d":
+            # Parse expression in x and y
+            expr_str_clean = re.sub(r'\^', '**', expr_str.strip())
+            f = safe_parse(expr_str_clean)
+            if f is None:
+                return jsonify({"error": "Could not parse expression"}), 400
+            
+            points_x, points_y, points_z = [], [], []
+            steps = 30
+            for i in range(steps+1):
+                xv = x_min + i*(x_max-x_min)/steps
+                for j in range(steps+1):
+                    yv = y_min + j*(y_max-y_min)/steps
+                    try:
+                        zv = float(f.subs([(x, xv), (y, yv)]))
+                        if abs(zv) < 1e8:
+                            points_x.append(round(xv,4))
+                            points_y.append(round(yv,4))
+                            points_z.append(round(zv,4))
+                    except: pass
+            
+            return jsonify({
+                "sympy": True, "type": "3d",
+                "x": points_x, "y": points_y, "z": points_z,
+                "expression": expr_str,
+                "latex": sp_latex(safe_parse(expr_str_clean)) if safe_parse(expr_str_clean) else expr_str
+            })
+        else:
+            # 2D plot
+            f = safe_parse(re.sub(r'\^', '**', expr_str.strip()))
+            if f is None:
+                return jsonify({"error": "Could not parse expression"}), 400
+            
+            points = []
+            num_pts = 200
+            step = (x_max - x_min) / num_pts
+            for i in range(num_pts+1):
+                xv = x_min + i*step
+                try:
+                    yv = float(f.subs(x, xv))
+                    if abs(yv) < 1e6:
+                        points.append({"x": round(xv,4), "y": round(yv,4)})
+                    else:
+                        points.append({"x": round(xv,4), "y": None})
+                except:
+                    points.append({"x": round(xv,4), "y": None})
+            
+            # Compute derivative
+            try:
+                df = diff(f, x)
+                df_latex = sp_latex(simplify(df))
+                crit = [float(c) for c in solve(df, x) if c.is_real and x_min <= float(c) <= x_max]
+            except:
+                df_latex = ""
+                crit = []
+            
+            return jsonify({
+                "sympy": True, "type": "2d",
+                "points": points,
+                "expression": expr_str,
+                "latex": sp_latex(f),
+                "derivative_latex": df_latex,
+                "critical_points": crit
+            })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ── All original routes ───────────────────────────
+# ── Mathematician routes ─────────────────────────
 
 @app.route("/api/mathematician")
 def mathematician_random():
-    dyn = ai_dynamic_mathematicians(count=12)
-    if dyn:
-        return jsonify(random.choice(dyn))
     name, d = random.choice(list(MATHEMATICIANS.items()))
     return jsonify({"name": name, **d})
 
 @app.route("/api/mathematicians")
 def mathematician_list():
-    dyn = ai_dynamic_mathematicians(count=18)
-    if dyn:
-        slim = [{"name": x.get("name","Unknown"), "period": x.get("period","N/A"), "country": x.get("country","N/A"), "fields": x.get("fields",[])} for x in dyn]
-        return jsonify({"mathematicians": slim, "total": len(slim), "source": "dynamic"})
-    return jsonify({"mathematicians": [{"name": n, "period": d["period"], "country": d["country"], "fields": d["fields"]} for n, d in MATHEMATICIANS.items()], "total": len(MATHEMATICIANS), "source": "local"})
+    return jsonify({"mathematicians": [{"name": n, "period": d["period"], "country": d["country"], "fields": d["fields"]} for n, d in MATHEMATICIANS.items()], "total": len(MATHEMATICIANS)})
 
 @app.route("/api/mathematician/<name>")
 def mathematician_detail(name):
     q = normalize_name(name)
     for n, d in MATHEMATICIANS.items():
         if q and (q in normalize_name(n) or normalize_name(n) in q):
-            return jsonify({"name": n, **d, "source": "local"})
+            return jsonify({"name": n, **d})
+    # AI fallback
     prompt = f"""Return ONLY valid JSON for mathematician: {name}
-Keys: name, period, country, fields (array), contribution, keyresults, quote, image, impact, resources (array of 'Label: URL')."""
+Keys: name, period, country, fields (array), contribution, keyresults, quote, image (Wikipedia URL), impact, wiki (Wikipedia URL)."""
     raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
-    data = parse_json_block(raw)
-    if isinstance(data, dict) and data.get("name"):
-        data["source"] = "dynamic"
-        return jsonify(data)
+    data_out = parse_json_block(raw)
+    if isinstance(data_out, dict) and data_out.get("name"):
+        return jsonify(data_out)
     return jsonify({"error": "Not found"}), 404
 
-DYNAMIC_PROJECTS_CACHE = []
 
-@app.route("/api/projects")
-def projects_list():
-    global DYNAMIC_PROJECTS_CACHE
-    dyn = ai_dynamic_projects(count=24)
-    if dyn:
-        DYNAMIC_PROJECTS_CACHE = [{"id": i, **p} for i, p in enumerate(dyn, start=1)]
-        return jsonify({"projects": DYNAMIC_PROJECTS_CACHE, "total": len(DYNAMIC_PROJECTS_CACHE), "source": "dynamic"})
-    return jsonify({"projects": MATH_PROJECTS, "total": len(MATH_PROJECTS), "source": "local"})
-
-@app.route("/api/project/<int:pid>", methods=["POST"])
-def project_detail(pid):
-    source = DYNAMIC_PROJECTS_CACHE if DYNAMIC_PROJECTS_CACHE else MATH_PROJECTS
-    p = next((x for x in source if int(x.get("id", -1)) == pid), None)
-    if not p: return jsonify({"error": "Not found"}), 404
-    links = ", ".join(p.get("links", [])) if isinstance(p.get("links"), list) else ""
-    prompt = f"""Explain this maths project for students.
-Project: {p.get('title')}
-Math topics: {', '.join(p.get('math', []))}
-Description: {p.get('desc')}
-Real-world use: {p.get('real')}
-
-Give Step 1, Step 2, Step 3... implementation and important formulas in LaTeX."""
-    return jsonify({"project": p, "explanation": ask_simple(prompt, system=ASK_ANUPAM_PROMPT)})
+# ── Theorem routes ───────────────────────────────
 
 @app.route("/api/theorems")
 def theorems_list():
@@ -1385,84 +825,17 @@ def theorem_detail(name):
             return jsonify({"name": n, **d})
     return jsonify({"error": "Not found"}), 404
 
+
+# ── Competition routes ───────────────────────────
+
 @app.route("/api/competition/<cat>")
 def competition(cat):
     probs = COMPETITION_PROBLEMS.get(cat.upper(), [])
     if not probs: return jsonify({"error": "Category not found. Use IMO, PUTNAM, or AIME"}), 404
     return jsonify({"category": cat.upper(), "problems": probs, "total": len(probs)})
 
-@app.route("/api/learning-paths")
-def learning_paths_list():
-    return jsonify({"paths": [{"name": n, "overview": d["overview"]} for n, d in LEARNING_PATHS.items()], "total": len(LEARNING_PATHS)})
 
-@app.route("/api/learning-path/<name>")
-def learning_path_detail(name):
-    for n, d in LEARNING_PATHS.items():
-        if name.lower().replace("-"," ") in n.lower():
-            return jsonify({"name": n, **d})
-    return jsonify({"error": "Not found"}), 404
-
-@app.route("/api/formula", methods=["POST"])
-def formula():
-    data  = request.get_json()
-    topic = data.get("topic", "Calculus")
-    exam  = data.get("exam",  "JAM")
-    stored = EXAM_FORMULAS.get(topic, {}).get(exam, [])
-    stored_block = ("\n\nKNOWN FORMULAS TO INCLUDE:\n" + "\n".join(f"• {f}" for f in stored)) if stored else ""
-    prompt = f"""Generate a COMPLETE, exam-ready formula sheet for: {topic}
-Target exam: {exam}{stored_block}
-
-For each formula:
-📌 [Formula Name]
-\\[ LaTeX formula \\]
-When to use: [1 sentence]
-Condition: [any restrictions]
-Exam tip: [common mistake or trick]
-
-Include AT LEAST 18 formulas. ALL math in LaTeX."""
-    return jsonify({"answer": ask_simple(prompt, system=SYSTEM_PROMPT)})
-
-@app.route("/api/revision", methods=["POST"])
-def revision():
-    topic = request.get_json().get("topic", "Calculus")
-    prompt = f"""Give exactly 10 RAPID REVISION POINTS for: {topic} (graduate exam level)
-
-For each:
-[N]. [TOPIC IN CAPS]
-Definition: [with LaTeX]
-Key formula: \\[ ... \\]
-Exam trap: [common wrong answer]
-Memory trick: [how to remember]
-
-ALL math in LaTeX."""
-    return jsonify({"answer": ask_simple(prompt, system=SYSTEM_PROMPT)})
-
-@app.route("/api/conceptmap", methods=["POST"])
-def conceptmap():
-    topic = request.get_json().get("topic", "Calculus")
-    prompt = f"""Create a DEEP concept map for: {topic}
-
-📌 Core Definition + LaTeX
-💡 Key Sub-concepts (6-8) each with LaTeX + intuition
-📐 How they connect (arrows with reason)
-⭐ Top 5 theorems / results
-🌍 3 real-world applications
-📚 Prerequisites and what builds on this
-
-ALL math in LaTeX."""
-    return jsonify({"answer": ask_simple(prompt, system=SYSTEM_PROMPT)})
-
-@app.route("/api/latex", methods=["POST"])
-def latex_gen():
-    text = request.get_json().get("text", "")
-    prompt = f"""Generate professional LaTeX code for: {text}
-
-Include:
-1. Complete compilable code snippet
-2. Explanation of each command
-3. How to compile (pdflatex or overleaf)
-4. Alternative simpler version if complex"""
-    return jsonify({"answer": ask_simple(prompt, system=SYSTEM_PROMPT)})
+# ── Quiz ─────────────────────────────────────────
 
 @app.route("/api/quiz/question", methods=["POST"])
 def quiz_question():
@@ -1471,7 +844,7 @@ def quiz_question():
 Difficulty: {d.get('difficulty','medium')}
 Question {d.get('q_num',1)} of {d.get('total',5)}
 
-EXACT FORMAT:
+EXACT FORMAT (no deviation):
 Q: [question text with LaTeX]
 A) [option]
 B) [option]
@@ -1480,7 +853,7 @@ D) [option]
 ANSWER: [single letter A/B/C/D]
 EXPLANATION: [full step-by-step solution with LaTeX]
 
-ALL math in LaTeX."""
+ALL math in LaTeX. Make it genuinely challenging."""
     raw = ask_simple(prompt)
     lines = raw.strip().split("\n")
     ans_line = next((l for l in lines if l.strip().startswith("ANSWER:")), "ANSWER: A")
@@ -1492,55 +865,60 @@ ALL math in LaTeX."""
     question = question.split("EXPLANATION:", 1)[0].strip()
     return jsonify({"question": question.strip(), "answer": ans, "explanation": explanation})
 
+
+# ── PYQ ──────────────────────────────────────────
+
 @app.route("/api/pyq")
 def pyq():
     exam   = request.args.get("exam", "JAM")
-    topics = {"JAM": ["Real Analysis","Linear Algebra","Calculus","Group Theory","Complex Analysis"], "GATE": ["Calculus","Linear Algebra","Complex Analysis","PDE","ODE"], "CSIR": ["Real Analysis","Topology","Algebra","Functional Analysis","Complex Analysis"]}
+    topics = {"JAM": ["Real Analysis","Linear Algebra","Calculus","Group Theory","Complex Analysis"],
+              "GATE": ["Calculus","Linear Algebra","Complex Analysis","PDE","ODE"],
+              "CSIR": ["Real Analysis","Topology","Algebra","Functional Analysis","Complex Analysis"]}
     topic  = random.choice(topics.get(exam, topics["JAM"]))
-    year   = random.randint(2014, 2023)
+    year   = random.randint(2015, 2024)
     prompt = f"""Generate a realistic {exam} PYQ for {topic} (~year {year}).
 
-FORMAT:
+FORMAT (exact):
 Question: [challenging problem with LaTeX]
-Solution: [complete step-by-step with ALL LaTeX formulas]
+Solution: [complete step-by-step with ALL LaTeX formulas, box the final answer]
 Key Concept: [theorem tested]
-Exam Tip: [approach for similar questions]
-
-ALL math in LaTeX."""
+Exam Tip: [approach for similar questions]"""
     raw   = ask_simple(prompt, system=SYSTEM_PROMPT)
     lines = raw.split('\n')
     q = next((l.replace("Question:","").strip() for l in lines if l.startswith("Question:")), raw[:300])
-    a = next((l.replace("Solution:","").strip()  for l in lines if l.startswith("Solution:")),  "See full answer above.")
+    a = next((l.replace("Solution:","").strip()  for l in lines if l.startswith("Solution:")), "See full answer above.")
     return jsonify({"q": q, "a": a, "topic": topic, "year": year, "exam": exam})
+
+
+# ── Challenge ────────────────────────────────────
 
 @app.route("/api/challenge")
 def challenge():
     challenges = [
         "Prove that \\(\\sqrt{2}\\) is irrational using proof by contradiction.",
-        "Find all critical points of \\(f(x)=x^3-3x+2\\) and classify them using the second derivative test.",
-        "Compute the eigenvalues and eigenvectors of \\(A=\\begin{pmatrix}2&1\\\\1&2\\end{pmatrix}\\).",
-        "Evaluate \\(\\int x^2 e^x\\,dx\\) fully using integration by parts.",
-        "Solve \\(\\frac{dy}{dx}+2y=4x\\) with initial condition \\(y(0)=1\\).",
+        "Find all critical points of \\(f(x)=x^3-3x+2\\) and classify them.",
+        "Compute eigenvalues and eigenvectors of \\(A=\\begin{pmatrix}2&1\\\\1&2\\end{pmatrix}\\).",
+        "Evaluate \\(\\int x^2 e^x\\,dx\\) using integration by parts.",
+        "Solve \\(\\frac{dy}{dx}+2y=4x\\) with \\(y(0)=1\\).",
         "Prove the Cauchy-Schwarz inequality in \\(\\mathbb{R}^n\\).",
         "Show every convergent sequence is a Cauchy sequence.",
-        "Compute \\(\\sum_{n=1}^\\infty\\frac{1}{n^2}\\) using Fourier series of \\(f(x)=x\\) on \\([-\\pi,\\pi]\\).",
-        "Prove \\(\\text{tr}(AB)=\\text{tr}(BA)\\) for any \\(n\\times n\\) matrices \\(A, B\\).",
-        "Prove the intermediate value theorem using the completeness of \\(\\mathbb{R}\\).",
+        "Compute \\(\\sum_{n=1}^\\infty\\frac{1}{n^2}\\) using Fourier series.",
+        "Prove \\(\\text{tr}(AB)=\\text{tr}(BA)\\) for any \\(n\\times n\\) matrices.",
         "Find the radius of convergence of \\(\\sum_{n=0}^\\infty \\frac{n!}{n^n} x^n\\).",
-        "Prove that a continuous function on a closed bounded interval attains its maximum.",
+        "Prove that a continuous function on \\([a,b]\\) attains its maximum.",
+        "Prove that \\(e\\) is irrational.",
     ]
     return jsonify({"challenge": random.choice(challenges)})
+
+
+# ── Realworld ────────────────────────────────────
 
 @app.route("/api/realworld")
 def realworld_random():
     return jsonify(random.choice(REALWORLD))
 
-@app.route("/api/realworld/<concept>")
-def realworld_detail(concept):
-    for item in REALWORLD:
-        if concept.lower() in item["concept"].lower():
-            return jsonify(item)
-    return jsonify({"error": "Not found"}), 404
+
+# ── Research Hub ─────────────────────────────────
 
 @app.route("/api/research-hub")
 def research_hub_index():
@@ -1556,49 +934,68 @@ def research_hub_cat(cat):
 @app.route("/api/research", methods=["POST"])
 def research_question():
     question = request.get_json().get("question", "")
-    prompt = f"""Answer this research mathematics question in depth: {question}
+    prompt = f"""Answer this research mathematics question: {question}
 
 📌 Overview of the research area
-🔬 Current state (key open problems)
+🔬 Key open problems (with LaTeX statements)
 📐 Core mathematical tools + theorems with LaTeX
-💡 Key researchers to follow
-📚 Recommended papers and textbooks
+💡 Key researchers and their contributions
+📚 Recommended papers (title + author, searchable on arXiv/Google Scholar)
 🚀 How a student can get started
 
 ALL math in LaTeX."""
     return jsonify({"answer": ask_simple(prompt, system=SYSTEM_PROMPT)})
 
-@app.route("/api/books", methods=["POST"])
-def books_search():
-    d = request.get_json() or {}
-    topic = (d.get("topic") or "Mathematics").strip()
-    exam = (d.get("exam") or "").strip()
-    prompt = f"""Return ONLY valid JSON array of best books for topic: {topic}. Exam: {exam or 'General'}.
-Each item: name, author, level, why, link. 8-12 items. Real links only."""
-    raw = ask_simple(prompt, system=ASK_ANUPAM_PROMPT)
-    data = parse_json_block(raw)
-    if isinstance(data, list) and data:
-        return jsonify({"books": data, "total": len(data), "source": "dynamic"})
-    return jsonify({"books": [], "total": 0, "source": "none"})
+
+# ── Exam Info ────────────────────────────────────
 
 @app.route("/api/exam/<exam>")
 def exam_info(exam):
-    info = {
-        "JAM": {"full_name": "IIT JAM Mathematics", "conducting_body": "IITs (rotational)", "eligibility": "Bachelor's degree with Mathematics in at least 2 years", "pattern": "3 hours · 60 questions · 100 marks\nSection A: 30 MCQ (1 & 2 marks, ⅓ negative)\nSection B: 10 MSQ (2 marks, NO negative)\nSection C: 20 NAT (1 & 2 marks, NO negative)", "syllabus": "Real Analysis · Linear Algebra · Calculus · Differential Equations · Group Theory · Complex Analysis · Numerical Analysis · Statistics & Probability", "weightage": "Real Analysis 25% · Linear Algebra 20% · Calculus 20% · Group Theory 15% · Statistics 10%", "top_books": ["Rudin — Principles of Mathematical Analysis","Artin — Algebra","Churchill — Complex Variables","Apostol — Calculus Vol 1 & 2"], "strategy": "Solve 15 years PYQs. Strong in Real Analysis = 60% of rank. Take 1 full mock test per week in last 3 months.", "website": "https://jam.iitd.ac.in"},
-        "GATE": {"full_name": "GATE Mathematics (MA)", "conducting_body": "IITs / IISc (rotational)", "eligibility": "Bachelor's in Mathematics/Statistics/CS or related", "pattern": "3 hours · 65 questions · 100 marks\nGeneral Aptitude: 15 marks\nCore MA: 85 marks (MCQ + MSQ + NAT)", "syllabus": "Calculus · Linear Algebra · Real Analysis · Complex Analysis · ODE · PDE · Abstract Algebra · Functional Analysis · Numerical Analysis · Probability", "weightage": "Calculus + LA: 30% · Real Analysis: 20% · Complex: 15% · Algebra: 15%", "top_books": ["Apostol — Calculus","Hoffman-Kunze — Linear Algebra","Conway — Complex Analysis","Dummit-Foote — Abstract Algebra"], "strategy": "NAT questions have no negative marking — attempt all. NPTEL videos are excellent.", "website": "https://gate.iitd.ac.in"},
-        "CSIR": {"full_name": "CSIR UGC NET Mathematics", "conducting_body": "NTA (National Testing Agency)", "eligibility": "Master's in Mathematics with 55% (50% SC/ST/PwD)", "pattern": "3 hours · 200 marks total\nPart A: 20Q (General Science, 30 marks)\nPart B: 40Q (Core math, 70 marks, ⅓ negative)\nPart C: 60Q (Advanced, 100 marks, ⅓ negative, PROOF-BASED)", "syllabus": "Analysis (Real+Complex+Functional) · Algebra (Linear+Abstract) · Topology · ODE · PDE · Numerical Methods · Probability", "weightage": "Analysis: 30% · Algebra: 25% · Complex: 20% · Topology: 10%", "top_books": ["Rudin — Real & Complex Analysis","Dummit-Foote — Abstract Algebra","Munkres — Topology","Conway — Functions of One Complex Variable"], "strategy": "Part C is the key differentiator. Master proof writing. JRF = ₹31,000/month for PhD.", "website": "https://csirnet.nta.nic.in"}
-    }
-    return jsonify(info.get(exam, {"error": "Not found. Use JAM, GATE, or CSIR"}))
+    return jsonify(EXAM_INFO.get(exam, {"error": "Not found. Use JAM, GATE, or CSIR"}))
+
+
+# ── LaTeX ────────────────────────────────────────
+
+@app.route("/api/latex", methods=["POST"])
+def latex_gen():
+    text = request.get_json().get("text", "")
+    prompt = f"""Generate professional LaTeX code for: {text}
+
+1. Complete compilable snippet
+2. Brief explanation of each command
+3. How to compile (pdflatex / Overleaf)"""
+    return jsonify({"answer": ask_simple(prompt, system=SYSTEM_PROMPT)})
+
+
+# ── Mock test AI solve ───────────────────────────
+
+@app.route("/api/solve-question", methods=["POST"])
+def solve_question():
+    """Solve a specific mock test question completely."""
+    data = request.get_json()
+    question = data.get("question", "")
+    if not question:
+        return jsonify({"error": "question required"}), 400
+    prompt = f"""A student is stuck on this exam question:
+
+{question}
+
+Provide COMPLETE solution:
+📌 Identify the topic
+📐 Full step-by-step working (show ALL steps)
+✅ Final Answer: \\[\\boxed{{...}}\\]
+⚠️ Key insight / trick for this type
+💡 Similar question to practice
+
+ALL math in LaTeX. Be thorough."""
+    return jsonify({"solution": ask_simple(prompt, system=SYSTEM_PROMPT)})
 
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
-    print(f"\n🧮 MathSphere v6.0 Professor Edition — port {port}")
+    print(f"\n🧮 MathSphere v7.0 — port {port}")
     print(f"   ✅ SymPy: {SYMPY_AVAILABLE}")
     print(f"   ✅ Groq: {GROQ_AVAILABLE}")
     print(f"   ✅ Gemini: {GEMINI_AVAILABLE}")
-    print(f"   👥 {len(MATHEMATICIANS)} Mathematicians")
-    print(f"   🚀 {len(MATH_PROJECTS)} Projects")
-    print(f"   📐 {len(THEOREMS)} Theorems")
     print(f"   📺 {TEACHER_YOUTUBE}\n")
     app.run(host="0.0.0.0", port=port, debug=False)

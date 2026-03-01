@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
-<title>MathSphere v6.0 — Professor Edition by Anupam Nigam</title>
+<title>MathSphere v7.0 — Professor Edition by Anupam Nigam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
 <style>
 /* ── CSS VARIABLES ─────────────────────────────── */
 :root{
@@ -44,7 +45,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @keyframes drift{0%{transform:translateY(105vh);opacity:0}8%,92%{opacity:1}100%{transform:translateY(-10vh);opacity:0}}
 
 /* ── LAYOUT ─────────────────────────────────────── */
-#app{position:relative;z-index:1;display:flex;height:100vh;max-width:1120px;margin:0 auto}
+#app{position:relative;z-index:1;display:flex;height:100vh;max-width:1200px;margin:0 auto}
 
 /* ── SIDEBAR ─────────────────────────────────────── */
 #sidebar{width:244px;flex-shrink:0;border-right:1px solid var(--bor);
@@ -76,7 +77,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .nav-btn.active::before{transform:scaleY(1)}
 .nav-btn .em{width:20px;text-align:center;font-size:14px;transition:transform .22s}
 .nav-btn:hover .em{transform:scale(1.2) rotate(-5deg)}
-.nav-btn .new-tag{font-size:8px;background:var(--acc3);color:#000;padding:1px 5px;border-radius:3px;font-family:var(--fM);letter-spacing:.5px;text-transform:uppercase;margin-left:auto}
 .sb-scroll{flex:1;overflow-y:auto;padding:6px 8px;scrollbar-width:none}
 .sb-scroll::-webkit-scrollbar{display:none}
 .sb-footer{padding:12px 10px;border-top:1px solid var(--bor);display:flex;gap:7px;flex-wrap:wrap}
@@ -101,11 +101,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 #owner-name{font-family:var(--fH);font-weight:700;font-size:12px;color:var(--acc3);padding:4px 9px;border:1px solid var(--bor2);border-radius:999px;background:var(--sur2)}
 #theme-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;letter-spacing:.5px;transition:all .2s}
 #theme-btn:hover{border-color:var(--acc);color:var(--acc)}
-
-/* SymPy status badge */
-#sympy-status{font-size:9px;font-family:var(--fM);padding:3px 8px;border-radius:20px;letter-spacing:.5px;white-space:nowrap}
-#sympy-status.active{background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);color:var(--acc3)}
-#sympy-status.inactive{background:rgba(64,75,96,.15);border:1px solid var(--bor);color:var(--txt3)}
 
 body.light{
   --bg:#f5f7ff;--sur:#ffffff;--sur2:#eef2ff;--sur3:#e7ecfa;
@@ -180,16 +175,6 @@ body.light{
 .bubble a{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(79,142,247,.3);transition:all .2s}
 .bubble a:hover{border-color:var(--acc)}
 
-/* ── VERIFICATION BADGES ──────────────────────────── */
-.vbadge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-family:var(--fM);
-  padding:3px 10px;border-radius:20px;margin:6px 4px 4px 0;letter-spacing:.4px;cursor:default}
-.vbadge.high{background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.35);color:var(--acc3)}
-.vbadge.medium{background:rgba(247,195,79,.1);border:1px solid rgba(247,195,79,.35);color:var(--yellow)}
-.vbadge.low{background:rgba(247,147,79,.1);border:1px solid rgba(247,147,79,.35);color:var(--acc4)}
-.vbadge.verified{background:rgba(0,212,168,.12);border:1px solid rgba(0,212,168,.4);color:var(--acc3)}
-.vbadge.mismatch{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:var(--red)}
-.vbadge.unverified{background:var(--sur3);border:1px solid var(--bor2);color:var(--txt3)}
-
 /* ── COPY / SAVE ACTIONS ──────────────────────────── */
 .copy-wrap{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
 .copy-btn{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
@@ -202,18 +187,67 @@ body.light{
   cursor:pointer;font-family:var(--fM);transition:all .2s}
 .save-btn:hover{background:rgba(0,212,168,.16);border-color:var(--acc3)}
 
-/* ── SYMPY STEPS ──────────────────────────────────── */
-.sympy-steps{background:rgba(0,212,168,.05);border:1px solid rgba(0,212,168,.2);border-radius:9px;padding:12px 14px;margin:10px 0}
-.sympy-steps .step-lbl{font-family:var(--fM);font-size:9px;color:var(--acc3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
-.sympy-steps .step{font-size:12px;color:var(--txt2);margin:4px 0;padding-left:10px;border-left:2px solid rgba(0,212,168,.3)}
+/* ── PANELS ──────────────────────────────────────────── */
+.panel{display:flex;flex-direction:column;gap:9px}
+.ptitle{font-family:var(--fH);font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px}
+.psubtitle{font-size:11px;color:var(--txt3);font-family:var(--fM);margin-bottom:4px}
+.pbtn{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);border-radius:8px;
+  padding:9px 13px;cursor:pointer;font-size:12.5px;transition:all .22s;
+  text-align:left;font-family:var(--fB);position:relative;overflow:hidden}
+.pbtn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--acc),var(--acc2));transform:scaleY(0);transition:transform .22s;border-radius:0 2px 2px 0}
+.pbtn:hover{background:var(--sur3);border-color:var(--acc);color:var(--txt);padding-left:17px}
+.pbtn:hover::before{transform:scaleY(1)}
+.pbtn-sub{font-size:11px;color:var(--txt3);margin-top:2px;display:block;font-family:var(--fM)}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-/* ── TYPING ─────────────────────────────────────────── */
-.typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
-  border-radius:13px;border-top-left-radius:3px;width:fit-content}
-.td{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:td 1.2s ease-in-out infinite}
-.td:nth-child(2){animation-delay:.2s;background:var(--acc2)}
-.td:nth-child(3){animation-delay:.4s;background:var(--acc3)}
-@keyframes td{0%,60%,100%{transform:translateY(0) scale(.8);opacity:.4}30%{transform:translateY(-7px) scale(1);opacity:1}}
+/* ── FORMULA SHEET ───────────────────────────────── */
+.formula-sheet{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:16px;margin:8px 0}
+.formula-category{margin-bottom:14px}
+.formula-cat-title{font-family:var(--fH);font-weight:700;font-size:13px;color:var(--acc);
+  margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(79,142,247,.2)}
+.formula-item{background:var(--sur3);border-left:2px solid var(--acc2);padding:10px 12px;
+  margin:6px 0;border-radius:5px;font-size:12px;color:var(--txt2);line-height:1.6}
+.formula-item .eq{font-family:var(--fM);color:var(--acc3);margin:4px 0;display:block}
+
+/* ── CONCEPT MAP ─────────────────────────────────── */
+.concept-tree{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;
+  padding:16px;margin:8px 0;font-family:var(--fM);font-size:12px;color:var(--txt2);
+  line-height:1.9;overflow-x:auto}
+.concept-tree code{background:var(--sur3);padding:2px 6px;border-radius:3px;color:var(--acc3)}
+
+/* ── GRAPH CONTAINER ─────────────────────────────── */
+.graph-container{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;
+  padding:14px;margin:8px 0;width:100%;height:400px}
+.graph-controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.graph-input{background:var(--sur3);border:1px solid var(--bor);color:var(--txt);
+  padding:6px 10px;border-radius:5px;font-family:var(--fM);font-size:12px}
+.graph-input:focus{outline:none;border-color:var(--acc)}
+.graph-btn{background:var(--acc);color:white;border:none;padding:6px 14px;border-radius:5px;
+  font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--fB)}
+.graph-btn:hover{background:var(--acc2);transform:translateY(-1px)}
+
+/* ── BOOKS INPUT ─────────────────────────────────── */
+.books-input-form{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.input-group{display:flex;flex-direction:column;gap:4px}
+.input-label{font-size:11px;color:var(--txt2);font-family:var(--fM);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.input-field{background:var(--sur3);border:1px solid var(--bor);color:var(--txt);
+  padding:8px 12px;border-radius:6px;font-family:var(--fB);font-size:12px;}
+.input-field:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(79,142,247,.1)}
+.books-search-btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;
+  color:white;padding:8px 18px;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--fB);
+  transition:all .2s;align-self:flex-start}
+.books-search-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,142,247,.3)}
+
+.book-card{background:var(--sur3);border-left:3px solid var(--acc2);padding:12px;margin:8px 0;
+  border-radius:6px;display:flex;flex-direction:column;gap:4px}
+.book-title{font-weight:600;color:var(--txt);font-size:12.5px}
+.book-author{font-size:11px;color:var(--acc);font-family:var(--fM)}
+.book-level{display:inline-block;font-size:10px;background:rgba(0,212,168,.1);color:var(--acc3);
+  padding:2px 6px;border-radius:3px;font-family:var(--fM);width:fit-content;margin-top:2px}
+.book-why{font-size:11px;color:var(--txt2);margin-top:3px;line-height:1.5}
+.book-search{color:var(--acc);text-decoration:none;font-size:10px;margin-top:4px;font-family:var(--fM)}
+.book-search:hover{text-decoration:underline}
 
 /* ── QUIZ / CARDS ────────────────────────────────────── */
 .qcard{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:18px;
@@ -230,100 +264,40 @@ body.light{
 .qopt:disabled{cursor:default}
 .qletter{font-family:var(--fM);font-size:11px;font-weight:600;width:22px;height:22px;
   border-radius:5px;background:var(--bor2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.qfooter{display:flex;justify-content:space-between;align-items:center}
+.qfooter{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .qprog{height:3px;background:var(--bor);border-radius:2px;overflow:hidden;margin:2px 0}
 .qbar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .6s}
 .qexpl{background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.15);
   border-radius:8px;padding:10px 13px;font-size:12.5px;color:var(--txt2);display:none;line-height:1.7}
 .qnext{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;
   color:white;padding:8px 18px;font-size:12.5px;cursor:pointer;font-family:var(--fB);
-  box-shadow:0 0 14px rgba(79,142,247,.25);transition:all .22s}
+  box-shadow:0 0 14px rgba(79,142,247,.25);transition:all .22s;white-space:nowrap}
 .qnext:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(79,142,247,.4)}
 
-/* ── VERIFIER PANELS ─────────────────────────────── */
-.verifier-wrap{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:20px;display:flex;flex-direction:column;gap:14px}
-.verifier-title{font-family:var(--fH);font-weight:700;font-size:16px;color:var(--txt);display:flex;align-items:center;gap:8px}
-.verifier-section{background:var(--sur3);border:1px solid var(--bor);border-radius:9px;padding:13px}
-.vsec-label{font-family:var(--fM);font-size:9px;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.vsec-label span{width:6px;height:6px;border-radius:50%;background:var(--acc);display:inline-block}
-.verifier-textarea{width:100%;background:none;border:none;outline:none;color:var(--txt);
-  font-family:var(--fB);font-size:13.5px;line-height:1.65;resize:none;min-height:40px;padding:0}
-.verifier-textarea::placeholder{color:var(--txt3)}
-.verify-btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;
-  color:white;padding:9px 22px;font-size:13px;cursor:pointer;font-family:var(--fB);
-  box-shadow:0 0 14px rgba(79,142,247,.28);transition:all .22s;align-self:flex-start}
-.verify-btn:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(79,142,247,.45)}
-.verify-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.verdict-box{border-radius:10px;padding:14px 16px;margin-top:4px}
-.verdict-box.correct{background:rgba(45,214,122,.07);border:1px solid rgba(45,214,122,.3)}
-.verdict-box.incorrect{background:rgba(232,64,64,.07);border:1px solid rgba(232,64,64,.3)}
-.verdict-box.partial{background:rgba(247,195,79,.07);border:1px solid rgba(247,195,79,.3)}
-.verdict-box.unverified{background:var(--sur3);border:1px solid var(--bor2)}
-.verdict-title{font-family:var(--fH);font-weight:700;font-size:14px;margin-bottom:8px}
-.verdict-box.correct   .verdict-title{color:var(--green)}
-.verdict-box.incorrect .verdict-title{color:var(--red)}
-.verdict-box.partial   .verdict-title{color:var(--yellow)}
-.verdict-box.unverified .verdict-title{color:var(--txt2)}
+/* ── MOCK TEST QUESTION ──────────────────────────── */
+.mock-question-wrap{background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:16px;margin:8px 0}
+.mock-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;
+  font-size:11px;color:var(--txt3);font-family:var(--fM)}
+.mock-progress{height:4px;background:var(--bor);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.mock-progress-bar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .5s}
+.mock-question-text{font-size:13px;color:var(--txt);line-height:1.7;margin-bottom:12px}
+.mock-action-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mock-solve-btn{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.3);
+  color:var(--acc2);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;
+  font-family:var(--fM);transition:all .2s}
+.mock-solve-btn:hover{background:rgba(124,92,252,.25);border-color:var(--acc2)}
+.solution-box{background:rgba(45,214,122,.06);border:1px solid rgba(45,214,122,.2);
+  border-radius:8px;padding:12px;margin:8px 0;font-size:12px;color:var(--txt2);
+  line-height:1.7;display:none}
+.solution-box.show{display:block}
 
-/* step validator */
-.step-input-row{display:flex;gap:8px;align-items:center;margin:5px 0}
-.step-num{font-family:var(--fM);font-size:10px;color:var(--txt3);min-width:48px}
-.step-field{flex:1;background:var(--sur3);border:1px solid var(--bor);border-radius:7px;
-  padding:7px 10px;color:var(--txt);font-family:var(--fB);font-size:13px;outline:none;
-  transition:border-color .2s}
-.step-field:focus{border-color:var(--acc)}
-.add-step-btn{background:none;border:1px dashed var(--bor2);color:var(--txt3);padding:7px 14px;
-  border-radius:7px;cursor:pointer;font-size:12px;font-family:var(--fM);transition:all .2s;width:100%;margin-top:6px}
-.add-step-btn:hover{border-color:var(--acc);color:var(--acc)}
-.rmv-step{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:13px;padding:4px;transition:color .2s}
-.rmv-step:hover{color:var(--red)}
-
-/* ── PANELS ──────────────────────────────────────────── */
-.panel{display:flex;flex-direction:column;gap:9px}
-.ptitle{font-family:var(--fH);font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px}
-.psubtitle{font-size:11px;color:var(--txt3);font-family:var(--fM);margin-bottom:4px}
-.pbtn{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);border-radius:8px;
-  padding:9px 13px;cursor:pointer;font-size:12.5px;transition:all .22s;
-  text-align:left;font-family:var(--fB);position:relative;overflow:hidden}
-.pbtn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,var(--acc),var(--acc2));transform:scaleY(0);transition:transform .22s;border-radius:0 2px 2px 0}
-.pbtn:hover{background:var(--sur3);border-color:var(--acc);color:var(--txt);padding-left:17px}
-.pbtn:hover::before{transform:scaleY(1)}
-.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.pbtn-sub{font-size:11px;color:var(--txt3);margin-top:2px;display:block;font-family:var(--fM)}
-.stage-card{background:var(--sur3);border-radius:9px;padding:13px;border-left:3px solid var(--acc);margin:5px 0}
-.stage-name{font-size:12.5px;font-weight:600;color:var(--acc);margin-bottom:5px}
-.stage-item{font-size:11.5px;color:var(--txt2);margin:3px 0}
-.stage-outcome{font-size:11px;color:var(--acc3);margin-top:5px}
-.thm-card{background:var(--sur3);border-radius:9px;padding:13px;margin:7px 0;border:1px solid var(--bor2)}
-.thm-label{font-size:10px;color:var(--acc);font-family:var(--fM);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
-.thm-text{font-size:13px;color:var(--txt);line-height:1.7}
-.thm-badge{display:inline-block;font-size:10px;font-family:var(--fM);
-  padding:2px 8px;border-radius:4px;margin-right:4px;margin-top:4px}
-.badge-hard{background:rgba(247,147,79,.12);border:1px solid rgba(247,147,79,.3);color:var(--acc4)}
-.badge-mid {background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);color:var(--acc)}
-.badge-easy{background:rgba(45,214,122,.12);border:1px solid rgba(45,214,122,.3);color:var(--green)}
-.comp-card{background:var(--sur3);border-radius:9px;padding:13px;margin:7px 0;border:1px solid var(--bor2);position:relative}
-.comp-meta{font-size:10px;color:var(--txt3);font-family:var(--fM);margin-bottom:7px}
-.comp-prob{font-size:13px;color:var(--txt);line-height:1.75}
-.hint-toggle{background:none;border:1px solid var(--bor2);color:var(--txt3);font-size:11px;
-  padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--fM);margin-top:8px;transition:all .2s}
-.hint-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
-.hint-box{background:rgba(247,195,79,.06);border:1px solid rgba(247,195,79,.2);border-radius:7px;
-  padding:10px;margin-top:8px;font-size:12px;color:var(--txt2);display:none}
-.ans-box{background:rgba(45,214,122,.06);border:1px solid rgba(45,214,122,.2);border-radius:7px;
-  padding:10px;margin-top:8px;font-size:12px;color:var(--txt2);display:none}
-.result-card{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:24px;text-align:center}
-.result-score{font-family:var(--fH);font-size:52px;font-weight:800;
-  background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;background-clip:text}
-.info-row{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--txt2);margin:3px 0}
-.info-label{font-size:10px;color:var(--txt3);font-family:var(--fM);min-width:80px}
-.bm-item{background:var(--sur2);border:1px solid var(--bor);border-radius:9px;padding:12px;margin:5px 0}
-.bm-topic{font-size:10px;color:var(--acc);font-family:var(--fM);margin-bottom:4px}
-.bm-content{font-size:12px;color:var(--txt2);line-height:1.6}
-.bm-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;margin-top:5px;transition:color .2s}
-.bm-del:hover{color:var(--red)}
+/* ── TYPING ─────────────────────────────────────────── */
+.typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
+  border-radius:13px;border-top-left-radius:3px;width:fit-content}
+.td{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:td 1.2s ease-in-out infinite}
+.td:nth-child(2){animation-delay:.2s;background:var(--acc2)}
+.td:nth-child(3){animation-delay:.4s;background:var(--acc3)}
+@keyframes td{0%,60%,100%{transform:translateY(0) scale(.8);opacity:.4}30%{transform:translateY(-7px) scale(1);opacity:1}}
 
 /* ── INPUT AREA ──────────────────────────────────────── */
 #inputarea{padding:12px 20px 14px;border-top:1px solid var(--bor);
@@ -371,6 +345,8 @@ body.light{
   .bubble{max-width:91%}
   #welcome h1{font-size:22px}
   .pgrid{grid-template-columns:1fr}
+  .graph-container{height:300px}
+  .books-input-form{flex-direction:column}
 }
 </style>
 </head>
@@ -381,56 +357,72 @@ body.light{
 <!-- ══ SIDEBAR ══════════════════════════════════════ -->
 <nav id="sidebar">
   <div class="logo-wrap">
-    <div class="logo-icon">
-      <img src="/logo.png" style="width:34px;height:34px;object-fit:contain"
-           onerror="this.style.display='none';this.parentNode.textContent='🧮'"/>
-    </div>
+    <div class="logo-icon">🧮</div>
     <div>
       <div class="logo-name">MathSphere</div>
-      <div class="logo-by">By Anupam Nigam</div>
+      <div class="logo-by">v7.0 Professor Edition</div>
     </div>
   </div>
 
   <div class="sb-scroll">
-    <div class="sb-section">LEARN</div>
-    <button class="nav-btn" id="nav-askanupam"   onclick="setMode('askanupam')">   <span class="em">🧠</span>Ask Anupam</button>
-    <button class="nav-btn" id="nav-verifier"    onclick="setMode('verifier')">    <span class="em">✅</span>Answer Verifier<span class="new-tag">NEW</span></button>
-    <button class="nav-btn" id="nav-stepcheck"   onclick="setMode('stepcheck')">   <span class="em">🔍</span>Step Validator<span class="new-tag">NEW</span></button>
-    <button class="nav-btn" id="nav-erroranalysis" onclick="setMode('erroranalysis')"><span class="em">🩺</span>Error Analysis<span class="new-tag">NEW</span></button>
-    <button class="nav-btn" id="nav-formula"     onclick="setMode('formula')">     <span class="em">📋</span>Formula Sheet</button>
-    <button class="nav-btn" id="nav-revision"    onclick="setMode('revision')">    <span class="em">⚡</span>Rapid Revision</button>
-    <button class="nav-btn" id="nav-conceptmap"  onclick="setMode('conceptmap')">  <span class="em">🗺️</span>Concept Map</button>
-    <button class="nav-btn" id="nav-latex"       onclick="setMode('latex')">       <span class="em">🧾</span>LaTeX Generator</button>
+    <div class="sb-section">CORE LEARNING</div>
+    <button class="nav-btn" id="nav-ask" onclick="setMode('ask')">
+      <span class="em">🧠</span>Ask Anupam
+    </button>
+    <button class="nav-btn" id="nav-formula" onclick="setMode('formula')">
+      <span class="em">📋</span>Formula Sheet
+    </button>
+    <button class="nav-btn" id="nav-conceptmap" onclick="setMode('conceptmap')">
+      <span class="em">🗺️</span>Concept Map
+    </button>
+    <button class="nav-btn" id="nav-graph" onclick="setMode('graph')">
+      <span class="em">📈</span>Graph Plotter
+    </button>
 
     <div class="sb-section">EXPLORE</div>
-    <button class="nav-btn" id="nav-mathematician" onclick="setMode('mathematician')"><span class="em">🧠</span>Mathematicians</button>
-    <button class="nav-btn" id="nav-projects"    onclick="setMode('projects')">    <span class="em">🚀</span>Projects</button>
-    <button class="nav-btn" id="nav-theorem"     onclick="setMode('theorem')">     <span class="em">📐</span>Theorem Explorer</button>
-    <button class="nav-btn" id="nav-competition" onclick="setMode('competition')"> <span class="em">🏆</span>Competition Math</button>
-    <button class="nav-btn" id="nav-learning"    onclick="setMode('learning')">    <span class="em">🎓</span>Learning Paths</button>
-    <button class="nav-btn" id="nav-realworld"   onclick="setMode('realworld')">   <span class="em">🌍</span>Real World Maths</button>
-    <button class="nav-btn" id="nav-research"    onclick="setMode('research')">    <span class="em">🔬</span>Research Hub</button>
-    <button class="nav-btn" id="nav-books"       onclick="setMode('books')">       <span class="em">📚</span>Books</button>
+    <button class="nav-btn" id="nav-mathematician" onclick="setMode('mathematician')">
+      <span class="em">🧠</span>Mathematicians
+    </button>
+    <button class="nav-btn" id="nav-projects" onclick="setMode('projects')">
+      <span class="em">🚀</span>Projects
+    </button>
+    <button class="nav-btn" id="nav-theorem" onclick="setMode('theorem')">
+      <span class="em">📐</span>Theorem Explorer
+    </button>
+    <button class="nav-btn" id="nav-competition" onclick="setMode('competition')">
+      <span class="em">🏆</span>Competition Math
+    </button>
+    <button class="nav-btn" id="nav-books" onclick="setMode('books')">
+      <span class="em">📚</span>Books
+    </button>
 
     <div class="sb-section">PRACTICE</div>
-    <button class="nav-btn" id="nav-quiz"        onclick="setMode('quiz')">        <span class="em">📝</span>Quiz Mode</button>
-    <button class="nav-btn" id="nav-mocktest"    onclick="setMode('mocktest')">    <span class="em">🧪</span>Mock Test (30 Q)</button>
-    <button class="nav-btn" id="nav-challenge"   onclick="setMode('challenge')">   <span class="em">🧩</span>Daily Challenge</button>
-    <button class="nav-btn" id="nav-pyq"         onclick="setMode('pyq')">         <span class="em">📜</span>PYQ Bank</button>
+    <button class="nav-btn" id="nav-quiz" onclick="setMode('quiz')">
+      <span class="em">📝</span>Quiz Mode
+    </button>
+    <button class="nav-btn" id="nav-mocktest" onclick="setMode('mocktest')">
+      <span class="em">🧪</span>Mock Test
+    </button>
+    <button class="nav-btn" id="nav-pyq" onclick="setMode('pyq')">
+      <span class="em">📜</span>PYQ Bank
+    </button>
 
     <div class="sb-section">EXAMS</div>
-    <button class="nav-btn" onclick="showExam('JAM')">  <span class="em">🎓</span>IIT JAM</button>
-    <button class="nav-btn" onclick="showExam('GATE')"> <span class="em">🔬</span>GATE MA</button>
-    <button class="nav-btn" onclick="showExam('CSIR')"> <span class="em">📚</span>CSIR NET</button>
-
-    <div class="sb-section">SAVED</div>
-    <button class="nav-btn" id="nav-bookmarks"   onclick="setMode('bookmarks')">   <span class="em">🔖</span>My Bookmarks</button>
+    <button class="nav-btn" onclick="showExam('JAM')">
+      <span class="em">🎓</span>IIT JAM
+    </button>
+    <button class="nav-btn" onclick="showExam('GATE')">
+      <span class="em">🔬</span>GATE MA
+    </button>
+    <button class="nav-btn" onclick="showExam('CSIR')">
+      <span class="em">📚</span>CSIR NET
+    </button>
   </div>
 
   <div class="sb-footer">
-    <a class="soc-link" href="https://youtube.com/@pi_nomenal1729"   target="_blank">📺 YouTube</a>
-    <a class="soc-link" href="https://instagram.com/pi_nomenal1729" target="_blank">📸 Insta</a>
-    <a class="soc-link" href="https://www.anupamnigam.com"           target="_blank">🌐 Site</a>
+    <a class="soc-link" href="https://youtube.com/@pi_nomenal1729" target="_blank">YouTube</a>
+    <a class="soc-link" href="https://instagram.com/pi_nomenal1729" target="_blank">Instagram</a>
+    <a class="soc-link" href="https://www.anupamnigam.com" target="_blank">Website</a>
   </div>
 </nav>
 
@@ -441,7 +433,6 @@ body.light{
     <div id="mode-title">🧠 Ask Anupam</div>
     <div class="status-dot"></div>
     <span style="font-size:10px;color:var(--txt3);font-family:var(--fM)">ONLINE</span>
-    <span id="sympy-status" class="inactive">SymPy ✗</span>
     <span id="owner-name">Anupam Nigam</span>
     <button id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
     <button id="clear-btn" onclick="clearAll()">CLEAR</button>
@@ -467,7 +458,7 @@ body.light{
         </button>
       </div>
     </div>
-    <div class="inp-hint">MATHSPHERE v6.0 PROFESSOR EDITION · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
+    <div class="inp-hint">MATHSPHERE v7.0 PROFESSOR EDITION · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
   </div>
 </div>
 
@@ -502,87 +493,32 @@ function renderMath(el){
 }
 
 /* ══ STATE ══════════════════════════════════════ */
-let mode='askanupam', chatHistory=[], imgB64=null, imgType=null, busy=false;
+let mode='ask', chatHistory=[], imgB64=null, imgType=null, busy=false;
 let quizState=null, mockState=null;
-let bookmarks=JSON.parse(localStorage.getItem('ms_bm')||'[]');
-let sympyAvailable=false;
 
 const MODE_CFG={
-  askanupam:    {title:'🧠 Ask Anupam',          ph:'Ask anything: math, coding, science, or upload an image of a problem...'},
-  verifier:     {title:'✅ Answer Verifier',       ph:'Type or paste your problem + answer to verify...'},
-  stepcheck:    {title:'🔍 Step Validator',        ph:'Enter your problem, then add each step of your working...'},
-  erroranalysis:{title:'🩺 Error Analysis',        ph:'Paste your full solution and the system will find every error...'},
-  formula:      {title:'📋 Formula Sheet',         ph:'Topic + exam e.g. "Calculus JAM" or "Linear Algebra GATE"'},
-  revision:     {title:'⚡ Rapid Revision',         ph:'Type a topic for 10 key revision points...'},
-  conceptmap:   {title:'🗺️ Concept Map',            ph:'Type a topic to explore all its connections...'},
-  latex:        {title:'🧾 LaTeX Generator',        ph:'Describe what you need LaTeX code for...'},
-  mathematician:{title:'🧠 Mathematicians',    ph:'Click a name for full biography...'},
-  projects:     {title:'🚀 Projects',          ph:'Click a project for the full implementation guide...'},
-  theorem:      {title:'📐 Theorem Explorer',       ph:'Click a theorem to see full proof...'},
-  competition:  {title:'🏆 Competition Math',       ph:'IMO · Putnam · AIME problems...'},
-  learning:     {title:'🎓 Learning Paths',         ph:'Select a learning path...'},
-  realworld:    {title:'🌍 Real World Maths',       ph:'See where maths is used in industry...'},
-  research:     {title:'🔬 Research Hub',           ph:'Ask about research areas, open problems...'},
-  books:        {title:'📚 Books',                  ph:'Type topic + exam e.g. Real Analysis GATE'},
-  quiz:         {title:'📝 Quiz Mode',              ph:''},
-  mocktest:     {title:'🧪 Mock Test (30 Q)',        ph:''},
-  challenge:    {title:'🧩 Daily Challenge',        ph:'Type your solution here...'},
-  pyq:          {title:'📜 PYQ Bank',               ph:''},
-  bookmarks:    {title:'🔖 My Bookmarks',           ph:''},
+  ask:        {title:'🧠 Ask Anupam',    ph:'Ask any mathematics question, solve problems, or upload an image...'},
+  formula:    {title:'📋 Formula Sheet',  ph:'Type a topic and exam level (e.g., "Calculus JAM")...'},
+  conceptmap: {title:'🗺️ Concept Map',     ph:'Type a topic to see its complete concept map...'},
+  graph:      {title:'📈 Graph Plotter',  ph:'Enter a function (e.g., x^2, sin(x), etc.) to plot...'},
+  mathematician:{title:'🧠 Mathematicians',ph:'Browse famous mathematicians...'},
+  projects:   {title:'🚀 Projects',       ph:'Find real-world applications by topic...'},
+  theorem:    {title:'📐 Theorem Explorer',ph:'Explore theorems with proofs...'},
+  competition:{title:'🏆 Competition Math',ph:'IMO · PUTNAM · AIME problems...'},
+  books:      {title:'📚 Books',          ph:'Find the best books by topic and level...'},
+  quiz:       {title:'📝 Quiz Mode',      ph:''},
+  mocktest:   {title:'🧪 Mock Test',      ph:''},
+  pyq:        {title:'📜 PYQ Bank',       ph:''},
 };
 
-window.onload=()=>{initTheme();checkHealth();setMode('askanupam');renderTagsBar();};
-
-/* ══ HEALTH CHECK — detect SymPy ══════════════════ */
-async function checkHealth(){
-  try{
-    const r=await (await fetch('/api/health')).json();
-    sympyAvailable=!!r.sympy;
-    const el=document.getElementById('sympy-status');
-    if(el){
-      el.textContent=sympyAvailable?'SymPy ✓':'SymPy ✗';
-      el.className=sympyAvailable?'active':'inactive';
-    }
-  }catch(e){}
-}
-
-/* ══ WELCOME ════════════════════════════════════ */
-function showWelcome(){
-  document.getElementById('chat').innerHTML=`
-  <div id="welcome">
-    <div class="big-icon-wrap">
-      <div class="orbit orbit1"><div class="orbit-dot od1"></div></div>
-      <div class="orbit orbit2"><div class="orbit-dot od2" style="top:auto;bottom:-3px"></div></div>
-      <div class="big-icon">
-        <img src="/logo.png" style="width:60px;height:60px;object-fit:contain"
-             onerror="this.style.display='none';this.parentNode.textContent='🧮'"/>
-      </div>
-    </div>
-    <h1>MathSphere v6.0</h1>
-    <p>Your complete AI mathematics platform — verified step-by-step solutions, SymPy-powered answer checking, theorem explorer, competition problems, and career guidance. Created by Anupam Nigam.</p>
-    <div class="feat-grid">
-      <div class="feat new">✅ Answer Verifier</div>
-      <div class="feat new">🔍 Step Validator</div>
-      <div class="feat new">🩺 Error Analysis</div>
-      <div class="feat new">📊 Confidence Score</div>
-      <div class="feat">⚡ Groq AI</div>
-      <div class="feat">🧠 16 Mathematicians</div>
-      <div class="feat">🚀 20 Projects</div>
-      <div class="feat">📐 Theorem Explorer</div>
-      <div class="feat">🏆 IMO · Putnam · AIME</div>
-      <div class="feat">🎓 JAM · GATE · CSIR</div>
-      <div class="feat">📋 Copy Everything</div>
-      <div class="feat">📸 Image Solving</div>
-    </div>
-  </div>`;
-}
+window.onload=()=>{initTheme();setMode('ask');renderTagsBar();};
 
 /* ══ MODE SWITCHING ═════════════════════════════ */
 function setMode(m){
   mode=m;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const nb=document.getElementById(`nav-${m}`);if(nb)nb.classList.add('active');
-  const cfg=MODE_CFG[m]||MODE_CFG.askanupam;
+  const cfg=MODE_CFG[m]||MODE_CFG.ask;
   const mt=document.getElementById('mode-title');
   mt.style.opacity='0';mt.style.transform='translateY(-5px)';
   setTimeout(()=>{mt.textContent=cfg.title;mt.style.opacity='1';mt.style.transform='translateY(0)';},150);
@@ -590,22 +526,14 @@ function setMode(m){
   document.getElementById('sidebar').classList.remove('open');
   renderTagsBar();
 
-  if(m==='verifier')     {showVerifier();return;}
-  if(m==='stepcheck')    {showStepCheck();return;}
-  if(m==='erroranalysis'){showErrorAnalysis();return;}
   if(m==='mathematician'){loadMathematicians();return;}
-  if(m==='projects')     {loadProjects();return;}
-  if(m==='theorem')      {loadTheorems();return;}
-  if(m==='competition')  {loadCompetition('IMO');return;}
-  if(m==='learning')     {loadLearningPaths();return;}
-  if(m==='realworld')    {loadRealWorld();return;}
-  if(m==='research')     {loadResearchHub();return;}
-  if(m==='books')        {loadBooks();return;}
-  if(m==='quiz')         {showQuizTopics();return;}
-  if(m==='mocktest')     {showMockTopics();return;}
-  if(m==='challenge')    {loadChallenge();return;}
-  if(m==='pyq')          {showPYQTopics();return;}
-  if(m==='bookmarks')    {showBookmarks();return;}
+  if(m==='projects'){loadProjects();return;}
+  if(m==='theorem'){loadTheorems();return;}
+  if(m==='competition'){loadCompetition('IMO');return;}
+  if(m==='books'){showBooksForm();return;}
+  if(m==='quiz'){showQuizTopics();return;}
+  if(m==='mocktest'){showMockTopics();return;}
+  if(m==='pyq'){showPYQTopics();return;}
   clearAll();
 }
 
@@ -624,39 +552,55 @@ document.addEventListener('click',e=>{
 function renderTagsBar(){
   const bar=document.getElementById('tagsbar');
   const tags={
-    askanupam:   [['∫ Solve Integral','Solve step by step: integral of x^2 sin(x) dx'],
-                  ['λ Eigenvalues','Find eigenvalues and eigenvectors of [[2,1],[1,2]]'],
-                  ['ε-δ Limits','Explain epsilon-delta definition of limit with worked example'],
-                  ['∑ Fourier','Derive Fourier series of f(x) = x on [-π, π]'],
-                  ['🎲 Probability','Explain Bayes theorem with a concrete example']],
-    verifier:    [['Check Integral','Problem: integrate x·sin(x) dx\nMy Answer: -x·cos(x) + sin(x) + C'],
-                  ['Check ODE','Problem: dy/dx = 2y, y(0)=1\nMy Answer: y = e^(2x)'],
-                  ['Check Eigenvalue','Problem: eigenvalues of [[3,1],[0,2]]\nMy Answer: λ = 3 and λ = 2'],
-                  ['Check Limit','Problem: lim x→0 sin(x)/x\nMy Answer: 1']],
-    stepcheck:   [['Integration by Parts','Find integral of x·e^x dx'],
-                  ['Solve ODE','Solve dy/dx + y = e^x'],
-                  ['Find Eigenvalues','Find eigenvalues of [[4,1],[2,3]]'],
-                  ['Differentiate','Differentiate f(x) = x²·sin(x)']],
-    formula:     [['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
-                  ['Real Analysis CSIR','Real Analysis CSIR'],['Calculus GATE','Calculus GATE']],
-    competition: [['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
-    quiz:        ['Calculus','Linear Algebra','Real Analysis','Algebra','Probability','Complex Analysis'],
-    mocktest:    ['JAM','GATE','CSIR'],
-    books:       [['Real Analysis JAM','Real Analysis JAM'],['Linear Algebra GATE','Linear Algebra GATE'],['Abstract Algebra CSIR','Abstract Algebra CSIR']],
-    pyq:         ['JAM','GATE','CSIR'],
+    ask:   [['∫ Solve Integral','Solve step by step: integral of x^2 sin(x) dx'],
+            ['λ Eigenvalues','Find eigenvalues of [[2,1],[1,2]]'],
+            ['ε Limits','Explain epsilon-delta definition of limit'],
+            ['∑ Series','Analyze convergence of series']],
+    formula:[['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
+             ['Real Analysis CSIR','Real Analysis CSIR']],
+    competition:[['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
+    quiz:['Calculus','Linear Algebra','Real Analysis','Complex Analysis'],
+    mocktest:['JAM','GATE','CSIR'],
+    pyq:['JAM','GATE','CSIR'],
   };
   if(!tags[mode]){bar.innerHTML='';return;}
   bar.innerHTML=tags[mode].map(item=>{
     const label=Array.isArray(item)?item[0]:item;
     const val=Array.isArray(item)?item[1]:item;
     if(mode==='competition')return`<div class="tag" onclick="loadCompetition('${val}')">${label}</div>`;
-    if(mode==='quiz')       return`<div class="tag" onclick="startQuiz('${label}')">${label}</div>`;
-    if(mode==='mocktest')   return`<div class="tag" onclick="startMock('${label}')">${label}</div>`;
-    if(mode==='pyq')        return`<div class="tag" onclick="loadPYQ('${label}')">${label}</div>`;
-    if(mode==='verifier')   return`<div class="tag" onclick="prefillVerifier('${escQ(val)}')">${label}</div>`;
-    if(mode==='stepcheck')  return`<div class="tag" onclick="prefillStepCheck('${escQ(val)}')">${label}</div>`;
+    if(mode==='quiz')return`<div class="tag" onclick="startQuiz('${label}')">${label}</div>`;
+    if(mode==='mocktest')return`<div class="tag" onclick="startMock('${label}')">${label}</div>`;
+    if(mode==='pyq')return`<div class="tag" onclick="loadPYQ('${label}')">${label}</div>`;
     return`<div class="tag" onclick="quickSend('${escQ(val||label)}')">${label}</div>`;
   }).join('');
+}
+
+/* ══ WELCOME ════════════════════════════════════ */
+function showWelcome(){
+  document.getElementById('chat').innerHTML=`
+  <div id="welcome">
+    <div class="big-icon-wrap">
+      <div class="orbit orbit1"><div class="orbit-dot od1"></div></div>
+      <div class="orbit orbit2"><div class="orbit-dot od2" style="top:auto;bottom:-3px"></div></div>
+      <div class="big-icon">🧮</div>
+    </div>
+    <h1>MathSphere v7.0</h1>
+    <p>Your complete AI mathematics platform — AI-powered problem solving, beautiful formula sheets, concept maps, 2D/3D graphing, theorem explorer, competition problems, and real-world projects. Created by Anupam Nigam.</p>
+    <div class="feat-grid">
+      <div class="feat">✅ Full Conversation Memory</div>
+      <div class="feat">📋 Dynamic Formula Sheets</div>
+      <div class="feat">🗺️ Beautiful Concept Maps</div>
+      <div class="feat">📈 2D/3D Graph Plotter</div>
+      <div class="feat">🚀 Real-World Projects</div>
+      <div class="feat">🧪 Mock Tests with AI Solve</div>
+      <div class="feat">📚 Smart Book Finder</div>
+      <div class="feat">🏆 Competition Problems</div>
+      <div class="feat">📐 Theorem Explorer</div>
+      <div class="feat">🎓 JAM · GATE · CSIR</div>
+      <div class="feat">📸 Image Problem Solving</div>
+      <div class="feat">🌍 Real-World Applications</div>
+    </div>
+  </div>`;
 }
 
 /* ══ SEND MESSAGE ═══════════════════════════════ */
@@ -671,266 +615,126 @@ async function sendMsg(){
   chatHistory.push({role:'user',content:text||'Please solve this problem from the image.'});
   showTyping();
   try{
-    let answer,confidence='HIGH';
+    let answer='';
     if(mode==='formula'){
-      const parts=text.split(' ');
-      const exams=['JAM','GATE','CSIR'];
-      const exam=parts.find(p=>exams.includes(p.toUpperCase()))||'JAM';
-      const topic=parts.filter(p=>!exams.includes(p.toUpperCase())).join(' ')||text;
-      const r=await api('/api/formula',{topic,exam});answer=r.answer;
-    }else if(mode==='revision'){
-      const r=await api('/api/revision',{topic:text});answer=r.answer;
+      const r=await api('/api/formula',{topic:text});
+      answer=r.answer;
     }else if(mode==='conceptmap'){
-      const r=await api('/api/conceptmap',{topic:text});answer=r.answer;
-    }else if(mode==='latex'){
-      const r=await api('/api/latex',{text});answer=r.answer;
-    }else if(mode==='research'){
-      const r=await api('/api/research',{question:text});answer=r.answer;
+      const r=await api('/api/conceptmap',{topic:text});
+      answer=r.answer;
+    }else if(mode==='graph'){
+      const r=await api('/api/graph',{expression:text,type:'2d'});
+      answer=r.answer||formatGraphData(r);
     }else{
-      const payload={messages:chatHistory.slice(-30),mode:mode==='askanupam'?'ask_anupam':'normal'};
+      const payload={messages:chatHistory.slice(-20)};
       if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
       const r=await api('/api/chat',payload);
       answer=r.answer;
-      confidence=r.confidence||'HIGH';
     }
     hideTyping();
     chatHistory.push({role:'assistant',content:answer});
-    addMsg('bot',answer,false,confidence);
+    addMsg('bot',answer);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ ANSWER VERIFIER ════════════════════════════ */
-function showVerifier(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  const html=`<div class="verifier-wrap">
-    <div class="verifier-title">✅ Answer Verifier
-      ${sympyAvailable?'<span class="vbadge verified">🔬 SymPy Active</span>':'<span class="vbadge unverified">SymPy Inactive</span>'}
-    </div>
-    <div style="font-size:12.5px;color:var(--txt2);line-height:1.7">
-      Enter any maths problem and your answer. The system uses ${sympyAvailable?'SymPy symbolic computation + AI':'AI'} to verify each step, check correctness, and show you exactly where errors occur.
-    </div>
-    <div class="verifier-section">
-      <div class="vsec-label"><span></span>PROBLEM</div>
-      <textarea id="vrf-problem" class="verifier-textarea" rows="3" placeholder="e.g. Find the derivative of f(x) = x²·sin(x)&#10;or: Solve dy/dx = 2xy with y(0) = 1&#10;or: Find eigenvalues of [[2,1],[1,3]]"></textarea>
-    </div>
-    <div class="verifier-section">
-      <div class="vsec-label"><span style="background:var(--acc3)"></span>YOUR ANSWER</div>
-      <textarea id="vrf-answer" class="verifier-textarea" rows="2" placeholder="e.g. f'(x) = 2x·sin(x) + x²·cos(x)"></textarea>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="verify-btn" id="vrf-btn" onclick="runVerifier()">✅ Verify My Answer</button>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3);cursor:pointer">
-        <input type="checkbox" id="vrf-sympy" ${sympyAvailable?'':'disabled'}/>
-        <span>Use SymPy symbolic engine</span>
-      </label>
-    </div>
-    <div id="vrf-result" style="display:none"></div>
-  </div>
-  <div style="font-size:11.5px;color:var(--txt3);margin-top:4px;font-family:var(--fM)">
-    💡 You can also type "Check: [problem] — My answer: [answer]" in the chat below for a quick AI check.
-  </div>`;
-  addBotHTML(html);
-  if(sympyAvailable)document.getElementById('vrf-sympy').checked=true;
-}
-
-function prefillVerifier(text){
-  const lines=text.split('\n');
-  const probLine=lines.find(l=>l.toLowerCase().startsWith('problem'))||lines[0]||'';
-  const ansLine=lines.find(l=>l.toLowerCase().startsWith('my answer'))||lines[1]||'';
-  const pe=document.getElementById('vrf-problem');const ae=document.getElementById('vrf-answer');
-  if(pe)pe.value=probLine.replace(/^[Pp]roblem:\s*/,'');
-  if(ae)ae.value=ansLine.replace(/^[Mm]y [Aa]nswer:\s*/,'');
-}
-
-async function runVerifier(){
-  const prob=(document.getElementById('vrf-problem')||{}).value||'';
-  const ans=(document.getElementById('vrf-answer')||{}).value||'';
-  const useSympy=document.getElementById('vrf-sympy')&&document.getElementById('vrf-sympy').checked;
-  if(!prob.trim()||!ans.trim()){toast('Please enter both the problem and your answer','info');return;}
-  const res=document.getElementById('vrf-result');
-  res.style.display='block';
-  res.innerHTML='<div style="color:var(--txt3);font-family:var(--fM);font-size:12px;padding:14px">🔍 Verifying your answer...</div>';
-  const btn=document.getElementById('vrf-btn');if(btn)btn.disabled=true;
+/* ══ FORMULA SHEET ══════════════════════════════ */
+async function loadFormulaSheet(){
+  rmWelcome();
+  const topic=prompt('Enter topic (e.g., Calculus, Linear Algebra):','Calculus');
+  if(!topic)return;
+  const exam=prompt('Enter exam level (e.g., JAM, GATE, CSIR):','JAM');
+  if(!exam)return;
+  document.getElementById('input').value='';
+  showTyping();
   try{
-    let verdict='UNVERIFIED',symSteps=[],correctLatex='',aiExpl='',numericalVerified=null,symbolicVerified=null;
-    // Try SymPy quick check first if available
-    if(useSympy&&sympyAvailable){
-      try{
-        const r=await api('/api/verify/check',{problem:prob,answer:ans});
-        verdict=r.verdict;
-        correctLatex=r.correct_answer_latex||'';
-        symSteps=r.sympy_steps||[];
-        aiExpl=r.ai_explanation||'';
-      }catch(e){}
+    const r=await api('/api/formula',{topic,exam});
+    hideTyping();
+    addMsg('bot',r.answer);
+  }catch(e){hideTyping();toast('Error: '+e.message,'err');}
+}
+
+/* ══ CONCEPT MAP ════════════════════════════════ */
+async function loadConceptMap(){
+  rmWelcome();
+  const topic=prompt('Enter topic for concept map:','Calculus');
+  if(!topic)return;
+  document.getElementById('input').value='';
+  showTyping();
+  try{
+    const r=await api('/api/conceptmap',{topic});
+    hideTyping();
+    addMsg('bot',r.answer);
+  }catch(e){hideTyping();toast('Error: '+e.message,'err');}
+}
+
+/* ══ GRAPH PLOTTER ══════════════════════════════ */
+function showGraphPlotter(){
+  rmWelcome();
+  document.getElementById('chat').innerHTML=`<div class="qcard">
+    <div class="ptitle">📈 Graph Plotter</div>
+    <div class="psubtitle">Plot 2D or 3D functions instantly</div>
+    <div class="graph-controls">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Function</label>
+        <input type="text" id="graph-expr" class="graph-input" placeholder="e.g., x^2, sin(x), x^2+y^2" style="width:100%"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Type</label>
+        <select id="graph-type" class="graph-input" style="width:80px">
+          <option value="2d">2D</option>
+          <option value="3d">3D</option>
+        </select>
+      </div>
+      <button class="graph-btn" onclick="plotGraph()">Plot</button>
+    </div>
+    <div id="graph-container" class="graph-container"></div>
+    <div id="graph-info" style="font-size:11px;color:var(--txt2);margin-top:8px;display:none"></div>
+  </div>`;
+}
+
+async function plotGraph(){
+  const expr=document.getElementById('graph-expr')?.value||'x^2';
+  const type=document.getElementById('graph-type')?.value||'2d';
+  if(!expr.trim()){toast('Enter a function','info');return;}
+  const container=document.getElementById('graph-container');
+  const info=document.getElementById('graph-info');
+  container.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--txt2)">Plotting...</div>';
+  try{
+    const r=await api('/api/graph',{expression:expr,type});
+    if(r.sympy===false){
+      info.style.display='block';
+      info.innerHTML=`<strong>Description:</strong><br>${r.description}`;
+      container.innerHTML='<div style="padding:20px;color:var(--txt2);font-size:12px;line-height:1.6">'+r.description+'</div>';
     }else{
-      // Fallback to AI-only check
-      const r=await api('/api/chat',{
-        messages:[{role:'user',content:`VERIFY THIS ANSWER:\n\nProblem: ${prob}\n\nStudent's answer: ${ans}\n\nVerdict must be: CORRECT, INCORRECT, or PARTIALLY CORRECT. Show full working.`}],
-        mode:'normal'
-      });
-      aiExpl=r.answer;
-      verdict=aiExpl.includes('CORRECT')&&!aiExpl.includes('INCORRECT')?'CORRECT':aiExpl.includes('INCORRECT')?'INCORRECT':'UNVERIFIED';
+      container.innerHTML='';
+      if(type==='2d'&&r.points){
+        const traces=[{x:r.points.map(p=>p.x),y:r.points.map(p=>p.y),mode:'lines',type:'scatter',name:'f(x)'}];
+        Plotly.newPlot('graph-container',traces,{
+          plot_bgcolor:'rgba(13,16,24,0.5)',
+          paper_bgcolor:'rgba(13,16,24,0)',
+          font:{color:'#dde1f0',family:"'DM Mono'"},
+          margin:{l:60,r:20,t:40,b:50},
+          hovermode:'closest'
+        },{responsive:true});
+        if(r.critical_points){
+          info.style.display='block';
+          info.innerHTML=`<strong>Critical Points:</strong> ${r.critical_points.map(c=>c.toFixed(3)).join(', ')}`;
+        }
+      }else if(type==='3d'&&r.x&&r.y&&r.z){
+        const trace={x:r.x,y:r.y,z:r.z,mode:'markers',type:'scatter3d',marker:{size:2,color:r.z,colorscale:'Viridis'}};
+        Plotly.newPlot('graph-container',[trace],{
+          scene:{bgcolor:'rgba(13,16,24,0.5)'},
+          plot_bgcolor:'rgba(13,16,24,0)',
+          paper_bgcolor:'rgba(13,16,24,0)',
+          font:{color:'#dde1f0',family:"'DM Mono'"},
+          margin:{l:0,r:0,t:30,b:0}
+        },{responsive:true});
+      }
     }
-    const vClass=verdict==='CORRECT'?'correct':verdict==='INCORRECT'?'incorrect':verdict==='PARTIAL'?'partial':'unverified';
-    const vIcon=verdict==='CORRECT'?'✅':verdict==='INCORRECT'?'❌':verdict==='PARTIAL'?'⚠️':'❓';
-    const vMsg=verdict==='CORRECT'?'Your answer is CORRECT! Zabardast! 🏆':
-                verdict==='INCORRECT'?'Your answer is INCORRECT. Dekho correction below.':
-                verdict==='PARTIAL'?'Partially Correct — some errors found.':'Could not auto-verify — AI analysis below.';
-    let stepsHtml='';
-    if(symSteps.length>0){
-      stepsHtml=`<div class="sympy-steps">
-        <div class="step-lbl">🔬 SymPy Computation Steps</div>
-        ${symSteps.map(s=>`<div class="step">${escHtml(s)}</div>`).join('')}
-      </div>`;
-    }
-    const corrHtml=correctLatex?`<div style="margin:8px 0;font-size:12.5px;color:var(--txt2)">Correct answer: \\(${correctLatex}\\)</div>`:'';
-    const id='vrf'+Date.now();
-    res.innerHTML=`<div class="verdict-box ${vClass}">
-      <div class="verdict-title">${vIcon} ${vMsg}</div>
-      ${corrHtml}
-      ${stepsHtml}
-      <div id="${id}exp" style="font-size:13px;color:var(--txt2);line-height:1.8;margin-top:8px">${fmt(aiExpl||'')}</div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}exp').innerText)">📋 Copy Explanation</button>
-        <button class="save-btn" onclick="saveBm('Verifier: ${escQ(prob.substring(0,40))}',document.getElementById('${id}exp').innerText)">🔖 Save</button>
-      </div>
-    </div>`;
-    setTimeout(()=>renderMath(res),100);
   }catch(e){
-    res.innerHTML=`<div style="color:var(--red);font-size:12.5px;padding:12px">⚠️ Verification error: ${e.message}</div>`;
-  }finally{
-    if(btn)btn.disabled=false;
+    container.innerHTML=`<div style="padding:20px;color:var(--red)">Error: ${e.message}</div>`;
+    info.style.display='none';
   }
-}
-
-/* ══ STEP VALIDATOR ═════════════════════════════ */
-let stepCount=1;
-function showStepCheck(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  stepCount=1;
-  const html=`<div class="verifier-wrap">
-    <div class="verifier-title">🔍 Step Validator</div>
-    <div style="font-size:12.5px;color:var(--txt2);line-height:1.7">
-      Enter your problem and each step of your working. The AI professor will check every step and mark exactly where errors occur.
-    </div>
-    <div class="verifier-section">
-      <div class="vsec-label"><span></span>PROBLEM</div>
-      <textarea id="sv-problem" class="verifier-textarea" rows="2" placeholder="e.g. Find integral of x·sin(x) dx using integration by parts"></textarea>
-    </div>
-    <div class="verifier-section">
-      <div class="vsec-label"><span style="background:var(--acc3)"></span>YOUR STEPS (one per box)</div>
-      <div id="sv-steps">
-        <div class="step-input-row">
-          <span class="step-num">Step 1</span>
-          <input id="sv-step-1" class="step-field" placeholder="e.g. Let u = x, dv = sin(x)dx"/>
-          <button class="rmv-step" onclick="removeStep(1)" title="Remove">✕</button>
-        </div>
-      </div>
-      <button class="add-step-btn" onclick="addStep()">+ Add Next Step</button>
-    </div>
-    <button class="verify-btn" onclick="runStepCheck()">🔍 Validate All Steps</button>
-    <div id="sv-result" style="display:none"></div>
-  </div>`;
-  addBotHTML(html);
-}
-
-function prefillStepCheck(problem){
-  const el=document.getElementById('sv-problem');
-  if(el)el.value=problem;
-}
-
-function addStep(){
-  stepCount++;
-  const container=document.getElementById('sv-steps');
-  if(!container)return;
-  const row=document.createElement('div');row.className='step-input-row';row.id='sv-row-'+stepCount;
-  row.innerHTML=`<span class="step-num">Step ${stepCount}</span>
-    <input id="sv-step-${stepCount}" class="step-field" placeholder="Next step..."/>
-    <button class="rmv-step" onclick="removeStep(${stepCount})" title="Remove">✕</button>`;
-  container.appendChild(row);
-  document.getElementById('sv-step-'+stepCount).focus();
-}
-
-function removeStep(n){
-  if(n===1&&stepCount===1){toast('Need at least one step','info');return;}
-  const row=document.getElementById('sv-row-'+n);
-  if(row)row.remove();
-}
-
-async function runStepCheck(){
-  const prob=(document.getElementById('sv-problem')||{}).value||'';
-  if(!prob.trim()){toast('Please enter the problem first','info');return;}
-  const steps=[];
-  for(let i=1;i<=stepCount+5;i++){
-    const el=document.getElementById('sv-step-'+i);
-    if(el&&el.value.trim())steps.push(el.value.trim());
-  }
-  if(steps.length===0){toast('Please enter at least one step','info');return;}
-  const res=document.getElementById('sv-result');
-  res.style.display='block';
-  res.innerHTML='<div style="color:var(--txt3);font-family:var(--fM);font-size:12px;padding:14px">🔍 Analysing your steps...</div>';
-  try{
-    const r=await api('/api/verify/steps',{problem:prob,steps});
-    const id='sv'+Date.now();
-    res.innerHTML=`<div class="verdict-box unverified" style="border-color:var(--bor2)">
-      <div class="verdict-title" style="color:var(--acc)">📊 Step-by-Step Analysis</div>
-      <div id="${id}an" style="font-size:13px;color:var(--txt2);line-height:1.85;margin-top:6px">${fmt(r.analysis)}</div>
-      ${r.sympy_checks&&r.sympy_checks.length>0?`
-        <div class="sympy-steps" style="margin-top:10px">
-          <div class="step-lbl">🔬 SymPy Parsed Expressions</div>
-          ${r.sympy_checks.map(c=>`<div class="step">Step ${c.step}: \\(${c.sympy_parsed}\\)</div>`).join('')}
-        </div>`:''}
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}an').innerText)">📋 Copy Analysis</button>
-        <button class="save-btn" onclick="saveBm('Step Analysis',document.getElementById('${id}an').innerText)">🔖 Save</button>
-      </div>
-    </div>`;
-    setTimeout(()=>renderMath(res),100);
-  }catch(e){res.innerHTML=`<div style="color:var(--red);padding:12px">⚠️ Error: ${e.message}</div>`;}
-}
-
-/* ══ ERROR ANALYSIS ═════════════════════════════ */
-function showErrorAnalysis(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  const html=`<div class="verifier-wrap">
-    <div class="verifier-title">🩺 Error Analysis Mode</div>
-    <div style="font-size:12.5px;color:var(--txt2);line-height:1.7">
-      Paste your complete (wrong) solution. The AI professor will identify every error, classify each mistake, and provide the fully correct working.
-    </div>
-    <div class="verifier-section">
-      <div class="vsec-label"><span></span>PROBLEM</div>
-      <textarea id="ea-problem" class="verifier-textarea" rows="2" placeholder="e.g. Differentiate f(x) = x²·e^x"></textarea>
-    </div>
-    <div class="verifier-section">
-      <div class="vsec-label"><span style="background:var(--red)"></span>YOUR (WRONG) SOLUTION</div>
-      <textarea id="ea-solution" class="verifier-textarea" rows="6" placeholder="Paste your complete working here — even if you know it is wrong. The more you write, the more detailed the error analysis."></textarea>
-    </div>
-    <button class="verify-btn" onclick="runErrorAnalysis()">🩺 Analyse Errors</button>
-    <div id="ea-result" style="display:none"></div>
-  </div>`;
-  addBotHTML(html);
-}
-
-async function runErrorAnalysis(){
-  const prob=(document.getElementById('ea-problem')||{}).value||'';
-  const sol=(document.getElementById('ea-solution')||{}).value||'';
-  if(!prob.trim()||!sol.trim()){toast('Please enter both problem and your solution','info');return;}
-  const res=document.getElementById('ea-result');
-  res.style.display='block';
-  res.innerHTML='<div style="color:var(--txt3);font-family:var(--fM);font-size:12px;padding:14px">🩺 Analysing your solution...</div>';
-  try{
-    const r=await api('/api/analyze/error',{problem:prob,wrong_solution:sol});
-    const id='ea'+Date.now();
-    res.innerHTML=`<div class="verdict-box incorrect">
-      <div class="verdict-title">🩺 Professor's Error Report</div>
-      <div id="${id}an" style="font-size:13px;color:var(--txt2);line-height:1.85;margin-top:6px">${fmt(r.analysis)}</div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}an').innerText)">📋 Copy Report</button>
-        <button class="save-btn" onclick="saveBm('Error Analysis',document.getElementById('${id}an').innerText)">🔖 Save</button>
-      </div>
-    </div>`;
-    setTimeout(()=>renderMath(res),100);
-  }catch(e){res.innerHTML=`<div style="color:var(--red);padding:12px">⚠️ Error: ${e.message}</div>`;}
 }
 
 /* ══ MATHEMATICIAN EXPLORER ═════════════════════ */
@@ -939,15 +743,11 @@ async function loadMathematicians(){
   try{
     const d=await(await fetch('/api/mathematicians')).json();hideTyping();
     const html=`<div class="panel">
-      <div class="ptitle">🧠 Mathematicians Explorer (${d.total})</div>
-      <div class="psubtitle">Click any name to view full biography, research papers, and legacy</div>
-      <div class="pgrid">${d.mathematicians.map(m=>
-        `<button class="pbtn" onclick="loadMathDetail('${escQ(m.name)}')">
-          ${m.name}
-          <span class="pbtn-sub">${m.period} · ${m.country}</span>
-          <span class="pbtn-sub">${m.fields.slice(0,2).join(', ')}</span>
-        </button>`).join('')}
-      </div>
+      <div class="ptitle">🧠 Mathematicians (${d.total})</div>
+      <div class="psubtitle">Click to view biography and contributions</div>
+      ${d.mathematicians.map(m=>`<button class="pbtn" onclick="loadMathDetail('${escQ(m.name)}')">
+        ${m.name}<span class="pbtn-sub">${m.period} · ${m.country}</span>
+      </button>`).join('')}
     </div>`;
     addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
@@ -957,81 +757,47 @@ async function loadMathDetail(name){
   showTyping();
   try{
     const d=await(await fetch('/api/mathematician/'+encodeURIComponent(name))).json();hideTyping();
-    const resLinks=d.resources?d.resources.map(r=>`<a href="${r.split(': ')[1]}" target="_blank">${r.split(': ')[0]}</a>`).join(' · '):'';
-    const id='md-'+Date.now();
     const html=`<div class="qcard">
-      <div style="display:flex;gap:14px;align-items:flex-start">
-        <img src="${d.image}" style="width:70px;height:80px;object-fit:cover;border-radius:9px;border:1px solid var(--bor2);flex-shrink:0"
-             onerror="this.style.display='none'" loading="lazy"/>
+      <div style="display:flex;gap:10px;align-items:flex-start">
         <div style="min-width:0">
-          <div style="font-size:18px;font-weight:700;color:var(--txt)">${d.name}</div>
-          <div style="font-size:12px;color:var(--acc);font-family:var(--fM);margin:3px 0">${d.period} · ${d.country}</div>
-          <div style="font-size:11px;color:var(--acc2)">${(d.fields||[]).join(' · ')}</div>
+          <div style="font-size:16px;font-weight:700;color:var(--txt)">${escHtml(d.name)}</div>
+          <div style="font-size:11px;color:var(--acc)">${escHtml(d.period)}</div>
         </div>
       </div>
-      <div style="color:var(--txt2);font-size:13px;line-height:1.7;margin:8px 0" id="${id}-c">${escHtml(d.contribution)}</div>
-      <div class="thm-card">
-        <div class="thm-label">KEY RESULTS</div>
-        <div class="thm-text" id="${id}-k">${escHtml(d.keyresults)}</div>
-      </div>
-      <div style="background:var(--sur3);border-left:3px solid var(--acc2);padding:10px 13px;border-radius:0 8px 8px 0;font-style:italic;color:var(--txt2);font-size:13px">"${escHtml(d.quote)}"</div>
-      <div style="font-size:11px;color:var(--acc3)">🌍 ${escHtml(d.impact)}</div>
-      ${resLinks?`<div style="font-size:11px;color:var(--txt3);margin-top:4px">📚 ${resLinks}</div>`:''}
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadMathematicians()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Mathematicians</button>
-        <button class="qnext" onclick="askAboutMath('${escQ(d.name)}')">Ask AI about ${d.name.split(' ').pop()}</button>
+      <hr style="border-color:var(--bor);margin:8px 0"/>
+      <div style="font-size:13px;color:var(--txt2);line-height:1.7">${escHtml(d.contribution)}</div>
+      <div style="background:var(--sur3);padding:10px;border-radius:6px;border-left:3px solid var(--acc2);font-style:italic;color:var(--txt2);font-size:12px;margin:8px 0">"${escHtml(d.quote)}"</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="qnext" onclick="loadMathematicians()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
       </div>
     </div>`;
     addBotHTML(html);
-    setTimeout(()=>{[id+'-c',id+'-k'].forEach(i=>{const el=document.getElementById(i);if(el)renderMath(el);});},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
-function askAboutMath(name){mode='askanupam';document.getElementById('input').value=`Tell me deeply about ${name}'s mathematical contributions and how they impact modern mathematics`;sendMsg();}
 
-/* ══ PROJECTS EXPLORER ══════════════════════════ */
+/* ══ PROJECTS LOADER ════════════════════════════ */
 async function loadProjects(){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/projects')).json();hideTyping();
-    const diffs={'Advanced':'badge-hard','Intermediate':'badge-mid','Very Advanced':'badge-hard','Easy':'badge-easy'};
-    const html=`<div class="panel">
-      <div class="ptitle">🚀 Projects (${d.total})</div>
-      <div class="psubtitle">${d.source==='dynamic'?'Live AI curated projects':'Local projects'}</div>
-      ${d.projects.map(p=>`
-        <button class="pbtn" onclick="loadProjectDetail(${p.id})">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-            <span>${p.id}. ${p.title}</span>
-            <span class="thm-badge ${diffs[p.difficulty]||'badge-mid'}">${p.difficulty}</span>
-          </div>
-          <span class="pbtn-sub">${p.math.slice(0,3).join(' · ')}</span>
-          <span class="pbtn-sub" style="color:var(--green)">💰 ${p.salary.split('|')[0].trim()}</span>
-        </button>`).join('')}
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+  rmWelcome();
+  document.getElementById('chat').innerHTML='<div class="qcard"><div class="ptitle">🚀 Projects by Topic</div><div class="psubtitle">Enter a mathematics topic to find real-world projects</div><div style="margin:12px 0"><input type="text" id="proj-topic" class="graph-input" placeholder="e.g., Linear Algebra, Optimization, etc." style="width:100%"/><button class="graph-btn" onclick="loadProjectsByTopic()" style="margin-top:8px">Find Projects</button></div></div>';
 }
 
-async function loadProjectDetail(pid){
+async function loadProjectsByTopic(){
+  const topic=(document.getElementById('proj-topic')?.value||'').trim();
+  if(!topic){toast('Enter a topic','info');return;}
   showTyping();
   try{
-    const r=await api('/api/project/'+pid,{});hideTyping();
-    const p=r.project;const id='prj-'+Date.now();
-    addBotHTML(`<div class="panel">
-      <div class="ptitle">🚀 ${p.title}</div>
-      <div class="info-row"><span class="info-label">MATH TOPICS</span>${p.math.join(' · ')}</div>
-      <div class="info-row"><span class="info-label">DESCRIPTION</span>${escHtml(p.desc)}</div>
-      <div class="info-row"><span class="info-label">REAL-WORLD</span>${escHtml(p.real)}</div>
-      <div class="info-row"><span class="info-label">COMPANIES</span><span style="color:var(--acc2)">${escHtml(p.companies)}</span></div>
-      <div class="info-row"><span class="info-label">SALARIES</span><span style="color:var(--green)">${escHtml(p.salary||'N/A')}</span></div>
-      ${Array.isArray(p.links)&&p.links.length?`<div class="info-row"><span class="info-label">LINKS</span>${p.links.map(l=>`<a href="${escHtml((l.split(': ')[1]||'').trim())}" target="_blank">${escHtml((l.split(': ')[0]||l).trim())}</a>`).join(' · ')}</div>`:''}
-      <hr style="border-color:var(--bor);margin:8px 0"/>
-      <div style="font-size:12.5px;color:var(--txt2);line-height:1.8" id="${id}-exp">${fmt(r.explanation)}</div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadProjects()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Projects</button>
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}-exp').innerText)">📋 Copy</button>
-      </div>
-    </div>`);
-    setTimeout(()=>{const el=document.getElementById(`${id}-exp`);if(el)renderMath(el);},100);
+    const r=await api('/api/projects/topic',{topic});
+    hideTyping();
+    const html=`<div class="panel">
+      <div class="ptitle">🚀 Projects: ${escHtml(topic)}</div>
+      ${(r.projects||[]).map(p=>`<div class="pbtn" style="display:flex;flex-direction:column">
+        <span style="font-weight:600;color:var(--txt)">${escHtml(p.title)}</span>
+        <span class="pbtn-sub">${escHtml(p.math_used.join(' · '))}</span>
+        <span class="pbtn-sub" style="color:var(--acc3);margin-top:3px">💰 ${escHtml(p.salary||'Salary varies')}</span>
+        <span class="pbtn-sub">${escHtml(p.description)}</span>
+      </div>`).join('')}
+    </div>`;
+    addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
@@ -1041,8 +807,8 @@ async function loadTheorems(){
   try{
     const d=await(await fetch('/api/theorems')).json();hideTyping();
     const html=`<div class="panel">
-      <div class="ptitle">📐 Theorem Explorer (${d.total})</div>
-      <div class="psubtitle">Full statements, formal proofs, exam relevance, and applications</div>
+      <div class="ptitle">📐 Theorem Explorer (${d.theorems.length})</div>
+      <div class="psubtitle">Click theorem to view full proof and applications</div>
       ${d.theorems.map(t=>`<button class="pbtn" onclick="loadTheoremDetail('${escQ(t)}')">${t}</button>`).join('')}
     </div>`;
     addBotHTML(html);
@@ -1053,62 +819,46 @@ async function loadTheoremDetail(name){
   showTyping();
   try{
     const d=await(await fetch('/api/theorem/'+encodeURIComponent(name))).json();hideTyping();
-    const diff={'Basic':'badge-easy','Core':'badge-easy','Intermediate':'badge-mid','Advanced':'badge-hard','Hard':'badge-hard','Very Hard':'badge-hard'}[d.difficulty]||'badge-mid';
-    const ids={s:'s'+Date.now(),p:'p'+Date.now(),f:'f'+Date.now()};
+    const id='thm'+Date.now();
     const html=`<div class="panel">
-      <div class="ptitle">📐 ${d.name}</div>
-      <div style="margin-bottom:4px">
-        <span class="thm-badge ${diff}">${d.difficulty}</span>
-        <span class="thm-badge" style="background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);color:var(--acc3)">📋 ${d.exam_relevance||'Key theorem'}</span>
+      <div class="ptitle">📐 ${escHtml(d.name)}</div>
+      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc);margin:8px 0">
+        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Statement</div>
+        <div id="${id}s" style="font-size:13px;color:var(--txt);line-height:1.7">${escHtml(d.statement)}</div>
       </div>
-      <div class="thm-card"><div class="thm-label">STATEMENT</div><div class="thm-text" id="${ids.s}">${escHtml(d.statement)}</div></div>
-      <div class="thm-card"><div class="thm-label">PROOF SKETCH</div><div class="thm-text" id="${ids.p}">${escHtml(d.proof_sketch)}</div></div>
-      <div class="thm-card"><div class="thm-label">FORMAL PROOF</div><div class="thm-text" id="${ids.f}">${escHtml(d.formal_proof)}</div></div>
-      <div class="thm-card" style="border-color:rgba(0,212,168,.2)"><div class="thm-label">APPLICATIONS</div><div class="thm-text">${escHtml(d.applications)}</div></div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadTheorems()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Theorems</button>
-        <button class="qnext" onclick="askAboutTheorem('${escQ(d.name)}')">Ask AI to explain</button>
-        <button class="copy-btn" onclick="copyTxt('${escQ(d.name+':\\n'+d.statement+'\\n\\nProof: '+d.proof_sketch)}')">📋 Copy</button>
+      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc2);margin:8px 0">
+        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Proof Sketch</div>
+        <div id="${id}p" style="font-size:12px;color:var(--txt2);line-height:1.7">${escHtml(d.proof_sketch)}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="qnext" onclick="loadTheorems()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
       </div>
     </div>`;
     addBotHTML(html);
-    setTimeout(()=>{Object.values(ids).forEach(id=>{const el=document.getElementById(id);if(el)renderMath(el);});},100);
+    setTimeout(()=>{[`${id}s`,`${id}p`].forEach(i=>{const el=document.getElementById(i);if(el)renderMath(el);});},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
-function askAboutTheorem(name){mode='askanupam';document.getElementById('input').value=`Explain ${name} in depth with all details, intuition, proof, and real-world applications`;sendMsg();}
 
-/* ══ COMPETITION MATH ═══════════════════════════ */
+/* ══ COMPETITION ════════════════════════════════ */
 async function loadCompetition(cat){
-  setModeTitle(`🏆 Competition Math — ${cat}`);
+  setModeTitle(`🏆 ${cat} Problems`);
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
     const d=await(await fetch('/api/competition/'+cat)).json();hideTyping();
-    const tagBar=document.getElementById('tagsbar');
-    tagBar.innerHTML=['IMO','PUTNAM','AIME'].map(c=>
-      `<div class="tag" onclick="loadCompetition('${c}')" style="${cat===c?'border-color:var(--acc);color:var(--acc)':''}">${c}</div>`).join('');
-
     const html=`<div class="panel">
-      <div class="ptitle">🏆 ${cat} Problems (${d.total})</div>
-      <div class="psubtitle">
-        ${cat==='IMO'?'International Mathematical Olympiad — world\'s hardest math competition':
-          cat==='PUTNAM'?'William Lowell Putnam Examination — top US/Canada university math competition':
-          'American Invitational Mathematics Examination'}
-      </div>
+      <div class="ptitle">🏆 ${escHtml(d.category)} (${d.problems.length})</div>
       ${d.problems.map((p,i)=>{
-        const metaLine=p.session?`${p.year} ${p.session}`:p.number?`${p.year} Problem ${p.number}`:`Problem ${i+1}`;
-        const diffBadge={Hard:'badge-hard',Medium:'badge-mid','Very Hard':'badge-hard',Easy:'badge-easy'}[p.difficulty]||'badge-mid';
         const pid='cp'+i+Date.now();
-        return`<div class="comp-card">
-          <div class="comp-meta">${metaLine} · <span class="thm-badge ${diffBadge}">${p.difficulty}</span></div>
-          <div class="comp-prob" id="prob-${pid}">${escHtml(p.problem)}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-            <button class="hint-toggle" onclick="toggleHint('${pid}')">💡 Hint</button>
-            <button class="hint-toggle" onclick="toggleAns('${pid}')" style="color:var(--green);border-color:rgba(45,214,122,.3)">✅ Answer</button>
-            <button class="copy-btn" onclick="copyTxt(document.getElementById('prob-${pid}').innerText)">📋 Copy</button>
-            <button class="copy-btn" onclick="solveCompProblem('${escQ(p.problem)}')">🤖 AI Solve</button>
+        return`<div class="comp-card" style="background:var(--sur3);padding:12px;border-radius:8px;margin:6px 0;border-left:3px solid var(--acc2)">
+          <div style="font-size:12px;font-weight:600;color:var(--txt)">${escHtml((p.year||'') + ' ' + (p.session||p.number||''))}</div>
+          <div id="prob-${pid}" style="font-size:12px;color:var(--txt2);margin:6px 0;line-height:1.6">${escHtml(p.problem)}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <button class="hint-toggle" style="font-size:10px;padding:4px 10px;background:none;border:1px solid var(--bor);border-radius:5px;color:var(--txt3);cursor:pointer;transition:all .2s" onclick="toggleShow('hint-${pid}')">💡 Hint</button>
+            <button class="hint-toggle" style="font-size:10px;padding:4px 10px;background:none;border:1px solid rgba(45,214,122,.3);border-radius:5px;color:var(--green);cursor:pointer;transition:all .2s" onclick="toggleShow('ans-${pid}')">✅ Answer</button>
+            <button class="copy-btn" onclick="copyTxt(document.getElementById('prob-${pid}').innerText)">Copy</button>
           </div>
-          <div class="hint-box" id="hint-${pid}">${escHtml(p.hint)}</div>
-          <div class="ans-box"  id="ans-${pid}" >${escHtml(p.answer||'Work through the hint!')}</div>
+          <div id="hint-${pid}" style="background:rgba(247,195,79,.06);border:1px solid rgba(247,195,79,.2);border-radius:5px;padding:8px;margin:6px 0;font-size:11px;color:var(--txt2);display:none">${escHtml(p.hint||'Work through the problem step by step')}</div>
+          <div id="ans-${pid}" style="background:rgba(45,214,122,.06);border:1px solid rgba(45,214,122,.2);border-radius:5px;padding:8px;margin:6px 0;font-size:11px;color:var(--txt2);display:none">${escHtml(p.answer||'')}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -1117,161 +867,77 @@ async function loadCompetition(cat){
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-function toggleHint(pid){const h=document.getElementById('hint-'+pid);if(h){h.style.display=h.style.display==='none'?'block':'none';if(h.style.display==='block')renderMath(h);}}
-function toggleAns(pid){const a=document.getElementById('ans-'+pid);if(a){a.style.display=a.style.display==='none'?'block':'none';if(a.style.display==='block')renderMath(a);}}
-function solveCompProblem(prob){mode='askanupam';document.getElementById('input').value='Solve this competition problem with full solution:\n\n'+prob;sendMsg();}
+function toggleShow(id){const el=document.getElementById(id);if(el){el.style.display=el.style.display==='none'?'block':'none';if(el.style.display==='block')renderMath(el);}}
 
-/* ══ LEARNING PATHS ═════════════════════════════ */
-async function loadLearningPaths(){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/learning-paths')).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🎓 Learning Paths (${d.total})</div>
-      <div class="psubtitle">Complete roadmaps from undergraduate to research/industry with salary milestones</div>
-      ${d.paths.map(p=>`
-        <button class="pbtn" onclick="loadPathDetail('${escQ(p.name)}')">
-          ${p.name}
-          <span class="pbtn-sub">${escHtml(p.overview)}</span>
-        </button>`).join('')}
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-async function loadPathDetail(name){
-  showTyping();
-  try{
-    const d=await(await fetch('/api/learning-path/'+encodeURIComponent(name))).json();hideTyping();
-    const stagesHtml=(d.stages||[]).map((s,i)=>`
-      <div class="stage-card">
-        <div class="stage-name">Stage ${i+1}: ${escHtml(s.name)}</div>
-        <div class="stage-item">🎯 <strong>Goal:</strong> ${escHtml(s.goal)}</div>
-        <div class="stage-item">📚 <strong>Subjects:</strong> ${escHtml(s.subjects.join(' · '))}</div>
-        <div class="stage-item">💡 <strong>Tips:</strong> ${escHtml(s.tips)}</div>
-        <div class="stage-outcome">✅ ${escHtml(s.outcome)}</div>
-      </div>`).join('');
-    const html=`<div class="panel">
-      <div class="ptitle">🎓 ${escHtml(d.name)}</div>
-      <div style="font-size:12px;color:var(--txt2);margin:4px 0">${escHtml(d.overview)}</div>
-      <div style="font-size:12px;color:var(--txt3)">⏱ ${escHtml(d.total_time)}</div>
-      <div style="font-size:12.5px;color:var(--green);margin:4px 0">💰 ${escHtml(d.salary_journey)}</div>
-      ${stagesHtml}
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadLearningPaths()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Paths</button>
-        <button class="copy-btn" onclick="copySection('${escQ(d.name)}')">📋 Copy Path</button>
+/* ══ BOOKS FINDER ═══════════════════════════════ */
+function showBooksForm(){
+  rmWelcome();
+  document.getElementById('chat').innerHTML=`<div class="qcard">
+    <div class="ptitle">📚 Book Finder</div>
+    <div class="psubtitle">Find the best books by topic and level</div>
+    <div class="books-input-form">
+      <div class="input-group">
+        <label class="input-label">Topic</label>
+        <input type="text" id="book-topic" class="input-field" placeholder="e.g., Real Analysis, Linear Algebra"/>
       </div>
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-/* ══ REAL WORLD ═════════════════════════════════ */
-async function loadRealWorld(){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/realworld')).json();hideTyping();
-    const id='rw-'+Date.now();
-    const html=`<div class="panel">
-      <div class="ptitle">🌍 Real World Mathematics</div>
-      <div class="qcard">
-        <div style="font-size:11px;color:var(--acc);font-family:var(--fM)">CONCEPT</div>
-        <div style="font-size:18px;font-weight:700;color:var(--txt)">${escHtml(d.concept)}</div>
-        <div style="font-size:13px;font-weight:600;color:var(--acc2)">Application: ${escHtml(d.application)}</div>
-        <div style="color:var(--txt2);font-size:13px;line-height:1.7;margin:8px 0" id="${id}">${escHtml(d.explanation)}</div>
-        <div class="info-row"><span class="info-label">COMPANIES</span><span style="color:var(--acc2)">${escHtml(d.companies)}</span></div>
-        <div class="info-row"><span class="info-label">IMPACT</span>${escHtml(d.impact)}</div>
-        <div class="info-row"><span class="info-label">SALARY</span><span style="color:var(--green)">${escHtml(d.salary)}</span></div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="qnext" onclick="loadRealWorld()">Next Application →</button>
-          <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}').innerText)">📋 Copy</button>
-          <button class="qnext" onclick="askAboutRealWorld('${escQ(d.concept)}')" style="background:var(--acc2)">🤖 Ask AI</button>
-        </div>
+      <div class="input-group">
+        <label class="input-label">Level</label>
+        <select id="book-level" class="input-field">
+          <option value="beginner">Beginner</option>
+          <option value="undergraduate" selected>Undergraduate</option>
+          <option value="graduate">Graduate</option>
+          <option value="research">Research</option>
+        </select>
       </div>
-    </div>`;
-    addBotHTML(html);
-    setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},100);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-function askAboutRealWorld(concept){mode='askanupam';document.getElementById('input').value=`Explain in detail how ${concept} is used in the real world with full LaTeX mathematics.`;sendMsg();}
-
-/* ══ RESEARCH HUB ═══════════════════════════════ */
-async function loadResearchHub(){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/research-hub')).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🔬 Research Hub (${d.total_topics} Topics)</div>
-      <div class="psubtitle">Explore active research areas. Click to see all topics.</div>
-      ${d.categories.map(cat=>`
-        <button class="pbtn" onclick="loadResearchCat('${escQ(cat)}')">${cat}
-          <span class="pbtn-sub">Click to explore →</span>
-        </button>`).join('')}
-      <div style="margin-top:8px;padding:12px;background:var(--sur3);border-radius:8px;font-size:12px;color:var(--txt2)">
-        💡 Type any research question in the input below for a detailed AI explanation.
+      <div class="input-group">
+        <label class="input-label">Exam (optional)</label>
+        <select id="book-exam" class="input-field">
+          <option value="">Any</option>
+          <option value="JAM">JAM</option>
+          <option value="GATE">GATE</option>
+          <option value="CSIR">CSIR</option>
+        </select>
       </div>
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+      <button class="books-search-btn" onclick="searchBooks()">Search Books</button>
+    </div>
+    <div id="book-results"></div>
+  </div>`;
 }
 
-async function loadResearchCat(cat){
-  showTyping();
+async function searchBooks(){
+  const topic=(document.getElementById('book-topic')?.value||'').trim();
+  if(!topic){toast('Enter a topic','info');return;}
+  const level=document.getElementById('book-level')?.value||'undergraduate';
+  const exam=document.getElementById('book-exam')?.value||'';
+  const results=document.getElementById('book-results');
+  results.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:12px">Searching...</div>';
   try{
-    const d=await(await fetch('/api/research-hub/'+encodeURIComponent(cat))).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🔬 ${escHtml(d.category)} (${d.total} Topics)</div>
-      ${d.topics.map((t,i)=>`
-        <button class="pbtn" onclick="askResearchTopic('${escQ(t)}')">${i+1}. ${escHtml(t)}
-          <span class="pbtn-sub">Click to explore with AI →</span>
-        </button>`).join('')}
-      <button class="qnext" onclick="loadResearchHub()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor);margin-top:4px">← All Categories</button>
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-function askResearchTopic(t){mode='research';document.getElementById('input').value='Tell me about research in: '+t;sendMsg();}
-
-/* ══ EXAM INFO ══════════════════════════════════ */
-async function showExam(exam){
-  setModeTitle('🎓 Exam Info — '+exam);
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/exam/'+exam)).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🎓 ${escHtml(d.full_name)}</div>
-      <div class="qcard">
-        <div class="info-row"><span class="info-label">BODY</span>${escHtml(d.conducting_body)}</div>
-        <div class="info-row"><span class="info-label">ELIGIBILITY</span>${escHtml(d.eligibility)}</div>
-        <div class="info-row"><span class="info-label">PATTERN</span><span style="white-space:pre-line">${escHtml(d.pattern)}</span></div>
-        <div class="info-row"><span class="info-label">SYLLABUS</span>${escHtml(d.syllabus)}</div>
-        <div class="info-row"><span class="info-label">WEIGHTAGE</span>${escHtml(d.weightage)}</div>
-        <div><div class="info-label" style="display:block;margin-bottom:5px">TOP BOOKS</div>
-          ${(d.top_books||[]).map(b=>`<div style="font-size:12px;color:var(--txt2);padding:2px 0">📖 ${escHtml(b)}</div>`).join('')}
-        </div>
-        <div style="background:rgba(0,212,168,.06);border:1px solid rgba(0,212,168,.2);border-radius:8px;padding:10px;font-size:12.5px;color:var(--txt2)">
-          💡 <strong style="color:var(--acc3)">Strategy:</strong> ${escHtml(d.strategy||'')}
-        </div>
-        <a href="${d.website}" target="_blank" style="color:var(--acc);font-size:13px">🔗 ${d.website}</a>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="qnext" onclick="loadPYQ('${exam}')">📜 View PYQs</button>
-          <button class="qnext" onclick="startMock('${exam}')" style="background:var(--acc2)">🧪 Mock Test</button>
-        </div>
-      </div>
-    </div>`;
-    addBotHTML(html);
-    document.getElementById('sidebar').classList.remove('open');
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+    const r=await api('/api/books',{topic,level,exam});
+    if(!r.books||r.books.length===0){
+      results.innerHTML='<div style="color:var(--txt2);font-size:12px;padding:12px">No books found for this topic. Try another search.</div>';
+      return;
+    }
+    let html='';
+    r.books.forEach(b=>{
+      html+=`<div class="book-card">
+        <div class="book-title">${escHtml(b.name||b.title||'Unknown')}</div>
+        <div class="book-author">${escHtml(b.author||'Unknown Author')}</div>
+        ${b.level?`<div class="book-level">${escHtml(b.level)}</div>`:''}
+        <div class="book-why">${escHtml(b.why||'')}</div>
+        ${b.search_term?`<a href="https://www.google.com/search?q=${encodeURIComponent(b.search_term)}" target="_blank" class="book-search">🔍 Find Online</a>`:''}
+      </div>`;
+    });
+    results.innerHTML=html;
+  }catch(e){results.innerHTML=`<div style="color:var(--red);font-size:12px;padding:12px">Error: ${e.message}</div>`;}
 }
 
 /* ══ QUIZ ════════════════════════════════════════ */
 function showQuizTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
-  const topics=['Calculus','Linear Algebra','Real Analysis','Abstract Algebra',
-                'Probability','Number Theory','Complex Analysis','Statistics'];
+  const topics=['Calculus','Linear Algebra','Real Analysis','Complex Analysis','Abstract Algebra','Probability'];
   addBotHTML(`<div class="panel">
     <div class="ptitle">📝 Quiz Mode</div>
-    <div class="psubtitle">5 questions · Immediate feedback · Step-by-step explanations</div>
+    <div class="psubtitle">5 questions · Immediate feedback · Complete explanations</div>
     <div class="pgrid">${topics.map(t=>`<button class="pbtn" onclick="startQuiz('${t}')">${t}</button>`).join('')}</div>
   </div>`);
 }
@@ -1279,7 +945,7 @@ function showQuizTopics(){
 async function startQuiz(topic){
   document.getElementById('chat').innerHTML='';
   quizState={topic,q:0,total:5,score:0};
-  addMsg('bot',`📝 Starting ${topic} Quiz — 5 questions! Let's go! 🚀`);
+  addMsg('bot',`📝 Starting ${topic} Quiz — 5 questions!`);
   await nextQuizQ();
 }
 
@@ -1288,32 +954,28 @@ async function nextQuizQ(){
   try{
     const r=await api('/api/quiz/question',{topic:quizState.topic,difficulty:'medium',q_num:quizState.q+1,total:quizState.total});
     hideTyping();quizState.q++;quizState.curAns=r.answer;quizState.curExpl=r.explanation;
-    renderQuizCard(r.question,r.answer,r.explanation);
+    const lines=r.question.split('\n').filter(l=>l.trim());
+    const qLine=lines.find(l=>l.startsWith('Q:'))||lines[0]||'';
+    const opts=lines.filter(l=>/^[A-D]\)/.test(l.trim()));
+    const id='qz'+Date.now();
+    const html=`<div class="qcard" id="${id}">
+      <div class="psubtitle">Q ${quizState.q}/${quizState.total} · ${quizState.topic}</div>
+      <div class="qprog"><div class="qbar" style="width:${(quizState.q/quizState.total)*100}%"></div></div>
+      <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
+      <div class="qopts">${opts.map(o=>{
+        const let_=o.trim()[0],txt=o.trim().slice(2).trim();
+        return`<button class="qopt" id="${id}${let_}" onclick="pickAns('${id}','${let_}','${quizState.curAns}')" data-l="${let_}">
+          <span class="qletter">${let_}</span><span id="${id}opt${let_}">${escHtml(txt)}</span></button>`;
+      }).join('')}</div>
+      <div class="qexpl" id="${id}ex"></div>
+      <div class="qfooter">
+        <span style="font-size:10px;color:var(--txt3)">Score: <strong id="${id}sc">${quizState.score}</strong>/${quizState.q-1}</span>
+        <button class="qnext" id="${id}nx" style="display:none" onclick="quizNext('${id}')">${quizState.q>=quizState.total?'See Result →':'Next →'}</button>
+      </div>
+    </div>`;
+    addBotHTML(html);
+    setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},120);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-function renderQuizCard(question,answer,explanation){
-  const lines=question.split('\n').filter(l=>l.trim());
-  const qLine=lines.find(l=>l.startsWith('Q:'))||lines[0]||'';
-  const opts=lines.filter(l=>/^[A-D]\)/.test(l.trim()));
-  const id='qz'+Date.now();
-  const html=`<div class="qcard" id="${id}">
-    <div class="psubtitle">Q ${quizState.q}/${quizState.total} · ${quizState.topic}</div>
-    <div class="qprog"><div class="qbar" style="width:${(quizState.q/quizState.total)*100}%"></div></div>
-    <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
-    <div class="qopts">${opts.map(o=>{
-      const let_=o.trim()[0],txt=o.trim().slice(2).trim();
-      return`<button class="qopt" id="${id}${let_}" onclick="pickAns('${id}','${let_}','${answer}')" data-l="${let_}">
-        <span class="qletter">${let_}</span><span id="${id}opt${let_}">${escHtml(txt)}</span></button>`;
-    }).join('')}</div>
-    <div class="qexpl" id="${id}ex"></div>
-    <div class="qfooter">
-      <span style="font-size:11px;color:var(--txt3);font-family:var(--fM)">Score: <span id="${id}sc">${quizState.score}</span>/${quizState.q-1}</span>
-      <button class="qnext" id="${id}nx" style="display:none" onclick="quizNext('${id}')">${quizState.q>=quizState.total?'See Result →':'Next →'}</button>
-    </div>
-  </div>`;
-  addBotHTML(html);
-  setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},120);
 }
 
 function pickAns(id,chosen,correct){
@@ -1321,23 +983,23 @@ function pickAns(id,chosen,correct){
     if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
   const ok=chosen===correct;if(ok)quizState.score++;
   const ex=document.getElementById(id+'ex');
-  if(ex){ex.style.display='block';ex.innerHTML=(ok?'✅ Correct! Bohot achha! ':'❌ Wrong. Answer: '+correct+'. ')+escHtml(quizState.curExpl||'');renderMath(ex);}
+  if(ex){ex.style.display='block';ex.innerHTML=(ok?'✅ Correct! ':'❌ Incorrect. Answer: '+correct+'. ')+escHtml(quizState.curExpl||'');renderMath(ex);}
   const sc=document.getElementById(id+'sc');if(sc)sc.textContent=quizState.score;
   document.getElementById(id+'nx').style.display='block';
 }
 async function quizNext(id){document.getElementById(id+'nx').style.display='none';if(quizState.q>=quizState.total)showQuizResult();else await nextQuizQ();}
 function showQuizResult(){
   const s=quizState.score,t=quizState.total,pct=Math.round(s/t*100);
-  const msg=pct===100?'Perfect! Ekdum zabardast! 🏆':pct>=80?'Bahut achha! Excellent! 🌟':pct>=60?'Achha kiya! Keep going! 💪':'Aur practice karo! 📚';
-  const stars='⭐'.repeat(Math.min(s,5))+'☆'.repeat(5-Math.min(s,5));
-  addBotHTML(`<div class="result-card">
-    <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">📝 Quiz Complete — ${quizState.topic}</div>
-    <div class="result-score">${s}/${t}</div>
-    <div style="font-size:24px;margin:8px 0">${stars}</div>
-    <div style="font-size:14px;color:var(--txt2);margin-bottom:16px">${pct}% · ${msg}</div>
-    <button class="qnext" onclick="startQuiz('${quizState.topic}')">Try Again</button>
-    &nbsp;&nbsp;
-    <button class="qnext" onclick="showQuizTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Topic</button>
+  const msg=pct===100?'Perfect! Absolutely fantastic! 🏆':pct>=80?'Excellent! 🌟':pct>=60?'Good! Keep practicing! 💪':'Practice more! 📚';
+  addBotHTML(`<div class="result-card" style="background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:24px;text-align:center">
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">📝 ${quizState.topic} Quiz Complete</div>
+    <div style="font-size:48px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s}/${t}</div>
+    <div style="font-size:18px;margin:8px 0">${'⭐'.repeat(Math.min(s,5))}</div>
+    <div style="font-size:14px;color:var(--txt2);margin:12px 0">${pct}% — ${msg}</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <button class="qnext" onclick="startQuiz('${quizState.topic}')">Try Again</button>
+      <button class="qnext" onclick="showQuizTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Topic</button>
+    </div>
   </div>`);
   quizState=null;
 }
@@ -1346,27 +1008,26 @@ function showQuizResult(){
 function showMockTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   addBotHTML(`<div class="panel">
-    <div class="ptitle">🧪 Mock Test — 30 Questions</div>
-    <div class="psubtitle">Full-length exam simulation with feedback after each question</div>
-    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock Test (30 Questions)</button>`).join('')}
+    <div class="ptitle">🧪 Mock Test</div>
+    <div class="psubtitle">Full 30-question exam simulation</div>
+    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock Test</button>`).join('')}
   </div>`);
 }
 
 async function startMock(exam){
   document.getElementById('chat').innerHTML='';
   mockState={exam,q:0,total:30,score:0,topics:[]};
-  addMsg('bot',`🧪 ${exam} Mock Test started! 30 Questions. Type STOP to end.`);
+  addMsg('bot',`🧪 ${exam} Mock Test started! 30 Questions. Type STOP to quit.`);
   await nextMockQ();
 }
 
-function getMockTopic(exam){
-  const topics={JAM:['Real Analysis','Linear Algebra','Calculus','Group Theory','Complex Analysis','Probability'],GATE:['Calculus','Linear Algebra','Complex Analysis','PDE','ODE','Numerical Analysis'],CSIR:['Real Analysis','Topology','Abstract Algebra','Functional Analysis','Complex Analysis']};
-  const list=topics[exam]||topics['JAM'];
-  return list[Math.floor(Math.random()*list.length)];
-}
-
 async function nextMockQ(){
-  const topic=getMockTopic(mockState.exam);mockState.curTopic=topic;
+  const topics={JAM:['Real Analysis','Linear Algebra','Calculus','Group Theory','Complex Analysis'],
+                GATE:['Calculus','Linear Algebra','Complex Analysis','PDE','ODE'],
+                CSIR:['Real Analysis','Topology','Abstract Algebra','Complex Analysis']};
+  const topicList=topics[mockState.exam]||topics['JAM'];
+  const topic=topicList[Math.floor(Math.random()*topicList.length)];
+  mockState.curTopic=topic;
   showTyping();
   try{
     const r=await api('/api/quiz/question',{topic,difficulty:'hard',q_num:mockState.q+1,total:mockState.total});
@@ -1375,26 +1036,26 @@ async function nextMockQ(){
     const qLine=lines.find(l=>l.startsWith('Q:'))||lines[0]||'';
     const opts=lines.filter(l=>/^[A-D]\)/.test(l.trim()));
     const id='mk'+Date.now();
-    const html=`<div class="qcard" id="${id}">
-      <div class="psubtitle">${mockState.exam} Mock · Q${mockState.q}/${mockState.total} · ${topic} | Score: <span id="${id}sc">${mockState.score}</span></div>
-      <div class="qprog"><div class="qbar" style="width:${(mockState.q/mockState.total)*100}%"></div></div>
-      <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
+    const html=`<div class="mock-question-wrap" id="${id}">
+      <div class="mock-meta">
+        <span>${mockState.exam} Mock · Q${mockState.q}/${mockState.total}</span>
+        <span>Score: <strong>${mockState.score}</strong> | Topic: ${topic}</span>
+      </div>
+      <div class="mock-progress"><div class="mock-progress-bar" style="width:${(mockState.q/mockState.total)*100}%"></div></div>
+      <div class="mock-question-text" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
       <div class="qopts">${opts.map(o=>{const l=o.trim()[0],t=o.trim().slice(2).trim();
         return`<button class="qopt" id="${id}${l}" onclick="pickMock('${id}','${l}')" data-l="${l}">
           <span class="qletter">${l}</span><span>${escHtml(t)}</span></button>`;
       }).join('')}</div>
-      <div class="qexpl" id="${id}ex" style="display:none"></div>
-      <div class="qfooter">
-        <span style="font-size:11px;color:var(--txt3);font-family:var(--fM)">Type STOP in chat to end</span>
-        <div style="display:flex;gap:8px">
-          <button class="qnext" id="${id}sol" style="display:none;background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)" onclick="showMockSolution('${id}')">Solution</button>
-          <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'See Result →':'Next →'}</button>
-        </div>
+      <div class="solution-box" id="${id}sol"></div>
+      <div class="mock-action-btns">
+        <button class="mock-solve-btn" id="${id}sbtn" onclick="showMockSolution('${id}')" style="display:none">🤖 AI Solution</button>
+        <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'See Result →':'Next →'}</button>
       </div>
     </div>`;
     addBotHTML(html);
     setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},120);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error. '+e.message,true);}
+  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
 function pickMock(id,chosen){
@@ -1403,35 +1064,50 @@ function pickMock(id,chosen){
   ['A','B','C','D'].forEach(l=>{const b=document.getElementById(id+l);if(b){b.disabled=true;
     if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
   const ok=chosen===correct;if(ok)mockState.score++;else mockState.topics.push(mockState.curTopic);
-  const sc=document.getElementById(id+'sc');if(sc)sc.textContent=mockState.score;
-  document.getElementById(id+'sol').style.display='inline-flex';
+  document.getElementById(id+'sbtn').style.display='inline-flex';
   document.getElementById(id+'nx').style.display='inline-flex';
 }
-function showMockSolution(id){const ex=document.getElementById(id+'ex');if(ex){ex.style.display='block';ex.innerHTML=fmt(mockState.curExpl||'');renderMath(ex);}}
+
+async function showMockSolution(id){
+  const box=document.getElementById(id+'sol');
+  const btn=document.getElementById(id+'sbtn');
+  if(box.classList.contains('show')){box.classList.remove('show');btn.textContent='🤖 AI Solution';}else{
+    box.classList.add('show');btn.textContent='Hide Solution';
+    if(!box.innerHTML){
+      box.innerHTML='<div style="color:var(--txt3);font-size:11px">Generating solution...</div>';
+      try{
+        const r=await api('/api/solve-question',{question:document.getElementById(id+'q')?.innerText||''});
+        box.innerHTML=fmt(r.solution);
+        renderMath(box);
+      }catch(e){box.innerHTML='<div style="color:var(--red)">Error generating solution</div>';}
+    }
+  }
+}
+
 async function mockNext(id){document.getElementById(id+'nx').style.display='none';if(mockState.q>=mockState.total)showMockResult();else await nextMockQ();}
+
 function showMockResult(){
   const s=mockState.score,t=mockState.total,pct=Math.round(s/t*100);
-  const grade=pct>=80?'Outstanding! 🏆':pct>=60?'Achha kiya! 💪':'Aur mehnat karo! 📚';
-  const weak=[...new Set(mockState.topics)].slice(0,4).join(', ')||'None — perfect!';
-  addBotHTML(`<div class="result-card">
-    <div style="font-size:13px;color:var(--txt2);margin-bottom:4px">🧪 ${mockState.exam} Mock Test Complete</div>
-    <div class="result-score">${s}/${t}</div>
-    <div style="font-size:20px;margin:6px 0">${pct}%</div>
-    <div style="font-size:14px;color:var(--txt2);margin-bottom:10px">${grade}</div>
-    ${weak!=='None — perfect!'?`<div style="font-size:12px;color:var(--txt2);background:var(--sur3);padding:10px;border-radius:8px;margin-bottom:12px">⚠️ Revise: ${weak}</div>`:''}
-    <button class="qnext" onclick="startMock('${mockState.exam}')">Retry</button>
-    &nbsp;&nbsp;
-    <button class="qnext" onclick="showMockTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Exam</button>
+  const weak=[...new Set(mockState.topics)].slice(0,3).join(', ')||'None';
+  addBotHTML(`<div class="result-card" style="background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:24px;text-align:center">
+    <div style="font-size:12px;color:var(--txt2)">🧪 ${mockState.exam} Mock Test Complete</div>
+    <div style="font-size:48px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0">${s}/${t}</div>
+    <div style="font-size:16px;color:var(--txt2)">${pct}%</div>
+    ${weak!=='None'?`<div style="background:rgba(232,64,64,.08);border-left:3px solid var(--red);padding:10px;border-radius:5px;margin:12px 0;font-size:11px;color:var(--txt2);text-align:left"><strong>Revise these topics:</strong><br>${weak}</div>`:''}
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <button class="qnext" onclick="startMock('${mockState.exam}')">Retry</button>
+      <button class="qnext" onclick="showMockTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Exam</button>
+    </div>
   </div>`);
   mockState=null;
 }
 
-/* ══ PYQ ════════════════════════════════════════ */
+/* ══ PYQ ────────────────────────────────────────  */
 function showPYQTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   addBotHTML(`<div class="panel">
     <div class="ptitle">📜 Previous Year Questions</div>
-    <div class="psubtitle">AI-generated realistic PYQs with complete solutions</div>
+    <div class="psubtitle">Real exam questions with complete solutions</div>
     ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="loadPYQ('${e}')">🎓 ${e} PYQs</button>`).join('')}
   </div>`);
 }
@@ -1442,13 +1118,18 @@ async function loadPYQ(exam){
     const d=await(await fetch('/api/pyq?exam='+exam)).json();hideTyping();
     const qid='pq'+Date.now();const aid='pa'+Date.now();
     const html=`<div class="qcard">
-      <div class="psubtitle">📜 ${exam} · ~${d.year} · ${escHtml(d.topic)}</div>
-      <div class="thm-card"><div class="thm-label">QUESTION</div><div class="thm-text" id="${qid}">${escHtml(d.q)}</div></div>
-      <div class="thm-card" style="border-color:rgba(45,214,122,.2)"><div class="thm-label" style="color:var(--green)">SOLUTION</div><div class="thm-text" id="${aid}">${escHtml(d.a)}</div></div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <div class="psubtitle">📜 ${exam} · ${escHtml(d.topic)}</div>
+      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc);margin:8px 0">
+        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-bottom:4px">Question</div>
+        <div id="${qid}" style="font-size:12px;color:var(--txt);line-height:1.7">${escHtml(d.q)}</div>
+      </div>
+      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--green);margin:8px 0">
+        <div style="font-size:10px;color:var(--green);text-transform:uppercase;margin-bottom:4px">Solution</div>
+        <div id="${aid}" style="font-size:12px;color:var(--txt2);line-height:1.7">${escHtml(d.a)}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="qnext" onclick="loadPYQ('${exam}')">Next Question →</button>
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${qid}').innerText+'\\n\\nSolution:\\n'+document.getElementById('${aid}').innerText)">📋 Copy Q+A</button>
-        <button class="save-btn" onclick="saveBm('${exam} PYQ',document.getElementById('${qid}').innerText+'\\n\\nSolution:\\n'+document.getElementById('${aid}').innerText)">🔖 Save</button>
+        <button class="copy-btn" onclick="copyTxt(document.getElementById('${qid}').innerText+'\\n\\nSolution:\\n'+document.getElementById('${aid}').innerText)">Copy Q+A</button>
       </div>
     </div>`;
     addBotHTML(html);
@@ -1456,128 +1137,47 @@ async function loadPYQ(exam){
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ CHALLENGE ══════════════════════════════════ */
-async function loadChallenge(){
+/* ══ EXAM INFO ══════════════════════════════════ */
+async function showExam(exam){
+  setModeTitle(`🎓 ${exam}`);
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await(await fetch('/api/challenge')).json();hideTyping();
-    const cid='ch'+Date.now();
-    addBotHTML(`<div class="qcard">
-      <div class="ptitle">🧩 Aaj Ka Challenge!</div>
-      <div class="thm-card"><div class="thm-text" id="${cid}">${escHtml(d.challenge)}</div></div>
-      <div style="font-size:12px;color:var(--txt3);margin:4px 0">Type your solution in the chat below. Use the Answer Verifier to check it! ✅</div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadChallenge()">New Challenge</button>
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${cid}').innerText)">📋 Copy</button>
-        <button class="save-btn" onclick="saveBm('Daily Challenge',document.getElementById('${cid}').innerText)">🔖 Save</button>
-        <button class="qnext" onclick="setMode('verifier');document.getElementById('vrf-problem')&&(document.getElementById('vrf-problem').value=document.getElementById('${cid}').innerText)" style="background:rgba(0,212,168,.15);color:var(--acc3);border:1px solid rgba(0,212,168,.3);box-shadow:none">✅ Verify Answer</button>
-      </div>
-    </div>`);
-    setTimeout(()=>{const el=document.getElementById(cid);if(el)renderMath(el);},100);
-    mode='askanupam';
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-/* ══ BOOKS ══════════════════════════════════════ */
-async function loadBooks(topic='Mathematics',exam=''){
-  rmWelcome();showTyping();
-  try{
-    const r=await api('/api/books',{topic,exam});hideTyping();
-    if(!r.books||!r.books.length){addBotHTML(`<div class="qcard"><div class="ptitle">📚 Books</div><div style="color:var(--txt2)">No books found. Try another topic.</div></div>`);return;}
+    const d=await(await fetch('/api/exam/'+exam)).json();hideTyping();
     const html=`<div class="panel">
-      <div class="ptitle">📚 Books (${r.total})</div>
-      <div class="psubtitle">${escHtml(topic)} ${exam?'· '+escHtml(exam):''}</div>
-      ${r.books.map((b,i)=>`<div class="qcard" style="margin-bottom:8px">
-        <div style="font-weight:700;color:var(--txt)">${i+1}. ${escHtml(b.name||'Unknown')}</div>
-        <div style="font-size:12px;color:var(--acc2)">${escHtml(b.author||'')}${b.level?' · '+escHtml(b.level):''}</div>
-        <div style="font-size:12px;color:var(--txt2);margin-top:4px">${escHtml(b.why||'')}</div>
-        <a href="${escHtml(b.link||'#')}" target="_blank" style="font-size:12px;color:var(--acc)">🔗 Open Link</a>
-      </div>`).join('')}
+      <div class="ptitle">🎓 ${escHtml(d.full_name)}</div>
+      <div class="qcard">
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+          <div><strong>Eligibility:</strong> ${escHtml(d.eligibility)}</div>
+          <div><strong>Pattern:</strong> ${escHtml(d.pattern).replace(/\n/g,'<br>')}</div>
+          <div><strong>Syllabus:</strong> ${escHtml(d.syllabus)}</div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--sur3);border-radius:6px;font-size:11px;color:var(--txt2)">
+          <strong>📚 Top Books:</strong><br>${(d.top_books||[]).map(b=>'• '+escHtml(b)).join('<br>')}
+        </div>
+        <a href="${d.website}" target="_blank" style="color:var(--acc);font-size:12px;margin-top:10px;display:inline-block">🔗 Official Website</a>
+      </div>
     </div>`;
     addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ BOOKMARKS ══════════════════════════════════ */
-function showBookmarks(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  if(!bookmarks.length){
-    addBotHTML(`<div class="qcard"><div class="ptitle">🔖 My Bookmarks</div>
-      <div style="color:var(--txt2);font-size:13px;margin-top:8px">No bookmarks yet!<br>Click 🔖 Save on any response to save it here.</div>
-    </div>`);return;
-  }
-  let html=`<div class="panel"><div class="ptitle">🔖 My Bookmarks (${bookmarks.length})</div>`;
-  [...bookmarks].reverse().forEach((b,ri)=>{
-    const i=bookmarks.length-1-ri;
-    html+=`<div class="bm-item">
-      <div class="bm-topic">${escHtml(b.topic)} · ${escHtml(b.date)}</div>
-      <div class="bm-content">${escHtml(b.content.substring(0,280))}${b.content.length>280?'...':''}</div>
-      <div style="display:flex;gap:8px;margin-top:6px">
-        <button class="copy-btn" onclick="copyTxt('${escQ(b.content)}')">📋 Copy</button>
-        <button class="bm-del" onclick="delBm(${i})">🗑 Delete</button>
-      </div>
-    </div>`;
-  });
-  html+=`<button class="qnext" onclick="clrBm()" style="background:var(--red);margin-top:6px;font-size:12px;padding:6px 14px">Clear All</button></div>`;
-  addBotHTML(html);
-}
-function saveBm(topic,content){
-  bookmarks.push({topic,content,date:new Date().toLocaleDateString()});
-  if(bookmarks.length>40)bookmarks.shift();
-  localStorage.setItem('ms_bm',JSON.stringify(bookmarks));
-  toast('🔖 Saved!','ok');
-}
-function delBm(i){bookmarks.splice(i,1);localStorage.setItem('ms_bm',JSON.stringify(bookmarks));showBookmarks();}
-function clrBm(){if(confirm('Delete all bookmarks?')){bookmarks=[];localStorage.setItem('ms_bm','[]');showBookmarks();}}
-
-/* ══ COPY ═══════════════════════════════════════ */
-function copyTxt(text){
-  navigator.clipboard.writeText(text).then(()=>toast('📋 Copied!','ok')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');toast('📋 Copied!','ok');}catch(e){toast('Copy failed','info');}
-    document.body.removeChild(ta);
-  });
-}
-function copySection(title){
-  const nodes=document.querySelectorAll('.stage-card');
-  let text=title+'\n\n';nodes.forEach(n=>text+=n.innerText+'\n\n');
-  copyTxt(text||title);
-}
-function toast(msg,type='ok'){
-  const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.body.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);
-}
-
-/* ══ CONFIDENCE BADGE ═══════════════════════════ */
-function makeBadge(confidence){
-  if(!confidence||confidence==='HIGH')
-    return`<span class="vbadge verified" title="SymPy verified or AI high-confidence">✓ HIGH CONFIDENCE</span>`;
-  if(confidence==='MEDIUM')
-    return`<span class="vbadge medium" title="Standard result, verify if critical">⚠ MEDIUM CONFIDENCE</span>`;
-  return`<span class="vbadge low" title="Complex problem — please verify independently">⚠ LOW CONFIDENCE</span>`;
-}
-
 /* ══ DOM HELPERS ════════════════════════════════ */
-function addMsg(role,text,isErr=false,confidence=null){
+function addMsg(role,text,isErr=false){
   rmWelcome();
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className=`msg ${role}`;
   const avHtml=role==='user'
     ?'<div class="avatar" style="font-size:16px">👤</div>'
-    :`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML=\'🧮\'"/></div>`;
+    :'<div class="avatar">🧮</div>';
   div.innerHTML=avHtml+`<div class="bubble"></div>`;
   const bubble=div.querySelector('.bubble');
   bubble.innerHTML=fmt(text);
 
   if(role==='bot'&&!isErr){
     const cw=document.createElement('div');cw.className='copy-wrap';
-    if(confidence){
-      const badge=document.createElement('span');badge.innerHTML=makeBadge(confidence);cw.appendChild(badge.firstChild);
-    }
     const cb=document.createElement('button');cb.className='copy-btn';cb.textContent='📋 Copy';
     cb.onclick=()=>copyTxt(text);
     const sb=document.createElement('button');sb.className='save-btn';sb.textContent='🔖 Save';
-    sb.onclick=()=>saveBm(MODE_CFG[mode]?.title||mode,text);
     cw.appendChild(cb);cw.appendChild(sb);bubble.appendChild(cw);
   }
 
@@ -1594,7 +1194,7 @@ function addBotHTML(html){
   rmWelcome();
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='msg bot';
-  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML=\'🧮\'"/></div><div class="bubble">${html}</div>`;
+  div.innerHTML=`<div class="avatar">🧮</div><div class="bubble">${html}</div>`;
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
   div.querySelectorAll('pre').forEach(pre=>{
     const cb=document.createElement('button');cb.className='pre-copy';cb.textContent='Copy';
@@ -1606,7 +1206,7 @@ function showTyping(){
   busy=true;document.getElementById('send-btn').disabled=true;
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='msg bot';div.id='typing-ind';
-  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML=\'🧮\'"/></div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  div.innerHTML=`<div class="avatar">🧮</div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
 }
 function hideTyping(){
@@ -1655,6 +1255,18 @@ async function api(url,data){
   return r.json();
 }
 
+function copyTxt(text){
+  navigator.clipboard.writeText(text).then(()=>toast('📋 Copied!','ok')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast('📋 Copied!','ok');}catch(e){toast('Copy failed','info');}
+    document.body.removeChild(ta);
+  });
+}
+function toast(msg,type='ok'){
+  const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);
+}
+
 /* ══ IMAGE UPLOAD ══════════════════════════════ */
 function handleImg(e){
   const file=e.target.files[0];if(!file)return;
@@ -1695,6 +1307,11 @@ function toggleTheme(){
   localStorage.setItem('ms_theme',nowLight?'light':'dark');
   const b=document.getElementById('theme-btn');
   if(b)b.textContent=nowLight?'☀️ Light':'🌙 Dark';
+}
+
+function formatGraphData(r){
+  if(!r||typeof r!=='object')return 'Graph data not available';
+  return `Graph plotted successfully. ${r.latex?'Function: '+r.latex:''}`;
 }
 </script>
 </body>
