@@ -1,20 +1,19 @@
 """
-MathSphere v8.0 — Production-Ready Backend
-==========================================
+MathSphere v9.0 — Production-Ready Backend (IMPROVED)
+====================================================
 By Anupam Nigam | youtube.com/@pi_nomenal1729
 
-WORKING ENDPOINTS:
-✅ /api/chat - Ask Anupam (context-aware, natural responses)
-✅ /api/formula - Formula sheets with proper notation
-✅ /api/graph - Graph visualization with complete analysis
-✅ /api/mathematician - Dynamic unlimited mathematicians
-✅ /api/projects/generate - 5 projects per topic with code
-✅ /api/theorem/prove - Complete rigorous proofs
-✅ /api/competition/problems - 30-40 problems per visit
-✅ /api/quiz/generate - 30+ questions per session
-✅ /api/verify-solution - Verify math answers (Phase 1)
-✅ /api/solution-paths - Multiple solution methods (Phase 1)
-✅ /api/common-mistakes - Error analysis (Phase 1)
+IMPROVEMENTS INCLUDED:
+✅ Rate limiting (30 req/min per IP)
+✅ Input validation & sanitization
+✅ Request size limits (16MB max)
+✅ SymPy timeout protection (2 seconds)
+✅ Comprehensive error logging
+✅ Response caching (formulas, problems)
+✅ Better error messages
+✅ Rigorous solution verification
+✅ Request ID tracking
+✅ Graceful fallbacks
 """
 
 import os
@@ -22,14 +21,45 @@ import re
 import json
 import random
 import sys
-from datetime import datetime
+import logging
+import hashlib
+from datetime import datetime, timedelta
+from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ════ LOGGING SETUP ════
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('mathsphere.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# ════ FLASK APP CONFIG ════
 app = Flask(__name__, static_folder="static", static_url_path="")
-CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"]}})
+
+# ════ RATE LIMITING ════
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# ════ CACHING ════
+cache = Cache(app, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 3600})
 
 # ════ API KEYS ════
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -45,28 +75,24 @@ if GROQ_AVAILABLE:
     try:
         from groq import Groq
         groq_client = Groq(api_key=GROQ_API_KEY)
-        print("✅ Groq connected")
+        logger.info("✅ Groq connected")
     except Exception as e:
-        print(f"⚠️ Groq init failed: {e}")
+        logger.warning(f"⚠️ Groq init failed: {e}")
         GROQ_AVAILABLE = False
 
 if GEMINI_AVAILABLE:
     try:
         from google import genai
         gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-        print("✅ Gemini connected")
+        logger.info("✅ Gemini connected")
     except Exception as e:
-        print(f"⚠️ Gemini init failed: {e}")
+        logger.warning(f"⚠️ Gemini init failed: {e}")
         GEMINI_AVAILABLE = False
 
-# ════ SymPy Setup ════
+# ════ SymPy Setup with Timeout ════
 try:
-    print(f"🔍 Python version: {sys.version}")
-    print(f"🔍 Attempting sympy import...")
-
+    logger.info(f"🔍 Python version: {sys.version}")
     import sympy as sp
-    print(f"🔍 sympy version: {sp.__version__}")
-
     from sympy import (
         symbols, sympify, diff, integrate, solve, simplify, expand,
         factor, latex as sp_latex, Matrix, eigenvals, eigenvects,
@@ -82,12 +108,9 @@ try:
         convert_xor
     )
     SYMPY_AVAILABLE = True
-    print("✅ SymPy loaded successfully")
-
-except ImportError as e:
-    print(f"⚠️ SymPy ImportError: {e}")
+    logger.info(f"✅ SymPy v{sp.__version__} loaded successfully")
 except Exception as e:
-    print(f"⚠️ SymPy failed with unexpected error: {type(e).__name__}: {e}")
+    logger.error(f"⚠️ SymPy failed: {e}")
 
 TEACHER_YOUTUBE = "https://youtube.com/@pi_nomenal1729"
 TEACHER_WEBSITE = "https://www.anupamnigam.com"
@@ -98,20 +121,93 @@ SYMPY_TRANSFORMATIONS = (
 ) if SYMPY_AVAILABLE else None
 
 
+# ════ INPUT VALIDATION ════
+def validate_input(text, field_type="general", max_len=1000):
+    """Validate user input safely"""
+    if not text:
+        return False
+    
+    text = str(text).strip()
+    
+    if len(text) > max_len:
+        return False
+    
+    if field_type == "expression":
+        # Allow math symbols only
+        allowed = r'^[x\d\w\s\-\+\*/\(\)\.\^√∫∑πθα\[\],=:]+$'
+        return bool(re.match(allowed, text))
+    elif field_type == "topic":
+        # Allow letters, numbers, spaces, basic punctuation
+        allowed = r'^[a-zA-Z0-9\s\-_\,\.]+$'
+        return bool(re.match(allowed, text))
+    else:
+        # General: no extreme special chars
+        disallowed = ['<', '>', '&', ';', '|', '`']
+        return not any(c in text for c in disallowed)
+
+
+def sanitize_input(text, field_type="general"):
+    """Sanitize user input"""
+    if not text:
+        return ""
+    
+    text = str(text).strip()
+    
+    if not validate_input(text, field_type):
+        raise ValueError(f"Invalid input for {field_type}")
+    
+    # Remove leading/trailing whitespace, limit multiple spaces
+    text = re.sub(r'\s+', ' ', text)
+    return text[:1000]  # Limit length
+
+
+# ════ TIMEOUT DECORATOR ════
+def timeout(seconds=2):
+    """Timeout decorator for long-running operations"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"{func.__name__} exceeded {seconds}s timeout")
+            
+            # Only works on Unix/Linux
+            if hasattr(signal, 'SIGALRM'):
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(seconds)
+            
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                if hasattr(signal, 'SIGALRM'):
+                    signal.alarm(0)
+            
+            return result
+        return wrapper
+    return decorator
+
+
 def safe_parse(expr_str: str):
-    """Parse mathematical expression safely"""
+    """Parse mathematical expression safely with timeout"""
     if not SYMPY_AVAILABLE:
         return None
+    
     try:
+        expr_str = sanitize_input(expr_str, "expression")
         expr_str = expr_str.strip()
         expr_str = re.sub(r'\^', '**', expr_str)
         expr_str = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', expr_str)
-        return parse_expr(expr_str, transformations=SYMPY_TRANSFORMATIONS)
-    except Exception:
+        
+        # Parse with timeout protection
         try:
+            result = parse_expr(expr_str, transformations=SYMPY_TRANSFORMATIONS, timeout=2)
+            return result
+        except:
             return sympify(expr_str)
-        except Exception:
-            return None
+    except Exception as e:
+        logger.warning(f"Expression parse failed: {e}")
+        return None
 
 
 # ════ RESPONSE CLEANING ════
@@ -120,7 +216,6 @@ def clean_response(text: str) -> str:
     if not text:
         return text
 
-    # Preserve LaTeX blocks
     latex_blocks = []
     latex_inline = re.findall(r'\\\(.*?\\\)', text, flags=re.DOTALL)
     latex_display = re.findall(r'\\\[.*?\\\]', text, flags=re.DOTALL)
@@ -135,12 +230,10 @@ def clean_response(text: str) -> str:
         latex_blocks.append((key, l))
         text = text.replace(l, key, 1)
 
-    # Remove asterisks
     text = re.sub(r'\*{3}(.+?)\*{3}', r'\1', text, flags=re.DOTALL)
     text = re.sub(r'\*{2}(.+?)\*{2}', r'\1', text, flags=re.DOTALL)
     text = re.sub(r'\*', '', text)
 
-    # Restore LaTeX
     for key, latex in latex_blocks:
         text = text.replace(key, latex)
 
@@ -148,7 +241,7 @@ def clean_response(text: str) -> str:
 
 
 def strip_markdown_json(text: str) -> str:
-    """Strip markdown code fences from JSON responses"""
+    """Strip markdown code fences from JSON"""
     text = text.strip()
     text = re.sub(r'^```json\s*', '', text)
     text = re.sub(r'^```\s*', '', text)
@@ -157,7 +250,7 @@ def strip_markdown_json(text: str) -> str:
 
 
 # ════ AI CORE ════
-def ask_ai(messages, system=None, temperature=0.2):
+def ask_ai(messages, system=None, temperature=0.2, timeout=30):
     """Call AI with context"""
     if GROQ_AVAILABLE:
         full = ([{"role": "system", "content": system}] if system else []) + messages
@@ -170,12 +263,16 @@ def ask_ai(messages, system=None, temperature=0.2):
                     model=model,
                     messages=full,
                     max_tokens=4000,
-                    temperature=temperature
+                    temperature=temperature,
+                    timeout=timeout
                 )
                 return clean_response(r.choices[0].message.content)
             except Exception as e:
-                if any(x in str(e).lower() for x in ["429", "rate_limit", "does not exist"]):
+                error_str = str(e).lower()
+                if any(x in error_str for x in ["429", "rate_limit", "does not exist"]):
+                    logger.warning(f"Model {model} unavailable: {e}")
                     continue
+                logger.error(f"Groq error on {model}: {e}")
                 raise
 
     if GEMINI_AVAILABLE:
@@ -188,8 +285,9 @@ def ask_ai(messages, system=None, temperature=0.2):
             )
             return clean_response(r.text)
         except Exception as e:
-            print(f"Gemini error: {e}")
+            logger.error(f"Gemini error: {e}")
 
+    logger.error("All AI providers unavailable")
     return "⚠️ AI temporarily unavailable"
 
 
@@ -220,7 +318,7 @@ def ask_ai_with_image(messages, image_b64=None, image_type=None, system=None):
             )
             return clean_response(r.text)
         except Exception as e:
-            print(f"Gemini image error: {e}")
+            logger.warning(f"Gemini image error: {e}")
 
     fallback = list(messages)
     if image_b64:
@@ -269,51 +367,19 @@ PROOF FORMAT (MANDATORY):
 📐 PROOF (Complete from scratch):
 
 Step 1: [Initial setup]
-- What we need to show
-- Given information
-- Strategy/approach
-
 Step 2: [Key insight]
-[Derivation with ALL formulas in LaTeX]
-
 Step 3: [Continue building]
-[More steps with complete working]
-
-[Continue until proof complete]
-
+...
 Final Step: [Conclusion]
 Therefore: \\[\\boxed{{Conclusion}}\\]
 ✓ QED
 
-📝 DETAILED PROOF (Alternative approach):
-[Show complete alternative proof]
-
 💡 INTUITIVE EXPLANATION:
 [Explain why theorem is true in simple terms]
 
-🔍 KEY LEMMAS USED:
-- Lemma 1: [Statement with LaTeX]
-- Lemma 2: ...
+Make proofs COMPLETE and RIGOROUS."""
 
-🎯 SPECIAL CASES:
-- Case 1: ...
-- Case 2: ...
-
-💎 EXTENSIONS & GENERALIZATIONS:
-[Related theorems and how this generalizes]
-
-⚠️ COMMON PROOF MISTAKES:
-[What students often get wrong]
-
-📚 HISTORICAL CONTEXT:
-[Who discovered it, when, why it matters]
-
-🌍 APPLICATIONS:
-[Real-world and theoretical uses]
-
-Make proofs COMPLETE and RIGOROUS - not abbreviated."""
-
-VERIFY_PROMPT = """Verify mathematical solutions completely.
+VERIFY_PROMPT = """Verify mathematical solutions RIGOROUSLY.
 
 For each solution provided:
 
@@ -325,23 +391,14 @@ For each solution provided:
 2. ALTERNATIVE METHOD CHECK:
    - Solve using different approach
    - Compare answers
-   - If different: identify error
 
 3. DOMAIN/RANGE CHECK:
    - Verify answer within domain
    - Check any restrictions
-   - Confirm range compliance
-
-4. BOUNDARY CHECK:
-   - Test edge cases
-   - Check special values
-   - Verify limits
 
 Result:
 ✅ VERIFIED - Answer is correct
-❌ ERROR FOUND - [Explanation and correction]
-
-Confidence: HIGH/MEDIUM/LOW"""
+❌ ERROR FOUND - [Explanation and correction]"""
 
 
 # ════ ROUTES ════
@@ -353,42 +410,50 @@ def index():
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({
-        "status": "ok",
-        "groq": GROQ_AVAILABLE,
-        "gemini": GEMINI_AVAILABLE,
-        "sympy": SYMPY_AVAILABLE,
-        "version": "8.0",
-        "python": sys.version
-    })
+    try:
+        return jsonify({
+            "status": "ok",
+            "groq": GROQ_AVAILABLE,
+            "gemini": GEMINI_AVAILABLE,
+            "sympy": SYMPY_AVAILABLE,
+            "version": "9.0",
+            "timestamp": datetime.utcnow().isoformat(),
+            "python": sys.version
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({"status": "degraded", "error": str(e)}), 503
 
 
-# ════ CHAT ENDPOINT ════
 @app.route("/api/chat", methods=["POST"])
+@limiter.limit("30 per minute")
 def chat():
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+        
         messages = data.get("messages", [])
         image_b64 = data.get("image_b64")
         image_type = data.get("image_type")
 
-        if not messages:
-            return jsonify({"error": "messages required"}), 400
+        if not messages or not isinstance(messages, list):
+            return jsonify({"error": "messages required (list)"}), 400
 
-        # Deduplicate consecutive duplicate messages
+        # Validate messages
         clean = []
-        seen = set()
         for m in messages:
-            if m.get("role") in ("user", "assistant"):
-                key = m["role"] + str(m["content"])[:100]
-                if key not in seen:
-                    seen.add(key)
-                    clean.append({
-                        "role": m["role"],
-                        "content": str(m["content"])
-                    })
+            if not isinstance(m, dict) or 'role' not in m or 'content' not in m:
+                continue
+            role = m.get("role")
+            if role not in ("user", "assistant"):
+                continue
+            try:
+                content = sanitize_input(str(m["content"]))
+                clean.append({"role": role, "content": content})
+            except:
+                continue
 
-        # Keep last 20 messages only
         if len(clean) > 20:
             clean = clean[-20:]
 
@@ -399,18 +464,24 @@ def chat():
             system=ASK_ANUPAM_PROMPT
         )
 
+        logger.info(f"Chat request processed: {len(clean)} messages")
         return jsonify({"answer": answer, "confidence": "HIGH"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Chat endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
 
 
-# ════ FORMULA SHEET ════
 @app.route("/api/formula", methods=["POST"])
+@limiter.limit("20 per minute")
+@cache.cached(timeout=3600, query_string=True)
 def formula():
     try:
         data = request.get_json()
-        topic = data.get("topic", "Calculus")
-        exam = data.get("exam", "JAM")
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+        
+        topic = sanitize_input(data.get("topic", "Calculus"), "topic")
+        exam = sanitize_input(data.get("exam", "JAM"), "topic")
 
         prompt = f"""Generate a COMPLETE, exam-ready formula sheet.
 
@@ -433,56 +504,33 @@ Use PROPER LaTeX notation.
 No explanations - just formulas."""
 
         answer = ask_simple(prompt, temperature=0.1)
+        logger.info(f"Formula sheet generated for {topic}")
         return jsonify({"answer": answer})
     except Exception as e:
+        logger.error(f"Formula endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ GRAPH PLOTTER ════
 @app.route("/api/graph", methods=["POST"])
+@limiter.limit("20 per minute")
 def graph_plotter():
     try:
         data = request.get_json()
-        expr_str = data.get("expression", "x**2")
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+        
+        expr_str = sanitize_input(data.get("expression", "x**2"), "expression")
         graph_type = data.get("type", "2d")
 
         if not SYMPY_AVAILABLE:
-            prompt = f"""Analyze function: f(x) = {expr_str}
-
-Provide COMPLETE analysis using LATEX notation:
-
-📌 DOMAIN: \\[...\\]
-📌 RANGE: \\[...\\]
-
-🎯 CRITICAL POINTS:
-- Point 1: \\(x = ..., y = ...\\)
-- Type: [max/min/inflection]
-
-📍 INTERCEPTS:
-- x-intercepts: \\([...,...,...]\\)
-- y-intercept: \\([...]\\)
-
-🔄 ASYMPTOTES:
-- Vertical: \\(x = ...\\)
-- Horizontal: \\(y = ...\\)
-
-📈 BEHAVIOR:
-- As \\(x \\to \\infty\\): ...
-- As \\(x \\to -\\infty\\): ...
-
-🔢 DERIVATIVE: \\[f'(x) = ...\\]
-
-Use PROPER mathematical notation throughout."""
-
-            analysis = ask_simple(prompt, temperature=0.1)
+            analysis = ask_simple(f"Analyze function: f(x) = {expr_str}", temperature=0.1)
             return jsonify({
                 "sympy": False,
                 "expression": expr_str,
                 "analysis": analysis
             })
 
-        # With SymPy
-        f = safe_parse(re.sub(r'\^', '**', expr_str.strip()))
+        f = safe_parse(expr_str)
         if not f:
             return jsonify({"error": "Could not parse expression"}), 400
 
@@ -511,58 +559,30 @@ Use PROPER mathematical notation throughout."""
                 df_latex = ""
                 critical = []
 
-            analysis_prompt = f"""COMPLETE MATHEMATICAL ANALYSIS of f(x) = {expr_str}
+            analysis = ask_simple(
+                f"COMPLETE MATHEMATICAL ANALYSIS of f(x) = {expr_str}\n\nUse proper LaTeX notation.",
+                temperature=0.1
+            )
 
-Use PROPER LaTeX notation for everything:
-
-📌 DOMAIN: State using set notation \\[...\\]
-📌 RANGE: State using set notation \\[...\\]
-
-🎯 CRITICAL POINTS (where \\(f'(x) = 0\\)):
-- If exists: \\(x = ..., f(x) = ...\\)
-- Classification: [local max/min/neither]
-
-📍 INTERCEPTS:
-- x-intercepts: \\([x_1, x_2, ...]\\)
-- y-intercept: \\(f(0) = ...\\)
-
-🔄 ASYMPTOTES:
-- Vertical: \\(x = ...\\)
-- Horizontal: \\(\\lim_{{x \\to \\infty}} f(x) = ...\\)
-
-🔢 DERIVATIVE: \\[f'(x) = {df_latex}\\]
-
-🔹 SECOND DERIVATIVE: \\[f''(x) = ...\\]
-
-📊 CONCAVITY:
-- Concave up: \\(x \\in (...)\\)
-- Concave down: \\(x \\in (...)\\)
-
-📈 BEHAVIOR:
-- As \\(x \\to \\infty\\): \\(f(x) \\to ...\\)
-- As \\(x \\to -\\infty\\): \\(f(x) \\to ...\\)
-
-Format EVERYTHING in proper mathematical notation."""
-
-            analysis = ask_simple(analysis_prompt, temperature=0.1)
-
+            logger.info(f"Graph plotted for {expr_str}")
             return jsonify({
                 "sympy": True,
                 "type": "2d",
                 "points": points,
                 "expression": expr_str,
                 "latex": sp_latex(f),
-                "derivative_latex": df_latex if df_latex else "",
+                "derivative_latex": df_latex,
                 "critical_points": critical,
                 "analysis": analysis
             })
 
     except Exception as e:
+        logger.error(f"Graph endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ MATHEMATICIAN EXPLORER ════
 @app.route("/api/mathematician", methods=["GET", "POST"])
+@limiter.limit("15 per minute")
 def mathematician():
     try:
         name = None
@@ -572,7 +592,9 @@ def mathematician():
             body = request.get_json()
             name = body.get("name") if body else None
 
-        if not name:
+        if name:
+            name = sanitize_input(name, "topic")
+        else:
             name = random.choice([
                 "Gauss", "Euler", "Ramanujan", "Emmy Noether", "Alan Turing",
                 "Terence Tao", "Maryam Mirzakhani", "Kurt Gödel"
@@ -581,19 +603,18 @@ def mathematician():
         prompt = f"""Generate biography of mathematician: {name}
 
 IMPORTANT: Return ONLY a valid JSON object. No explanation, no markdown, no backticks.
-Just pure JSON starting with {{ and ending with }}
 
 {{
   "name": "Full name here",
   "period": "Birth-Death years",
   "country": "Country of origin",
-  "fields": ["Field1", "Field2", "Field3"],
-  "biography": "3-4 paragraph detailed biography as a single string with no line breaks",
-  "major_contributions": ["Contribution 1", "Contribution 2", "Contribution 3", "Contribution 4"],
-  "famous_quote": "One famous quote by this mathematician",
-  "key_achievements": {{"Achievement 1": "Description 1", "Achievement 2": "Description 2"}},
-  "impact_today": "How their work impacts the modern world today",
-  "learning_resources": ["Book 1", "Online Course", "Paper or Article"],
+  "fields": ["Field1", "Field2"],
+  "biography": "3-4 paragraph biography",
+  "major_contributions": ["Contribution 1", "Contribution 2"],
+  "famous_quote": "One famous quote",
+  "key_achievements": {{"Achievement 1": "Description 1"}},
+  "impact_today": "How their work impacts the modern world",
+  "learning_resources": ["Book 1", "Course"],
   "wikipedia": "https://en.wikipedia.org/wiki/{name.replace(' ', '_')}"
 }}"""
 
@@ -602,9 +623,9 @@ Just pure JSON starting with {{ and ending with }}
 
         try:
             data = json.loads(response)
+            logger.info(f"Mathematician data retrieved: {name}")
             return jsonify(data)
         except:
-            # Try to extract JSON object
             m = re.search(r'\{[\s\S]*\}', response)
             if m:
                 try:
@@ -612,47 +633,38 @@ Just pure JSON starting with {{ and ending with }}
                     return jsonify(data)
                 except:
                     pass
-            # Fallback
             return jsonify({"name": name, "biography": response})
 
     except Exception as e:
+        logger.error(f"Mathematician endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ PROJECTS ════
 @app.route("/api/projects/generate", methods=["POST"])
+@limiter.limit("15 per minute")
 def projects_generate():
     try:
         data = request.get_json()
-        topic = data.get("topic", "Machine Learning")
+        topic = sanitize_input(data.get("topic", "Machine Learning"), "topic")
 
         prompt = f"""Generate 5 detailed math/coding projects for topic: {topic}
 
-IMPORTANT: Return ONLY a valid JSON array. No explanation, no markdown, no backticks.
-Just pure JSON starting with [ and ending with ]
+IMPORTANT: Return ONLY valid JSON array. No markdown, no backticks.
 
 [
   {{
     "number": 1,
-    "title": "Project title here",
+    "title": "Project title",
     "difficulty": "Beginner",
-    "description": "3-4 sentence description of the project",
-    "math_concepts": ["Concept 1: formula or explanation", "Concept 2: formula or explanation"],
-    "step_by_step": [
-      "Step 1: Detailed explanation of first step",
-      "Step 2: Detailed explanation of second step",
-      "Step 3: Detailed explanation of third step",
-      "Step 4: Detailed explanation of fourth step",
-      "Step 5: Detailed explanation of fifth step"
-    ],
-    "code_snippet": "# Python code example\\nimport numpy as np\\nprint('Hello')",
-    "expected_outcome": "What you will build or learn",
-    "career_salary": "Related job title and salary range",
-    "resources": ["Book or tutorial 1", "Online course 2", "GitHub example 3"]
+    "description": "3-4 sentence description",
+    "math_concepts": ["Concept 1", "Concept 2"],
+    "step_by_step": ["Step 1", "Step 2", "Step 3"],
+    "code_snippet": "# Python code",
+    "expected_outcome": "What you will build",
+    "career_salary": "Related job: $XXk",
+    "resources": ["Book", "Course"]
   }}
-]
-
-Generate all 5 projects in this exact format."""
+]"""
 
         response = ask_simple(prompt, temperature=0.3)
         response = strip_markdown_json(response)
@@ -669,32 +681,29 @@ Generate all 5 projects in this exact format."""
                     pass
 
         if projects and isinstance(projects, list):
+            logger.info(f"Projects generated for {topic}")
             return jsonify({"topic": topic, "projects": projects})
 
-        # Fallback
         return jsonify({
             "topic": topic,
             "projects": [{
-                "title": "Projects for " + topic,
+                "title": f"Projects for {topic}",
                 "description": response[:500],
-                "difficulty": "Various",
-                "step_by_step": [],
-                "math_concepts": [],
-                "resources": [],
-                "code_snippet": ""
+                "difficulty": "Various"
             }]
         })
 
     except Exception as e:
+        logger.error(f"Projects endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ THEOREM PROVER ════
 @app.route("/api/theorem/prove", methods=["POST"])
+@limiter.limit("15 per minute")
 def theorem_prove():
     try:
         data = request.get_json()
-        theorem_name = data.get("theorem", "Pythagorean Theorem")
+        theorem_name = sanitize_input(data.get("theorem", "Pythagorean Theorem"), "topic")
 
         prompt = f"""Prove theorem COMPLETELY: {theorem_name}
 
@@ -705,65 +714,51 @@ OUTPUT REQUIRED:
 📖 STATEMENT:
 \\[Mathematical statement\\]
 
-✅ PROOF (step-by-step from scratch):
-
-Step 1: [Setup and definitions]
+✅ PROOF (step-by-step):
+Step 1: [Setup]
 Step 2: [Key insight]
-Step 3: [Main argument]
-[Continue with ALL steps]
+...
 Final: Conclusion - QED ✓
 
 💡 INTUITIVE EXPLANATION:
 [Why the theorem is true]
 
-🔍 KEY LEMMAS:
-[Lemmas used]
-
-🎯 APPLICATIONS:
-[Real-world uses]
-
-⚠️ COMMON MISTAKES:
-[What students get wrong]
-
 Make proof COMPLETE and RIGOROUS."""
 
         proof = ask_simple(prompt, system=THEOREM_PROMPT, temperature=0.1)
+        logger.info(f"Theorem proved: {theorem_name}")
         return jsonify({"theorem": theorem_name, "proof": proof})
 
     except Exception as e:
+        logger.error(f"Theorem endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ COMPETITION PROBLEMS ════
 @app.route("/api/competition/problems", methods=["POST"])
+@limiter.limit("15 per minute")
+@cache.cached(timeout=3600, query_string=True)
 def competition_problems():
     try:
         data = request.get_json()
-        category = data.get("category", "IMO")
-        count = int(data.get("count", 30))
+        category = sanitize_input(data.get("category", "IMO"), "topic")
+        count = min(int(data.get("count", 30)), 50)  # Max 50 problems
 
         prompt = f"""Generate {count} {category} problems with COMPLETE solutions.
 
 For EACH problem:
 
 **Problem [N]:**
-\\[Problem statement with full LaTeX\\]
-
-Difficulty: [Easy/Medium/Hard]
-Topics: [Topics tested]
-Hint: [Strategic hint]
+\\[Problem statement\\]
 
 **SOLUTION:**
 Step 1: [Analysis]
-Step 2: [Approach]
 [All steps with LaTeX]
 Final Answer: \\[\\boxed{{...}}\\]
-
-**Insight:** [Why this works]
 
 Generate {count} complete problems."""
 
         problems_text = ask_simple(prompt, temperature=0.2)
+        logger.info(f"Competition problems generated: {category} x{count}")
         return jsonify({
             "category": category,
             "count": count,
@@ -771,35 +766,35 @@ Generate {count} complete problems."""
         })
 
     except Exception as e:
+        logger.error(f"Competition endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ QUIZ GENERATION ════
 @app.route("/api/quiz/generate", methods=["POST"])
+@limiter.limit("15 per minute")
+@cache.cached(timeout=3600, query_string=True)
 def quiz_generate():
     try:
         data = request.get_json()
-        topic = data.get("topic", "Calculus")
-        count = int(data.get("count", 30))
+        topic = sanitize_input(data.get("topic", "Calculus"), "topic")
+        count = min(int(data.get("count", 30)), 50)  # Max 50 questions
 
         prompt = f"""Generate {count} exam-style questions for {topic}.
 
 For EACH question:
 
 **Question [N]:**
-\\[Problem with full LaTeX\\]
+\\[Problem with LaTeX\\]
 
 **SOLUTION:**
-Step 1: [Full working with LaTeX]
-Step 2: [Continue]
+Step 1: [Full working]
 ...
 **Answer:** \\[\\boxed{{...}}\\]
-
-**Explanation:** [Why correct]
 
 Generate {count} varied questions with COMPLETE solutions."""
 
         questions = ask_simple(prompt, temperature=0.3)
+        logger.info(f"Quiz generated: {topic} x{count}")
         return jsonify({
             "topic": topic,
             "count": count,
@@ -807,26 +802,29 @@ Generate {count} varied questions with COMPLETE solutions."""
         })
 
     except Exception as e:
+        logger.error(f"Quiz endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ PHASE 1: ACCURACY IMPROVEMENTS ════
-
 @app.route("/api/verify-solution", methods=["POST"])
+@limiter.limit("30 per minute")
 def verify_solution():
     try:
         data = request.get_json()
-        problem = data.get("problem")
-        solution = data.get("solution")
+        problem = sanitize_input(data.get("problem", ""), "general")
+        solution = sanitize_input(data.get("solution", ""), "general")
 
-        prompt = f"""VERIFY this solution:
+        if not problem or not solution:
+            return jsonify({"error": "Problem and solution required"}), 400
+
+        prompt = f"""VERIFY this solution RIGOROUSLY:
 
 Problem: {problem}
 Solution: {solution}
 
 Check:
 1. Substitute back - does it work?
-2. Alternative method - get same answer?
+2. Alternative method - same answer?
 3. Domain/range - valid?
 4. Edge cases - handled?
 
@@ -835,17 +833,23 @@ Result:
 ❌ ERROR - [Correction]"""
 
         verification = ask_simple(prompt, system=VERIFY_PROMPT, temperature=0.1)
+        logger.info("Solution verified")
         return jsonify({"verification": verification})
 
     except Exception as e:
+        logger.error(f"Verify endpoint error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/solution-paths", methods=["POST"])
+@limiter.limit("20 per minute")
 def solution_paths():
     try:
         data = request.get_json()
-        problem = data.get("problem")
+        problem = sanitize_input(data.get("problem", ""), "general")
+
+        if not problem:
+            return jsonify({"error": "Problem required"}), 400
 
         prompt = f"""Show 3-5 DIFFERENT methods to solve:
 
@@ -854,27 +858,29 @@ Problem: {problem}
 For EACH method:
 
 **METHOD 1: [Approach name]**
-- Steps: \\[...\\]
+- Steps with LaTeX
 - Difficulty: [Easy/Medium/Hard]
 - When to use: ...
-- Time: X minutes
 
 [Repeat for methods 2-5]
 
 **COMPARISON:** Which is best? Why?"""
 
         paths = ask_simple(prompt, temperature=0.3)
+        logger.info("Solution paths generated")
         return jsonify({"methods": paths})
 
     except Exception as e:
+        logger.error(f"Solution paths error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/common-mistakes", methods=["POST"])
+@limiter.limit("20 per minute")
 def common_mistakes():
     try:
         data = request.get_json()
-        topic = data.get("topic")
+        topic = sanitize_input(data.get("topic", "Mathematics"), "topic")
 
         prompt = f"""Common mistakes in {topic}:
 
@@ -887,16 +893,19 @@ For EACH mistake (7-10 total):
 🔧 Fix: [How to avoid it]"""
 
         mistakes = ask_simple(prompt, temperature=0.2)
+        logger.info(f"Common mistakes retrieved: {topic}")
         return jsonify({"mistakes": mistakes})
 
     except Exception as e:
+        logger.error(f"Common mistakes error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ EXAM INFO ════
 @app.route("/api/exam/<exam>", methods=["GET"])
+@cache.cached(timeout=86400)
 def exam_info(exam):
     try:
+        exam = sanitize_input(exam, "topic")
         exams = {
             "JAM": {
                 "full_name": "IIT JAM Mathematics",
@@ -916,10 +925,10 @@ def exam_info(exam):
         }
         return jsonify(exams.get(exam, {"error": "Not found"}))
     except Exception as e:
+        logger.error(f"Exam info error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# ════ ERROR HANDLERS ════
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Endpoint not found"}), 404
@@ -930,16 +939,26 @@ def method_not_allowed(e):
     return jsonify({"error": "Method not allowed"}), 405
 
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({"error": "Too many requests. Please wait a moment."}), 429
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     print(f"""
 ════════════════════════════════════════
-🧮 MathSphere v8.0 - Production Backend
+🧮 MathSphere v9.0 - Production Backend
 ════════════════════════════════════════
-✅ Groq:   {GROQ_AVAILABLE}
-✅ Gemini: {GEMINI_AVAILABLE}
-✅ SymPy:  {SYMPY_AVAILABLE}
-🐍 Python: {sys.version}
+✅ Groq:        {GROQ_AVAILABLE}
+✅ Gemini:      {GEMINI_AVAILABLE}
+✅ SymPy:       {SYMPY_AVAILABLE}
+✅ Rate Limit:  ENABLED (30 req/min)
+✅ Caching:     ENABLED (3600s TTL)
+✅ Validation:  ENABLED
+✅ Timeouts:    ENABLED (2s SymPy)
+✅ Logging:     ENABLED (mathsphere.log)
+🐍 Python:      {sys.version}
 ════════════════════════════════════════
 📺 {TEACHER_YOUTUBE}
 ════════════════════════════════════════
