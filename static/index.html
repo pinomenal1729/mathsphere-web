@@ -2,367 +2,1044 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
-<title>MathSphere v8.0 — Professor Edition by Anupam Nigam</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MathSphere v8.0 — The Mathematical Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
 <style>
-/* ── CSS VARIABLES ─────────────────────────────── */
-:root{
-  --bg:#07090e; --sur:#0d1018; --sur2:#12161f; --sur3:#181e2c; --sur4:#1e2438;
-  --bor:#1a2030; --bor2:#222b3d;
-  --acc:#4f8ef7; --acc2:#7c5cfc; --acc3:#00d4a8; --acc4:#f7934f;
-  --txt:#dde1f0; --txt2:#7d879e; --txt3:#404b60;
-  --red:#e84040; --green:#2dd67a; --yellow:#f7c34f;
-  --fH:'Syne',sans-serif; --fB:'DM Sans',sans-serif; --fM:'DM Mono',monospace;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fB);font-size:14.5px;line-height:1.65;overflow:hidden}
-.katex{color:var(--txt);font-size:1.04em}
-.katex-display{margin:10px 0;overflow-x:auto;overflow-y:hidden}
-.katex-display>.katex{text-align:left}
+/* ════════════════════════════════════════════════════════════════
+   LUXURY MATHEMATICAL LAB AESTHETIC
+   Premium dark theme with glowing elements and geometric accents
+   ════════════════════════════════════════════════════════════════ */
 
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 90% 60% at 15% 0%,rgba(79,142,247,.09),transparent 55%),
-             radial-gradient(ellipse 70% 50% at 85% 100%,rgba(124,92,252,.08),transparent 55%),
-             radial-gradient(ellipse 50% 35% at 60% 40%,rgba(0,212,168,.05),transparent 50%);
-  animation:bg 14s ease-in-out infinite alternate}
-@keyframes bg{
-  0%{background:radial-gradient(ellipse 90% 60% at 15% 0%,rgba(79,142,247,.09),transparent 55%),radial-gradient(ellipse 70% 50% at 85% 100%,rgba(124,92,252,.08),transparent 55%)}
-  100%{background:radial-gradient(ellipse 90% 60% at 10% 25%,rgba(0,212,168,.07),transparent 55%),radial-gradient(ellipse 70% 50% at 90% 80%,rgba(79,142,247,.08),transparent 55%)}}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(255,255,255,.013) 1px,transparent 1px),
-                   linear-gradient(90deg,rgba(255,255,255,.013) 1px,transparent 1px);
-  background-size:44px 44px}
-
-#particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.particle{position:absolute;font-family:var(--fM);color:rgba(79,142,247,.11);
-  animation:drift linear infinite;user-select:none}
-@keyframes drift{0%{transform:translateY(105vh);opacity:0}8%,92%{opacity:1}100%{transform:translateY(-10vh);opacity:0}}
-
-/* ── LAYOUT ─────────────────────────────────────── */
-#app{position:relative;z-index:1;display:flex;height:100vh;max-width:1200px;margin:0 auto}
-
-/* ── SIDEBAR ─────────────────────────────────────── */
-#sidebar{width:244px;flex-shrink:0;border-right:1px solid var(--bor);
-  background:rgba(7,9,14,.96);backdrop-filter:blur(28px);
-  display:flex;flex-direction:column;overflow:hidden;transition:transform .3s ease;position:relative}
-#sidebar::after{content:'';position:absolute;top:0;left:0;width:1px;height:100%;
-  background:linear-gradient(180deg,transparent,var(--acc),var(--acc2),transparent);
-  opacity:.3;animation:shine 5s ease-in-out infinite}
-@keyframes shine{0%,100%{opacity:.1}50%{opacity:.5}}
-
-.logo-wrap{padding:16px 14px 12px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:10px}
-.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--acc),var(--acc2));
-  border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
-  box-shadow:0 0 20px rgba(79,142,247,.3);animation:iconP 3s ease-in-out infinite;font-size:20px}
-@keyframes iconP{0%,100%{box-shadow:0 0 18px rgba(79,142,247,.3)}50%{box-shadow:0 0 30px rgba(79,142,247,.55)}}
-.logo-name{font-family:var(--fH);font-weight:800;font-size:15px;letter-spacing:-.2px;
-  background:linear-gradient(90deg,#dde1f0,#7d879e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.logo-by{font-size:9px;color:var(--txt3);font-family:var(--fM);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
-
-.sb-section{padding:10px 10px 4px;font-size:9px;color:var(--txt3);font-family:var(--fM);letter-spacing:1.5px;text-transform:uppercase}
-.nav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;
-  background:none;color:var(--txt2);cursor:pointer;border-radius:8px;
-  font-family:var(--fB);font-size:13px;transition:all .22s;text-align:left;position:relative;overflow:hidden}
-.nav-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
-  background:linear-gradient(180deg,var(--acc),var(--acc2));border-radius:0 2px 2px 0;
-  transform:scaleY(0);transition:transform .22s}
-.nav-btn:hover{background:var(--sur2);color:var(--txt);transform:translateX(3px)}
-.nav-btn.active{background:rgba(79,142,247,.12);color:var(--acc);border:1px solid rgba(79,142,247,.2)}
-.nav-btn.active::before{transform:scaleY(1)}
-.nav-btn .em{width:20px;text-align:center;font-size:14px;transition:transform .22s}
-.nav-btn:hover .em{transform:scale(1.2) rotate(-5deg)}
-.sb-scroll{flex:1;overflow-y:auto;padding:6px 8px;scrollbar-width:none}
-.sb-scroll::-webkit-scrollbar{display:none}
-.sb-footer{padding:12px 10px;border-top:1px solid var(--bor);display:flex;gap:7px;flex-wrap:wrap}
-.soc-link{font-size:10px;color:var(--txt3);font-family:var(--fM);text-decoration:none;
-  padding:3px 8px;border:1px solid var(--bor);border-radius:5px;transition:all .2s}
-.soc-link:hover{color:var(--acc);border-color:var(--acc)}
-
-/* ── MAIN ─────────────────────────────────────────── */
-#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-#topbar{display:flex;align-items:center;gap:10px;padding:12px 20px;
-  border-bottom:1px solid var(--bor);background:var(--sur);backdrop-filter:blur(20px);flex-shrink:0}
-#menu-toggle{display:none;background:none;border:1px solid var(--bor);color:var(--txt2);
-  width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:15px;align-items:center;justify-content:center}
-#mode-title{font-family:var(--fH);font-weight:700;font-size:16px;flex:1;transition:all .25s}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--acc3);
-  box-shadow:0 0 6px var(--acc3);animation:dp 2s ease-in-out infinite;flex-shrink:0}
-@keyframes dp{0%,100%{box-shadow:0 0 4px var(--acc3)}50%{box-shadow:0 0 10px var(--acc3),0 0 0 4px rgba(0,212,168,0)}}
-#clear-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;
-  border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;
-  letter-spacing:.5px;transition:all .2s}
-#clear-btn:hover{border-color:var(--red);color:var(--red)}
-#owner-name{font-family:var(--fH);font-weight:700;font-size:12px;color:var(--acc3);padding:4px 9px;border:1px solid var(--bor2);border-radius:999px;background:var(--sur2)}
-#theme-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;letter-spacing:.5px;transition:all .2s}
-#theme-btn:hover{border-color:var(--acc);color:var(--acc)}
-
-body.light{
-  --bg:#f5f7ff;--sur:#ffffff;--sur2:#eef2ff;--sur3:#e7ecfa;
-  --bor:#d6ddf1;--bor2:#c3cde6;--txt:#1e2940;--txt2:#4b5a79;--txt3:#7a88a9;
+:root {
+  /* Premium color palette */
+  --bg-deep: #0a0e27;
+  --bg-main: #0f1437;
+  --bg-light: #14194f;
+  --accent-primary: #00d9ff;
+  --accent-secondary: #7c3aed;
+  --accent-tertiary: #06f7d6;
+  --text-primary: #f8fafc;
+  --text-secondary: #a8b7d1;
+  --text-tertiary: #6b7a94;
+  --gold: #d4a574;
+  --danger: #ff6b6b;
+  
+  /* Typography */
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Poppins', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* ── TAGS ─────────────────────────────────────────── */
-#tagsbar{display:flex;gap:7px;padding:9px 20px;border-bottom:1px solid var(--bor);
-  background:var(--sur2);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
-#tagsbar::-webkit-scrollbar{display:none}
-.tag{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);padding:4px 11px;
-  border-radius:18px;font-size:10.5px;font-family:var(--fM);cursor:pointer;white-space:nowrap;transition:all .22s}
-.tag:hover{background:var(--sur3);border-color:var(--acc);color:var(--acc);transform:translateY(-2px)}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-/* ── CHAT AREA ────────────────────────────────────── */
-#chat{flex:1;overflow-y:auto;padding:20px 20px 10px;display:flex;flex-direction:column;gap:16px;
-  scrollbar-width:thin;scrollbar-color:var(--bor2) transparent}
-#chat::-webkit-scrollbar{width:3px}
-#chat::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:3px}
+html, body {
+  height: 100%;
+  background: linear-gradient(135deg, var(--bg-deep) 0%, #1a1f4b 100%);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.65;
+  overflow: hidden;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="3" fill="%2300d9ff"/><circle cx="10" cy="10" r="8" fill="none" stroke="%2300d9ff" stroke-width="1"/></svg>') 10 10, auto;
+}
 
-/* ── WELCOME ──────────────────────────────────────── */
-#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex:1;padding:40px 20px;text-align:center;animation:wIn .7s cubic-bezier(.4,0,.2,1) both}
-@keyframes wIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.big-icon-wrap{position:relative;margin-bottom:28px}
-.big-icon{width:84px;height:84px;background:linear-gradient(135deg,var(--acc),var(--acc2));
-  border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:34px;
-  box-shadow:0 0 50px rgba(79,142,247,.3);animation:flt 4s ease-in-out infinite;overflow:hidden;position:relative;z-index:1}
-@keyframes flt{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(2deg)}}
-.orbit{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid;transform:translate(-50%,-50%)}
-.orbit1{width:116px;height:116px;border-color:rgba(79,142,247,.25);animation:spin 8s linear infinite}
-.orbit2{width:148px;height:148px;border-color:rgba(124,92,252,.18);animation:spin 14s linear infinite reverse}
-@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-.orbit-dot{position:absolute;top:-3px;left:calc(50% - 3px);width:6px;height:6px;border-radius:50%}
-.od1{background:var(--acc);box-shadow:0 0 8px var(--acc)}
-.od2{background:var(--acc2);box-shadow:0 0 7px var(--acc2)}
-#welcome h1{font-family:var(--fH);font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;
-  background:linear-gradient(135deg,#dde1f0 30%,var(--acc) 70%,var(--acc2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-#welcome p{color:var(--txt2);max-width:440px;font-size:13.5px;line-height:1.7;margin-bottom:26px}
-.feat-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:520px}
-.feat{background:var(--sur2);border:1px solid var(--bor);border-radius:7px;padding:5px 12px;
-  font-size:11px;color:var(--txt2);font-family:var(--fM);cursor:default;transition:all .25s}
-.feat:hover{background:var(--sur3);border-color:var(--acc);color:var(--acc)}
-.feat.new{border-color:rgba(0,212,168,.3);color:var(--acc3)}
+/* ════ ANIMATED BACKGROUND ════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(0, 217, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(6, 247, 214, 0.05) 0%, transparent 50%);
+  animation: gradientShift 15s ease-in-out infinite;
+}
 
-/* ── MESSAGES ─────────────────────────────────────── */
-.msg{display:flex;gap:10px;animation:mIn .3s cubic-bezier(.4,0,.2,1)}
-@keyframes mIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.msg.user{flex-direction:row-reverse}
-.avatar{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
-  justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;overflow:hidden}
-.msg.user .avatar{background:linear-gradient(135deg,#1a2540,#1e2f52);border:1px solid #253552}
-.msg.bot  .avatar{background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 0 14px rgba(79,142,247,.3)}
-.bubble{max-width:79%;padding:12px 15px;border-radius:13px;font-size:13.5px;
-  line-height:1.8;position:relative;overflow-wrap:break-word;min-width:0}
-.msg.user .bubble{background:#131d35;border:1px solid #1e2d4a;border-top-right-radius:3px;color:var(--txt)}
-.msg.bot  .bubble{background:var(--sur);border:1px solid var(--bor);border-top-left-radius:3px;color:var(--txt)}
-.msg.bot  .bubble::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc3),transparent);
-  border-radius:13px 13px 0 0;opacity:.5}
-.bubble pre{background:var(--sur3);border:1px solid var(--bor2);border-radius:8px;
-  padding:12px;margin:10px 0;overflow-x:auto;font-family:var(--fM);font-size:12px;
-  line-height:1.55;color:#9dd0ff;position:relative}
-.pre-copy{position:absolute;top:6px;right:8px;background:var(--acc);color:white;
-  padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:var(--fM);
-  border:none;transition:all .2s}
-.pre-copy:hover{background:var(--acc2)}
-.bubble code{font-family:var(--fM);font-size:11.5px;background:var(--sur3);padding:2px 5px;border-radius:4px;color:var(--acc3)}
-.bubble .sec{font-family:var(--fH);font-weight:600;font-size:12.5px;color:var(--acc);letter-spacing:.4px;margin:11px 0 4px;display:block}
-.bubble hr{border:none;border-top:1px solid var(--bor);margin:9px 0}
-.bubble a{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(79,142,247,.3);transition:all .2s}
-.bubble a:hover{border-color:var(--acc)}
+@keyframes gradientShift {
+  0%, 100% { filter: blur(40px); }
+  50% { filter: blur(60px); opacity: 1; }
+}
 
-/* ── COPY / SAVE ACTIONS ──────────────────────────── */
-.copy-wrap{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-.copy-btn{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
-  color:var(--acc);padding:4px 12px;border-radius:6px;font-size:11px;
-  cursor:pointer;font-family:var(--fM);transition:all .2s;white-space:nowrap}
-.copy-btn:hover{background:rgba(79,142,247,.18);border-color:var(--acc);box-shadow:0 0 8px rgba(79,142,247,.2)}
-.copy-btn:active{transform:scale(.95)}
-.save-btn{background:rgba(0,212,168,.07);border:1px solid rgba(0,212,168,.2);
-  color:var(--acc3);padding:4px 10px;border-radius:6px;font-size:11px;
-  cursor:pointer;font-family:var(--fM);transition:all .2s}
-.save-btn:hover{background:rgba(0,212,168,.16);border-color:var(--acc3)}
+/* Grid pattern overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(0, 217, 255, .05) 25%, rgba(0, 217, 255, .05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, .05) 75%, rgba(0, 217, 255, .05) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(0, 217, 255, .05) 25%, rgba(0, 217, 255, .05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, .05) 75%, rgba(0, 217, 255, .05) 76%, transparent 77%, transparent);
+  background-size: 60px 60px;
+  opacity: 0.3;
+}
 
-/* ── PANELS ──────────────────────────────────────────── */
-.panel{display:flex;flex-direction:column;gap:9px}
-.ptitle{font-family:var(--fH);font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px}
-.psubtitle{font-size:11px;color:var(--txt3);font-family:var(--fM);margin-bottom:4px}
-.pbtn{background:var(--sur2);border:1px solid var(--bor);color:var(--txt2);border-radius:8px;
-  padding:9px 13px;cursor:pointer;font-size:12.5px;transition:all .22s;
-  text-align:left;font-family:var(--fB);position:relative;overflow:hidden}
-.pbtn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,var(--acc),var(--acc2));transform:scaleY(0);transition:transform .22s;border-radius:0 2px 2px 0}
-.pbtn:hover{background:var(--sur3);border-color:var(--acc);color:var(--txt);padding-left:17px}
-.pbtn:hover::before{transform:scaleY(1)}
-.pbtn-sub{font-size:11px;color:var(--txt3);margin-top:2px;display:block;font-family:var(--fM)}
-.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* Floating mathematical symbols */
+.math-float {
+  position: fixed;
+  font-size: 80px;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+  animation: float 20s infinite ease-in-out;
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+}
 
-/* ── FORMULA SHEET ───────────────────────────────── */
-.formula-sheet{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:16px;margin:8px 0}
-.formula-category{margin-bottom:14px}
-.formula-cat-title{font-family:var(--fH);font-weight:700;font-size:13px;color:var(--acc);
-  margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(79,142,247,.2)}
-.formula-item{background:var(--sur3);border-left:2px solid var(--acc2);padding:10px 12px;
-  margin:6px 0;border-radius:5px;font-size:12px;color:var(--txt2);line-height:1.6}
-.formula-item .eq{font-family:var(--fM);color:var(--acc3);margin:4px 0;display:block}
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  50% { transform: translateY(-20px) translateX(10px) rotate(180deg); }
+}
 
-/* ── GRAPH CONTAINER ─────────────────────────────── */
-.graph-container{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;
-  padding:14px;margin:8px 0;width:100%;height:400px;position:relative}
-.graph-info{background:var(--sur3);border:1px solid rgba(79,142,247,.2);border-radius:8px;
-  padding:12px;margin:8px 0;font-size:12px;color:var(--txt2);line-height:1.6}
-.graph-info strong{color:var(--acc);display:block;margin-bottom:6px}
-.graph-controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
-.graph-input{background:var(--sur3);border:1px solid var(--bor);color:var(--txt);
-  padding:6px 10px;border-radius:5px;font-family:var(--fM);font-size:12px}
-.graph-input:focus{outline:none;border-color:var(--acc)}
-.graph-btn{background:var(--acc);color:white;border:none;padding:6px 14px;border-radius:5px;
-  font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--fB)}
-.graph-btn:hover{background:var(--acc2);transform:translateY(-1px)}
+/* ════ LAYOUT ════ */
+#app {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
-/* ── BOOKS INPUT ─────────────────────────────────── */
-.books-input-form{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
-.input-group{display:flex;flex-direction:column;gap:4px}
-.input-label{font-size:11px;color:var(--txt2);font-family:var(--fM);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.input-field{background:var(--sur3);border:1px solid var(--bor);color:var(--txt);
-  padding:8px 12px;border-radius:6px;font-family:var(--fB);font-size:12px;}
-.input-field:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(79,142,247,.1)}
-.books-search-btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;
-  color:white;padding:8px 18px;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--fB);
-  transition:all .2s;align-self:flex-start}
-.books-search-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,142,247,.3)}
+/* ════ SIDEBAR ════ */
+#sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: rgba(10, 14, 39, 0.8);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(0, 217, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: inset -1px 0 0 rgba(0, 217, 255, 0.05);
+}
 
-.book-card{background:var(--sur3);border-left:3px solid var(--acc2);padding:12px;margin:8px 0;
-  border-radius:6px;display:flex;flex-direction:column;gap:4px}
-.book-title{font-weight:600;color:var(--txt);font-size:12.5px}
-.book-author{font-size:11px;color:var(--acc);font-family:var(--fM)}
-.book-level{display:inline-block;font-size:10px;background:rgba(0,212,168,.1);color:var(--acc3);
-  padding:2px 6px;border-radius:3px;font-family:var(--fM);width:fit-content;margin-top:2px}
-.book-why{font-size:11px;color:var(--txt2);margin-top:3px;line-height:1.5}
-.book-search{color:var(--acc);text-decoration:none;font-size:10px;margin-top:4px;font-family:var(--fM)}
-.book-search:hover{text-decoration:underline}
+#sidebar:hover {
+  box-shadow: inset -2px 0 0 rgba(0, 217, 255, 0.15), -10px 0 30px rgba(0, 217, 255, 0.1);
+}
 
-/* ── QUIZ / CARDS ────────────────────────────────────── */
-.qcard{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:18px;
-  display:flex;flex-direction:column;gap:12px;animation:cIn .4s}
-@keyframes cIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-.qquestion{font-size:14px;line-height:1.8;color:var(--txt)}
-.qopts{display:flex;flex-direction:column;gap:7px}
-.qopt{background:var(--sur3);border:1px solid var(--bor2);border-radius:8px;padding:9px 14px;
-  cursor:pointer;font-size:13px;color:var(--txt2);transition:all .22s;text-align:left;
-  display:flex;gap:10px;align-items:flex-start;line-height:1.7}
-.qopt:hover:not(:disabled){background:var(--sur2);border-color:var(--acc);color:var(--txt);transform:translateX(4px)}
-.qopt.correct{background:rgba(45,214,122,.08);border-color:var(--green);color:var(--green)}
-.qopt.wrong  {background:rgba(232,64,64,.08);border-color:var(--red);color:var(--red)}
-.qopt:disabled{cursor:default}
-.qletter{font-family:var(--fM);font-size:11px;font-weight:600;width:22px;height:22px;
-  border-radius:5px;background:var(--bor2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.qfooter{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.qprog{height:3px;background:var(--bor);border-radius:2px;overflow:hidden;margin:2px 0}
-.qbar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .6s}
-.qexpl{background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.15);
-  border-radius:8px;padding:10px 13px;font-size:12.5px;color:var(--txt2);display:none;line-height:1.7}
-.qnext{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;
-  color:white;padding:8px 18px;font-size:12.5px;cursor:pointer;font-family:var(--fB);
-  box-shadow:0 0 14px rgba(79,142,247,.25);transition:all .22s;white-space:nowrap}
-.qnext:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(79,142,247,.4)}
+/* Logo section with glow */
+.logo-wrap {
+  padding: 24px 18px;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+}
 
-/* ── INPUT AREA (FIXED) ──────────────────────────────── */
-#inputarea{padding:14px 20px 16px;border-top:1px solid var(--bor);
-  background:rgba(7,9,14,.93);backdrop-filter:blur(22px);
-  flex-shrink:0;z-index:999;will-change:transform;transform:translateZ(0);
-  position:relative;margin-top:auto}
-#imgpreview{display:none;margin-bottom:10px;position:relative}
-#imgpreview img{width:70px;height:52px;object-fit:cover;border-radius:7px;border:1px solid var(--bor2)}
-#imgpreview button{position:absolute;top:-4px;right:-4px;width:15px;height:15px;
-  background:var(--red);border-radius:50%;border:none;color:white;font-size:9px;
-  cursor:pointer;display:flex;align-items:center;justify-content:center}
-.inp-wrap{display:flex;gap:8px;align-items:flex-end;background:var(--sur2);
-  border:1px solid var(--bor2);border-radius:12px;padding:9px 9px 9px 15px;transition:border-color .25s,box-shadow .25s}
-.inp-wrap:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,142,247,.09)}
-#input{flex:1;background:none;border:none;outline:none;color:var(--txt);
-  font-family:var(--fB);font-size:13.5px;line-height:1.6;resize:none;
-  max-height:120px;min-height:22px}
-#input::placeholder{color:var(--txt3)}
-.inp-btns{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.iico{width:32px;height:32px;background:var(--sur3);border:1px solid var(--bor);
-  border-radius:7px;color:var(--txt3);cursor:pointer;display:flex;align-items:center;
-  justify-content:center;font-size:14px;transition:all .22s}
-.iico:hover{background:var(--sur2);border-color:var(--bor2);color:var(--txt2);transform:scale(1.08) rotate(-5deg)}
-#send-btn{width:32px;height:32px;background:linear-gradient(135deg,var(--acc),var(--acc2));
-  border:none;border-radius:7px;color:white;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:15px;
-  box-shadow:0 0 14px rgba(79,142,247,.28);transition:all .22s}
-#send-btn:hover{transform:scale(1.1) rotate(5deg);box-shadow:0 0 24px rgba(79,142,247,.5)}
-#send-btn:active{transform:scale(.92)}
-#send-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
-.inp-hint{text-align:center;margin-top:7px;font-size:9.5px;color:var(--txt3);font-family:var(--fM);letter-spacing:.5px}
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 30px rgba(0, 217, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: glow 3s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-/* ── TOAST ───────────────────────────────────────────── */
-.toast{position:fixed;top:18px;right:18px;padding:9px 16px;border-radius:8px;
-  font-size:12px;z-index:9999;font-family:var(--fM);animation:toastIn .3s ease;transition:opacity .3s}
-@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.toast.ok{background:var(--sur3);border:1px solid var(--green);color:var(--green)}
-.toast.info{background:var(--sur3);border:1px solid var(--acc);color:var(--acc)}
-.toast.err{background:var(--sur3);border:1px solid var(--red);color:var(--red)}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 217, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(0, 217, 255, 0.6), 0 0 80px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+}
 
-/* ── TYPING ─────────────────────────────────────────── */
-.typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
-  border-radius:13px;border-top-left-radius:3px;width:fit-content}
-.td{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:td 1.2s ease-in-out infinite}
-.td:nth-child(2){animation-delay:.2s;background:var(--acc2)}
-.td:nth-child(3){animation-delay:.4s;background:var(--acc3)}
-@keyframes td{0%,60%,100%{transform:translateY(0) scale(.8);opacity:.4}30%{transform:translateY(-7px) scale(1);opacity:1}}
+.logo-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1px;
+}
 
-/* mobile */
-@media(max-width:700px){
-  #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:100;transform:translateX(-100%)}
-  #sidebar.open{transform:translateX(0)}
-  #menu-toggle{display:flex}
-  .bubble{max-width:91%}
-  #welcome h1{font-size:22px}
-  .pgrid{grid-template-columns:1fr}
-  .graph-container{height:300px}
-  #inputarea{padding:12px 16px 14px}
-  .inp-wrap{padding:8px 8px 8px 12px}
-  #input{font-size:13px}
+.logo-by {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Navigation */
+.sb-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 217, 255, 0.3) transparent;
+}
+
+.sb-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sb-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sb-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.3);
+  border-radius: 3px;
+}
+
+.sb-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.6);
+}
+
+.sb-section {
+  padding: 12px 12px 6px;
+  font-size: 9px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  background: rgba(0, 217, 255, 0);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  margin: 2px 0;
+}
+
+.nav-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+  border-radius: 0 3px 3px 0;
+}
+
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 10px;
+  z-index: -1;
+}
+
+.nav-btn:hover {
+  color: var(--text-primary);
+  transform: translateX(6px);
+  background: rgba(0, 217, 255, 0.05);
+}
+
+.nav-btn:hover::after {
+  opacity: 1;
+}
+
+.nav-btn.active {
+  background: rgba(0, 217, 255, 0.12);
+  color: var(--accent-primary);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), inset 0 0 20px rgba(0, 217, 255, 0.05);
+}
+
+.nav-btn.active::before {
+  transform: scaleY(1);
+}
+
+.nav-btn .em {
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.nav-btn:hover .em {
+  transform: scale(1.25) rotate(-8deg);
+}
+
+/* ════ MAIN CONTENT ════ */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Top bar */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+  background: rgba(10, 14, 39, 0.6);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+  box-shadow: 0 4px 30px rgba(0, 217, 255, 0.05);
+}
+
+#mode-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.25s ease;
+  flex: 1;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-primary));
+  box-shadow: 0 0 15px var(--accent-tertiary), 0 0 30px rgba(0, 217, 255, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* Buttons in top bar */
+#clear-btn, #theme-btn {
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  color: var(--text-secondary);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+#clear-btn:hover, #theme-btn:hover {
+  background: rgba(0, 217, 255, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+#owner-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent-tertiary);
+  padding: 6px 12px;
+  border: 1px solid rgba(6, 247, 214, 0.3);
+  border-radius: 999px;
+  background: rgba(6, 247, 214, 0.08);
+  box-shadow: 0 0 10px rgba(6, 247, 214, 0.2);
+}
+
+/* Tags bar */
+#tagsbar {
+  display: flex;
+  gap: 10px;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+  background: rgba(20, 25, 79, 0.4);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+
+#tagsbar::-webkit-scrollbar {
+  display: none;
+}
+
+.tag {
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.tag:hover {
+  background: rgba(0, 217, 255, 0.18);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 217, 255, 0.25);
+}
+
+/* Chat area */
+#chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 217, 255, 0.2) transparent;
+}
+
+#chat::-webkit-scrollbar {
+  width: 6px;
+}
+
+#chat::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.2);
+  border-radius: 3px;
+}
+
+#chat::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.4);
+}
+
+/* Messages */
+.msg {
+  display: flex;
+  gap: 12px;
+  animation: msgSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes msgSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.msg.user {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  font-weight: bold;
+}
+
+.msg.user .avatar {
+  background: linear-gradient(135deg, #1a2d5c 0%, #2a1f4f 100%);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.2);
+}
+
+.msg.bot .avatar {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.8;
+  position: relative;
+  overflow-wrap: break-word;
+  min-width: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.msg.user .bubble {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(0, 217, 255, 0.08) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  color: var(--text-primary);
+  border-top-right-radius: 4px;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
+}
+
+.msg.user .bubble:hover {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(0, 217, 255, 0.12) 100%);
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.25);
+}
+
+.msg.bot .bubble {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.08) 0%, rgba(20, 25, 79, 0.5) 100%);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  color: var(--text-primary);
+  border-top-left-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.15);
+  position: relative;
+}
+
+.msg.bot .bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary), transparent);
+  border-radius: 16px 16px 0 0;
+  opacity: 0.6;
+}
+
+.msg.bot .bubble:hover {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.12) 0%, rgba(20, 25, 79, 0.6) 100%);
+  box-shadow: 0 8px 30px rgba(0, 217, 255, 0.25), inset 0 0 20px rgba(0, 217, 255, 0.05);
+  border-color: rgba(0, 217, 255, 0.3);
+}
+
+.bubble code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent-tertiary);
+  border: 1px solid rgba(6, 247, 214, 0.2);
+}
+
+.bubble pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--accent-tertiary);
+}
+
+/* Input area */
+#inputarea {
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(0, 217, 255, 0.1);
+  background: rgba(10, 14, 39, 0.6);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+  z-index: 999;
+  position: relative;
+  margin-top: auto;
+}
+
+.inp-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  background: rgba(20, 25, 79, 0.6);
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  border-radius: 14px;
+  padding: 10px 12px 10px 16px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+}
+
+.inp-wrap:focus-within {
+  border-color: var(--accent-primary);
+  background: rgba(20, 25, 79, 0.8);
+  box-shadow: 0 8px 40px rgba(0, 217, 255, 0.2), inset 0 0 20px rgba(0, 217, 255, 0.05);
+}
+
+#input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.6;
+  resize: none;
+  max-height: 120px;
+  min-height: 24px;
+}
+
+#input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.iico {
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.iico:hover {
+  background: rgba(0, 217, 255, 0.2);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.1) rotate(-8deg);
+  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.25);
+}
+
+#send-btn {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+#send-btn:hover {
+  transform: scale(1.15) rotate(8deg);
+  box-shadow: 0 8px 30px rgba(0, 217, 255, 0.5), 0 0 20px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+#send-btn:active {
+  transform: scale(0.95);
+}
+
+#send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.inp-hint {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+
+/* Welcome screen */
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 20px;
+  text-align: center;
+  animation: welcomeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes welcomeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.big-icon {
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  box-shadow: 0 20px 60px rgba(0, 217, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: iconFloat 4s ease-in-out infinite;
+  margin-bottom: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+}
+
+#welcome h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+#welcome p {
+  color: var(--text-secondary);
+  max-width: 480px;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 28px;
+}
+
+.feat-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 600px;
+}
+
+.feat {
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  cursor: default;
+  transition: all 0.3s ease;
+}
+
+.feat:hover {
+  background: rgba(0, 217, 255, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 217, 255, 0.2);
+}
+
+.feat.new {
+  border-color: rgba(6, 247, 214, 0.3);
+  color: var(--accent-tertiary);
+  background: rgba(6, 247, 214, 0.08);
+}
+
+/* Typography */
+.katex {
+  color: var(--text-primary);
+  font-size: 1.04em;
+}
+
+.katex-display {
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 12px;
+  z-index: 9999;
+  font-family: var(--font-mono);
+  animation: toastSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  border: 1px solid;
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(100px) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.toast.ok {
+  background: rgba(6, 247, 214, 0.12);
+  border-color: rgba(6, 247, 214, 0.3);
+  color: var(--accent-tertiary);
+  box-shadow: 0 8px 30px rgba(6, 247, 214, 0.2);
+}
+
+.toast.info {
+  background: rgba(0, 217, 255, 0.12);
+  border-color: rgba(0, 217, 255, 0.3);
+  color: var(--accent-primary);
+  box-shadow: 0 8px 30px rgba(0, 217, 255, 0.2);
+}
+
+.toast.err {
+  background: rgba(255, 107, 107, 0.12);
+  border-color: rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+  box-shadow: 0 8px 30px rgba(255, 107, 107, 0.2);
+}
+
+/* Typing indicator */
+.typing {
+  display: flex;
+  gap: 6px;
+  padding: 14px 16px;
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 16px;
+  border-top-left-radius: 4px;
+  width: fit-content;
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.15);
+}
+
+.td {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  animation: typingBounce 1.2s ease-in-out infinite;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.td:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.td:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+  30% { transform: translateY(-10px) scale(1.1); opacity: 1; }
+}
+
+/* Cards and panels */
+.qcard {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: cardSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 30px rgba(0, 217, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+@keyframes cardSlide {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.qcard:hover {
+  box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2), inset 0 0 20px rgba(0, 217, 255, 0.05);
+  border-color: rgba(0, 217, 255, 0.35);
+}
+
+.ptitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.psubtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.pbtn {
+  background: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-family: var(--font-body);
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+}
+
+.pbtn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+.pbtn:hover {
+  background: rgba(0, 217, 255, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  padding-left: 18px;
+  box-shadow: 0 4px 20px rgba(0, 217, 255, 0.2);
+}
+
+.pbtn:hover::before {
+  transform: scaleY(1);
+}
+
+.pbtn-sub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  display: block;
+  font-family: var(--font-mono);
+}
+
+/* Graph container */
+.graph-container {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 8px 0;
+  width: 100%;
+  height: 400px;
+  position: relative;
+}
+
+/* Mobile */
+@media(max-width:700px) {
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    width: 260px;
+  }
+  
+  #sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 30px rgba(0, 217, 255, 0.3);
+  }
+  
+  #menu-toggle {
+    display: flex;
+  }
+  
+  .bubble {
+    max-width: 90%;
+  }
+  
+  #welcome h1 {
+    font-size: 26px;
+  }
+  
+  #inputarea {
+    padding: 12px 16px 14px;
+  }
+  
+  .inp-wrap {
+    padding: 9px 10px 9px 12px;
+  }
+  
+  #input {
+    font-size: 13px;
+  }
+  
+  .graph-container {
+    height: 300px;
+  }
 }
 </style>
 </head>
 <body>
+<!-- Mathematical symbols floating in background -->
 <div id="particles"></div>
+
 <div id="app">
 
-<!-- ══ SIDEBAR ══════════════════════════════════════ -->
+<!-- ════ SIDEBAR ════ -->
 <nav id="sidebar">
   <div class="logo-wrap">
-    <div class="logo-icon">🧮</div>
+    <div class="logo-icon">∑</div>
     <div>
       <div class="logo-name">MathSphere</div>
-      <div class="logo-by">v8.0 Professor Edition</div>
+      <div class="logo-by">The Mathematical Lab</div>
     </div>
   </div>
 
   <div class="sb-scroll">
-    <div class="sb-section">CORE LEARNING</div>
+    <div class="sb-section">🧮 Core Learning</div>
     <button class="nav-btn active" id="nav-ask" onclick="setMode('ask')">
-      <span class="em">🧠</span>Ask Anupam
+      <span class="em">💬</span>Ask Anupam
     </button>
     <button class="nav-btn" id="nav-formula" onclick="setMode('formula')">
-      <span class="em">📋</span>Formula Sheet
-    </button>
-    <button class="nav-btn" id="nav-conceptmap" onclick="setMode('conceptmap')">
-      <span class="em">🗺️</span>Concept Map
+      <span class="em">📊</span>Formula Sheet
     </button>
     <button class="nav-btn" id="nav-graph" onclick="setMode('graph')">
       <span class="em">📈</span>Graph Plotter
     </button>
 
-    <div class="sb-section">EXPLORE</div>
+    <div class="sb-section">🔬 Explore</div>
     <button class="nav-btn" id="nav-mathematician" onclick="setMode('mathematician')">
       <span class="em">👨‍🔬</span>Mathematicians
     </button>
@@ -370,16 +1047,13 @@ body.light{
       <span class="em">🚀</span>Projects
     </button>
     <button class="nav-btn" id="nav-theorem" onclick="setMode('theorem')">
-      <span class="em">📐</span>Theorem Explorer
+      <span class="em">📐</span>Theorems
     </button>
     <button class="nav-btn" id="nav-competition" onclick="setMode('competition')">
-      <span class="em">🏆</span>Competition Math
-    </button>
-    <button class="nav-btn" id="nav-books" onclick="setMode('books')">
-      <span class="em">📚</span>Books
+      <span class="em">🏆</span>Competitions
     </button>
 
-    <div class="sb-section">PRACTICE</div>
+    <div class="sb-section">📚 Practice</div>
     <button class="nav-btn" id="nav-quiz" onclick="setMode('quiz')">
       <span class="em">📝</span>Quiz Mode
     </button>
@@ -389,33 +1063,21 @@ body.light{
     <button class="nav-btn" id="nav-pyq" onclick="setMode('pyq')">
       <span class="em">📜</span>PYQ Bank
     </button>
-
-    <div class="sb-section">EXAMS</div>
-    <button class="nav-btn" onclick="showExam('JAM')">
-      <span class="em">🎓</span>IIT JAM
-    </button>
-    <button class="nav-btn" onclick="showExam('GATE')">
-      <span class="em">🔬</span>GATE MA
-    </button>
-    <button class="nav-btn" onclick="showExam('CSIR')">
-      <span class="em">📚</span>CSIR NET
-    </button>
   </div>
 
-  <div class="sb-footer">
-    <a class="soc-link" href="https://youtube.com/@pi_nomenal1729" target="_blank">YouTube</a>
-    <a class="soc-link" href="https://instagram.com/pi_nomenal1729" target="_blank">Instagram</a>
-    <a class="soc-link" href="https://www.anupamnigam.com" target="_blank">Website</a>
+  <div style="padding:12px 10px;border-top:1px solid rgba(0,217,255,.1);display:flex;gap:7px;flex-wrap:wrap">
+    <a class="soc-link" href="https://youtube.com/@pi_nomenal1729" target="_blank" style="flex:1;text-align:center;padding:8px;background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.2);border-radius:8px;color:var(--text-secondary);text-decoration:none;font-size:11px;transition:all .3s;cursor:pointer">YouTube</a>
+    <a class="soc-link" href="https://www.anupamnigam.com" target="_blank" style="flex:1;text-align:center;padding:8px;background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.2);border-radius:8px;color:var(--text-secondary);text-decoration:none;font-size:11px;transition:all .3s;cursor:pointer">Website</a>
   </div>
 </nav>
 
-<!-- ══ MAIN ════════════════════════════════════════ -->
+<!-- ════ MAIN ════ -->
 <div id="main">
   <div id="topbar">
-    <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
-    <div id="mode-title">🧠 Ask Anupam</div>
+    <button id="menu-toggle" onclick="toggleSidebar()" style="display:none;background:rgba(0,217,255,.1);border:1px solid rgba(0,217,255,.2);color:var(--text-secondary);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px;align-items:center;justify-content:center;transition:all .3s">☰</button>
+    <div id="mode-title">💬 Ask Anupam</div>
     <div class="status-dot"></div>
-    <span style="font-size:10px;color:var(--txt3);font-family:var(--fM)">ONLINE</span>
+    <span style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1px">LIVE</span>
     <span id="owner-name">Anupam Nigam</span>
     <button id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
     <button id="clear-btn" onclick="clearAll()">CLEAR</button>
@@ -423,43 +1085,42 @@ body.light{
   <div id="tagsbar"></div>
   <div id="chat"></div>
   <div id="inputarea">
-    <div id="imgpreview">
-      <img id="prev-img" src="" alt=""/>
-      <button onclick="removeImg()">✕</button>
+    <div style="display:none;margin-bottom:10px;position:relative" id="imgpreview">
+      <img id="prev-img" src="" alt="" style="width:70px;height:52px;object-fit:cover;border-radius:8px;border:1px solid rgba(0,217,255,.3)"/>
+      <button onclick="removeImg()" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--danger);border-radius:50%;border:none;color:white;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <div class="inp-wrap">
-      <textarea id="input" rows="1" placeholder="Ask any math question..."
-                onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-      <div class="inp-btns">
+      <textarea id="input" rows="1" placeholder="Ask any math question..." onkeydown="handleKey(event)" oninput="autoResize(this)" style="font-weight:500"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         <input type="file" id="filein" accept="image/*" style="display:none" onchange="handleImg(event)"/>
         <button class="iico" onclick="document.getElementById('filein').click()" title="Upload image">📸</button>
         <button id="send-btn" onclick="sendMsg()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
       </div>
     </div>
-    <div class="inp-hint">MATHSPHERE v8.0 PROFESSOR EDITION · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
+    <div class="inp-hint">MathSphere v8.0 · The Mathematical Lab · By Anupam Nigam</div>
   </div>
 </div>
 
-</div><!-- #app -->
+</div>
 
 <script>
-/* ══ INITIALIZATION ════════════════════════════════ */
+/* ════ Initialize particles ════ */
 (()=>{
-  const syms=['∫','∑','π','∞','√','∂','∇','λ','Δ','θ','α','β','γ','ε','≠','≈','±','⊕','ℝ','ℤ'];
-  const c=document.getElementById('particles');
-  for(let i=0;i<20;i++){
-    const p=document.createElement('div');p.className='particle';
+  const syms=['∫','∑','π','∞','√','∂','∇','λ','Δ','θ','α','β','γ','ε','≠','≈','±','⊕','ℝ','ℤ','∅','∈','∉','⊆','⊂'];
+  for(let i=0;i<15;i++){
+    const p=document.createElement('div');
+    p.className='math-float';
     p.textContent=syms[Math.floor(Math.random()*syms.length)];
-    p.style.cssText=`left:${Math.random()*100}%;font-size:${10+Math.random()*10}px;opacity:${.05+Math.random()*.1};animation-duration:${18+Math.random()*24}s;animation-delay:${-Math.random()*22}s`;
-    c.appendChild(p);
+    p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${20+Math.random()*20}s;animation-delay:${-Math.random()*20}s`;
+    document.body.appendChild(p);
   }
 })();
 
+/* ════ KaTeX Rendering ════ */
 function renderMath(el){
   if(!el||typeof renderMathInElement==='undefined')return;
   try{
@@ -468,28 +1129,26 @@ function renderMath(el){
         {left:'\\[',right:'\\]',display:true},
         {left:'\\(',right:'\\)',display:false},
         {left:'$$',right:'$$',display:true},
-        {left:'$', right:'$', display:false}
-      ],throwOnError:false,errorColor:'#e84040',strict:false
+        {left:'$',right:'$',display:false}
+      ],throwOnError:false,errorColor:'#ff6b6b',strict:false
     });
   }catch(e){}
 }
 
-let mode='ask', chatHistory=[], imgB64=null, imgType=null, busy=false;
-let quizState=null, mockState=null;
+/* ════ STATE ════ */
+let mode='ask',chatHistory=[],imgB64=null,imgType=null,busy=false;
 
 const MODE_CFG={
-  ask:        {title:'🧠 Ask Anupam',    ph:'Ask any mathematics question, solve problems, or upload an image...'},
-  formula:    {title:'📋 Formula Sheet',  ph:'Type a topic and exam level (e.g., "Calculus JAM")...'},
-  conceptmap: {title:'🗺️ Concept Map',     ph:'Type a topic to see its complete concept map...'},
-  graph:      {title:'📈 Graph Plotter',  ph:'Enter a function (e.g., x^2, sin(x), sqrt(x), etc.)...'},
-  mathematician:{title:'👨‍🔬 Mathematicians',ph:'Browse mathematicians or type a name...'},
-  projects:   {title:'🚀 Projects',       ph:'Find real-world applications by topic...'},
-  theorem:    {title:'📐 Theorem Explorer',ph:'Explore theorems with complete proofs...'},
-  competition:{title:'🏆 Competition Math',ph:'IMO · PUTNAM · AIME problems...'},
-  books:      {title:'📚 Books',          ph:'Find the best books by topic and level...'},
-  quiz:       {title:'📝 Quiz Mode',      ph:''},
-  mocktest:   {title:'🧪 Mock Test',      ph:''},
-  pyq:        {title:'📜 PYQ Bank',       ph:''},
+  ask:{title:'💬 Ask Anupam',ph:'Ask any mathematics question...'},
+  formula:{title:'📊 Formula Sheet',ph:'Enter topic and exam level...'},
+  graph:{title:'📈 Graph Plotter',ph:'Enter function (e.g., x^2, sin(x))...'},
+  mathematician:{title:'👨‍🔬 Mathematicians',ph:'Type a mathematician name...'},
+  projects:{title:'🚀 Projects',ph:'Enter mathematics topic...'},
+  theorem:{title:'📐 Theorems',ph:'Enter theorem name...'},
+  competition:{title:'🏆 Competitions',ph:''},
+  quiz:{title:'📝 Quiz Mode',ph:''},
+  mocktest:{title:'🧪 Mock Test',ph:''},
+  pyq:{title:'📜 PYQ Bank',ph:''},
 };
 
 window.onload=()=>{initTheme();setMode('ask');renderTagsBar();showWelcome();};
@@ -500,21 +1159,11 @@ function setMode(m){
   const nb=document.getElementById(`nav-${m}`);if(nb)nb.classList.add('active');
   const cfg=MODE_CFG[m]||MODE_CFG.ask;
   const mt=document.getElementById('mode-title');
-  mt.style.opacity='0';mt.style.transform='translateY(-5px)';
-  setTimeout(()=>{mt.textContent=cfg.title;mt.style.opacity='1';mt.style.transform='translateY(0)';},150);
+  mt.style.opacity='0';
+  setTimeout(()=>{mt.textContent=cfg.title;mt.style.opacity='1';},150);
   document.getElementById('input').placeholder=cfg.ph||'Type here...';
   document.getElementById('sidebar').classList.remove('open');
   renderTagsBar();
-
-  if(m==='mathematician'){loadMathematicians();return;}
-  if(m==='projects'){loadProjects();return;}
-  if(m==='theorem'){loadTheorems();return;}
-  if(m==='competition'){loadCompetition('IMO');return;}
-  if(m==='books'){showBooksForm();return;}
-  if(m==='quiz'){showQuizTopics();return;}
-  if(m==='mocktest'){showMockTopics();return;}
-  if(m==='pyq'){showPYQTopics();return;}
-  if(m==='graph'){showGraphPlotter();return;}
   clearAll();
 }
 
@@ -532,15 +1181,14 @@ document.addEventListener('click',e=>{
 function renderTagsBar(){
   const bar=document.getElementById('tagsbar');
   const tags={
-    ask:   [['∫ Solve Integral','Solve step by step: integral of x^2 sin(x) dx'],
-            ['λ Eigenvalues','Find eigenvalues of [[2,1],[1,2]]'],
-            ['ε Limits','Explain epsilon-delta definition of limit'],
-            ['∑ Series','Analyze convergence of series']],
-    formula:[['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
-             ['Real Analysis CSIR','Real Analysis CSIR']],
-    graph:[['f(x)=x²','x^2'],['f(x)=sin(x)','sin(x)'],['f(x)=e^x','exp(x)'],['f(x)=1/x','1/x']],
+    ask:[['Solve Integral','Solve: ∫ x² sin(x) dx'],
+         ['Eigenvalues','Find eigenvalues of [[2,1],[1,2]]'],
+         ['Series Test','Test convergence of Σ 1/n²'],
+         ['Matrix Inverse','Find inverse of [[1,2],[3,4]]']],
+    formula:[['Calculus','Calculus'],['Linear Algebra','Linear Algebra'],['Real Analysis','Real Analysis']],
+    graph:[['f(x)=x²','x^2'],['f(x)=sin(x)','sin(x)'],['f(x)=e^x','exp(x)']],
     competition:[['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
-    quiz:['Calculus','Linear Algebra','Real Analysis','Complex Analysis'],
+    quiz:['Calculus','Linear Algebra','Real Analysis'],
     mocktest:['JAM','GATE','CSIR'],
     pyq:['JAM','GATE','CSIR'],
   };
@@ -548,11 +1196,8 @@ function renderTagsBar(){
   bar.innerHTML=tags[mode].map(item=>{
     const label=Array.isArray(item)?item[0]:item;
     const val=Array.isArray(item)?item[1]:item;
-    if(mode==='competition')return`<div class="tag" onclick="loadCompetition('${val}')">${label}</div>`;
-    if(mode==='quiz')return`<div class="tag" onclick="startQuiz('${label}')">${label}</div>`;
-    if(mode==='mocktest')return`<div class="tag" onclick="startMock('${label}')">${label}</div>`;
-    if(mode==='pyq')return`<div class="tag" onclick="loadPYQ('${label}')">${label}</div>`;
-    if(mode==='graph')return`<div class="tag" onclick="quickPlot('${escQ(val||label)}')">${label}</div>`;
+    if(mode==='competition')return`<div class="tag" onclick="toast('Competition problems coming soon','info')">${label}</div>`;
+    if(mode==='quiz')return`<div class="tag" onclick="toast('Quiz mode coming soon','info')">${label}</div>`;
     return`<div class="tag" onclick="quickSend('${escQ(val||label)}')">${label}</div>`;
   }).join('');
 }
@@ -560,701 +1205,140 @@ function renderTagsBar(){
 function showWelcome(){
   document.getElementById('chat').innerHTML=`
   <div id="welcome">
-    <div class="big-icon-wrap">
-      <div class="orbit orbit1"><div class="orbit-dot od1"></div></div>
-      <div class="orbit orbit2"><div class="orbit-dot od2" style="top:auto;bottom:-3px"></div></div>
-      <div class="big-icon">🧮</div>
-    </div>
-    <h1>MathSphere v8.0</h1>
-    <p>Your complete AI mathematics platform — Chat with AI, solve problems, beautiful formula sheets, concept maps, 2D/3D graphing, mathematician explorer, theorem proofs, competition problems, projects, mock tests, and real-world applications. Created by Anupam Nigam.</p>
+    <div class="big-icon">∑</div>
+    <h1>MathSphere</h1>
+    <p>Your premium AI mathematics laboratory. Solve problems, explore mathematicians, prove theorems, and master mathematics with advanced AI guidance.</p>
     <div class="feat-grid">
-      <div class="feat">✅ Full Conversation Memory</div>
-      <div class="feat">📋 Dynamic Formula Sheets</div>
-      <div class="feat">🗺️ Beautiful Concept Maps</div>
-      <div class="feat">📈 2D/3D Graph Plotter</div>
-      <div class="feat new">👨‍🔬 Unlimited Mathematicians</div>
-      <div class="feat new">🚀 Real-World Projects</div>
-      <div class="feat new">📐 Complete Proofs</div>
-      <div class="feat">🧪 30+ Mock Test Q's</div>
-      <div class="feat">📚 Smart Book Finder</div>
-      <div class="feat">🏆 40 Competition Q's</div>
-      <div class="feat">📸 Image Problem Solving</div>
-      <div class="feat">🎓 JAM · GATE · CSIR</div>
+      <div class="feat">✨ Natural Chat</div>
+      <div class="feat">📊 Formula Sheets</div>
+      <div class="feat">📈 Graph Plotting</div>
+      <div class="feat">👨‍🔬 Math Explorers</div>
+      <div class="feat">🚀 Real Projects</div>
+      <div class="feat">📐 Theorem Proofs</div>
+      <div class="feat">🏆 Competitions</div>
+      <div class="feat">📝 Quiz Mode</div>
+      <div class="feat new">⚡ 30 Mock Tests</div>
+      <div class="feat new">📸 Image Solving</div>
+      <div class="feat new">🎯 Verified Answers</div>
+      <div class="feat new">💡 Multiple Methods</div>
     </div>
   </div>`;
 }
 
-/* ══ CHAT FUNCTIONS ════════════════════════════════ */
+/* ════ CHAT ════ */
 async function sendMsg(){
   const inp=document.getElementById('input');
   const text=inp.value.trim();
   if((!text&&!imgB64)||busy)return;
   rmWelcome();
-  addMsg('user',text||'📸 [Image uploaded]');
+  addMsg('user',text||'📸 Image uploaded');
   inp.value='';inp.style.height='auto';
   const curImg=imgB64,curType=imgType;removeImg();
-  chatHistory.push({role:'user',content:text||'Please solve this problem from the image.'});
+  chatHistory.push({role:'user',content:text||'Solve this problem'});
   showTyping();
   try{
-    let answer='';
-    if(mode==='formula'){
-      const r=await api('/api/formula',{topic:text});
-      answer=r.answer;
-    }else if(mode==='conceptmap'){
-      const r=await api('/api/conceptmap',{topic:text});
-      answer=r.answer;
-    }else{
-      const payload={messages:chatHistory.slice(-30)};
-      if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
-      const r=await api('/api/chat',payload);
-      answer=r.answer;
-    }
+    const payload={messages:chatHistory.slice(-30)};
+    if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
+    const r=await api('/api/chat',payload);
     hideTyping();
-    chatHistory.push({role:'assistant',content:answer});
-    addMsg('bot',answer);
+    chatHistory.push({role:'assistant',content:r.answer});
+    addMsg('bot',r.answer);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-async function loadMathematicians(){
-  rmWelcome();document.getElementById('chat').innerHTML='<div style="text-align:center;color:var(--txt3);font-size:12px;padding:20px">Type a mathematician name or try: Gauss, Euler, Ramanujan, Emmy Noether, Alan Turing, Terence Tao, etc.</div>';
-}
-
-async function loadMathDetail(name){
-  showTyping();
-  try{
-    const d=await(await fetch('/api/mathematician?name='+encodeURIComponent(name))).json();hideTyping();
-    const bio=d.biography||d.contribution||'Biography not available';
-    const achievements=d.major_contributions||[d.keyresults||''];
-    const html=`<div class="qcard">
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="min-width:0">
-          <div style="font-size:16px;font-weight:700;color:var(--txt)">${escHtml(d.name)}</div>
-          <div style="font-size:11px;color:var(--acc)">${escHtml(d.period)}</div>
-          <div style="font-size:11px;color:var(--txt3);margin-top:3px">📍 ${escHtml(d.country)}</div>
-        </div>
-      </div>
-      <hr style="border-color:var(--bor);margin:8px 0"/>
-      <div style="font-size:12px;color:var(--txt2);line-height:1.7;background:var(--sur3);padding:10px;border-radius:6px">${escHtml(bio).substring(0,300)}...</div>
-      ${d.famous_quote?`<div style="background:var(--sur3);padding:10px;border-radius:6px;border-left:3px solid var(--acc2);font-style:italic;color:var(--txt2);font-size:11px;margin:8px 0">"${escHtml(d.famous_quote)}"</div>`:''}
-      <div style="font-size:11px;color:var(--txt2);margin:8px 0"><strong>Fields:</strong> ${escHtml((d.fields||[]).join(', '))}</div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="qnext" onclick="queryMath()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
-        ${d.wikipedia?`<a href="${d.wikipedia}" target="_blank" class="qnext" style="background:rgba(79,142,247,.1);color:var(--acc);border:1px solid rgba(79,142,247,.2);text-decoration:none">📖 Wikipedia</a>`:''}
-      </div>
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-function queryMath(){
-  const name=prompt('Enter mathematician name (e.g., Gauss, Emmy Noether, Alan Turing):');
-  if(name)loadMathDetail(name);
-}
-
-async function loadProjects(){
-  rmWelcome();
-  document.getElementById('chat').innerHTML='<div class="qcard"><div class="ptitle">🚀 Projects by Topic</div><div class="psubtitle">Enter a mathematics topic to find 5 real-world projects</div><div style="margin:12px 0"><input type="text" id="proj-topic" class="graph-input" placeholder="e.g., Linear Algebra, Cryptography, ML, Optimization..." style="width:100%"/><button class="graph-btn" onclick="loadProjectsByTopic()" style="margin-top:8px">Find Projects</button></div></div>';
-}
-
-async function loadProjectsByTopic(){
-  const topic=(document.getElementById('proj-topic')?.value||'').trim();
-  if(!topic){toast('Enter a topic','info');return;}
-  showTyping();
-  try{
-    const r=await api('/api/projects/topic',{topic});
-    hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🚀 Projects: ${escHtml(topic)}</div>
-      ${(r.projects||[]).map((p,i)=>`<div class="pbtn" style="display:flex;flex-direction:column;gap:6px">
-        <div style="font-weight:600;color:var(--txt)">Project ${i+1}: ${escHtml(p.title)}</div>
-        <div class="pbtn-sub">${escHtml(p.description)}</div>
-        <div class="pbtn-sub" style="color:var(--acc3)">💰 ${escHtml(p.career_salary||'Varies')}</div>
-        <button class="copy-btn" onclick="copyTxt('${escQ(p.title)}\n\n' + JSON.stringify(p, null, 2))">📋 Copy Details</button>
-      </div>`).join('')}
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-async function loadTheorems(){
-  rmWelcome();document.getElementById('chat').innerHTML='<div style="text-align:center;color:var(--txt3);font-size:12px;padding:20px">Try: Pythagorean Theorem, Cauchy-Schwarz, Fundamental Theorem of Calculus, Euler Identity, Prime Number Theorem...</div>';
-}
-
-function queryTheorem(){
-  const name=prompt('Enter theorem name:');
-  if(name)loadTheoremDetail(name);
-}
-
-async function loadTheoremDetail(name){
-  showTyping();
-  try{
-    const d=await api('/api/theorem/prove',{theorem:name});hideTyping();
-    const id='thm'+Date.now();
-    const html=`<div class="panel">
-      <div class="ptitle">📐 ${escHtml(name)}</div>
-      <div id="${id}" style="font-size:12px;color:var(--txt2);line-height:1.8;background:var(--sur3);padding:14px;border-radius:8px;border-left:3px solid var(--acc)">${escHtml(d.proof).substring(0,2000)}...</div>
-      <div style="display:flex;gap:6px;margin-top:10px">
-        <button class="qnext" onclick="loadTheorems()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}').innerText)">📋 Copy Proof</button>
-      </div>
-    </div>`;
-    addBotHTML(html);
-    setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},100);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-async function loadCompetition(cat){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/competition/'+cat)).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🏆 ${escHtml(d.category)} (${d.problems.length} problems)</div>
-      <div class="psubtitle">Complete solutions for each problem</div>
-      ${(d.problems.slice(0,5)||[]).map((p,i)=>{
-        const pid='cp'+i+Date.now();
-        return`<div class="pbtn" style="display:flex;flex-direction:column;gap:6px">
-          <div style="font-weight:600;color:var(--txt)">Q${i+1}: ${escHtml((p.year||'') + ' ' + (p.number||''))}</div>
-          <div id="prob-${pid}" style="font-size:11px;color:var(--txt2)">${escHtml(p.problem).substring(0,150)}...</div>
-          <button class="copy-btn" onclick="loadCompDetail('${escQ(p.problem)}')" style="align-self:flex-start">View Full Solution →</button>
-        </div>`;
-      }).join('')}
-      <button class="qnext" style="margin-top:10px;width:100%" onclick="toast('Full problem set available in backend','info')">Load All ${d.problems.length} Problems</button>
-    </div>`;
-    addBotHTML(html);
-    setTimeout(()=>{document.querySelectorAll('[id^="prob-"]').forEach(el=>renderMath(el));},100);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-async function loadCompDetail(problem){
-  showTyping();
-  try{
-    const r=await api('/api/problem/solve',{problem});hideTyping();
-    addMsg('bot',r.solution);
-  }catch(e){hideTyping();toast('Error loading solution','err');}
-}
-
-function showBooksForm(){
-  rmWelcome();
-  document.getElementById('chat').innerHTML=`<div class="qcard">
-    <div class="ptitle">📚 Book Finder</div>
-    <div class="psubtitle">Find the best books by topic and level</div>
-    <div class="books-input-form">
-      <div class="input-group">
-        <label class="input-label">Topic</label>
-        <input type="text" id="book-topic" class="input-field" placeholder="e.g., Real Analysis, Linear Algebra"/>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Level</label>
-        <select id="book-level" class="input-field">
-          <option value="beginner">Beginner</option>
-          <option value="undergraduate" selected>Undergraduate</option>
-          <option value="graduate">Graduate</option>
-          <option value="research">Research</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Exam (optional)</label>
-        <select id="book-exam" class="input-field">
-          <option value="">Any</option>
-          <option value="JAM">JAM</option>
-          <option value="GATE">GATE</option>
-          <option value="CSIR">CSIR</option>
-        </select>
-      </div>
-      <button class="books-search-btn" onclick="searchBooks()">Search Books</button>
-    </div>
-    <div id="book-results"></div>
-  </div>`;
-}
-
-async function searchBooks(){
-  const topic=(document.getElementById('book-topic')?.value||'').trim();
-  if(!topic){toast('Enter a topic','info');return;}
-  const level=document.getElementById('book-level')?.value||'undergraduate';
-  const exam=document.getElementById('book-exam')?.value||'';
-  const results=document.getElementById('book-results');
-  results.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:12px">Searching...</div>';
-  try{
-    const r=await api('/api/books',{topic,level,exam});
-    if(!r.books||r.books.length===0){
-      results.innerHTML='<div style="color:var(--txt2);font-size:12px;padding:12px">No books found. Try another topic.</div>';
-      return;
-    }
-    let html='';
-    r.books.forEach(b=>{
-      html+=`<div class="book-card">
-        <div class="book-title">${escHtml(b.name||b.title||'Unknown')}</div>
-        <div class="book-author">${escHtml(b.author||'Unknown Author')}</div>
-        ${b.level?`<div class="book-level">${escHtml(b.level)}</div>`:''}
-        <div class="book-why">${escHtml(b.why||'')}</div>
-        ${b.search_term?`<a href="https://www.google.com/search?q=${encodeURIComponent(b.search_term)}" target="_blank" class="book-search">🔍 Find Online</a>`:''}
-      </div>`;
-    });
-    results.innerHTML=html;
-  }catch(e){results.innerHTML=`<div style="color:var(--red);font-size:12px;padding:12px">Error: ${e.message}</div>`;}
-}
-
-/* ══ GRAPH PLOTTER ════════════════════════════════ */
-function showGraphPlotter(){
-  rmWelcome();
-  document.getElementById('chat').innerHTML=`<div class="qcard">
-    <div class="ptitle">📈 Graph Plotter</div>
-    <div class="psubtitle">Plot 2D or 3D functions with complete analysis</div>
-    <div class="graph-controls">
-      <div style="flex:1">
-        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Function</label>
-        <input type="text" id="graph-expr" class="graph-input" placeholder="e.g., x^2, sin(x), sqrt(x)" style="width:100%"/>
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Type</label>
-        <select id="graph-type" class="graph-input" style="width:80px">
-          <option value="2d">2D</option>
-          <option value="3d">3D</option>
-        </select>
-      </div>
-      <button class="graph-btn" onclick="plotGraph()">Plot</button>
-    </div>
-    <div id="graph-container" class="graph-container"></div>
-    <div id="graph-info" class="graph-info" style="display:none"></div>
-  </div>`;
-}
-
-async function plotGraph(){
-  const expr=document.getElementById('graph-expr')?.value||'x^2';
-  const type=document.getElementById('graph-type')?.value||'2d';
-  if(!expr.trim()){toast('Enter a function','info');return;}
-  const container=document.getElementById('graph-container');
-  const info=document.getElementById('graph-info');
-  container.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--txt2)">Plotting...</div>';
-  try{
-    const r=await api('/api/graph',{expression:expr,type,x_min:-5,x_max:5,y_min:-5,y_max:5});
-    if(r.sympy===false){
-      info.style.display='block';
-      info.innerHTML=`<strong>Function Analysis:</strong><br>${r.analysis||r.description}`;
-      container.innerHTML='';
-    }else{
-      if(type==='2d'&&r.points){
-        const validPoints=r.points.filter(p=>p.y!==null&&!isNaN(p.y));
-        const traces=[{
-          x:validPoints.map(p=>p.x),
-          y:validPoints.map(p=>p.y),
-          mode:'lines',
-          type:'scatter',
-          name:'f(x)',
-          line:{color:'#4f8ef7',width:2},
-          hovertemplate:'x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
-        }];
-        if(r.critical_points&&r.critical_points.length>0){
-          const critY=r.critical_points.map(x=>validPoints.find(p=>Math.abs(p.x-x)<0.05)?.y).filter(y=>y!==undefined);
-          traces.push({
-            x:r.critical_points,
-            y:critY,
-            mode:'markers',
-            type:'scatter',
-            name:'Critical Points',
-            marker:{color:'#f7934f',size:8},
-            hovertemplate:'Critical: %{x:.3f}<extra></extra>'
-          });
-        }
-        Plotly.newPlot('graph-container',traces,{
-          title:{text:expr,font:{size:14}},
-          plot_bgcolor:'rgba(18,22,31,0.5)',
-          paper_bgcolor:'rgba(7,9,14,0)',
-          font:{color:'#dde1f0',family:"'DM Mono'"},
-          margin:{l:60,r:20,t:40,b:50},
-          hovermode:'closest',
-          xaxis:{showgrid:true,gridwidth:1,gridcolor:'rgba(79,142,247,.1)'},
-          yaxis:{showgrid:true,gridwidth:1,gridcolor:'rgba(79,142,247,.1)'}
-        },{responsive:true});
-        info.style.display='block';
-        info.innerHTML=`<strong>Analysis:</strong><br>${r.analysis||'Graph plotted successfully'}`;
-      }else if(type==='3d'&&r.x&&r.y&&r.z){
-        const trace={x:r.x,y:r.y,z:r.z,mode:'markers',type:'scatter3d',marker:{size:2,color:r.z,colorscale:'Viridis'}};
-        Plotly.newPlot('graph-container',[trace],{
-          title:{text:expr,font:{size:14}},
-          scene:{bgcolor:'rgba(18,22,31,0.5)'},
-          plot_bgcolor:'rgba(7,9,14,0)',
-          paper_bgcolor:'rgba(7,9,14,0)',
-          font:{color:'#dde1f0',family:"'DM Mono'"},
-          margin:{l:0,r:0,t:30,b:0}
-        },{responsive:true});
-        info.style.display='block';
-        info.innerHTML='<strong>3D Surface plotted successfully</strong>';
-      }
-    }
-  }catch(e){
-    container.innerHTML=`<div style="padding:20px;color:var(--red)">Error: ${e.message}</div>`;
-    info.style.display='none';
-  }
-}
-
-async function quickPlot(expr){
-  if(mode!=='graph')setMode('graph');
-  setTimeout(()=>{
-    document.getElementById('graph-expr').value=expr;
-    plotGraph();
-  },100);
-}
-
-function showQuizTopics(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  const topics=['Calculus','Linear Algebra','Real Analysis','Complex Analysis','Abstract Algebra','Probability'];
-  addBotHTML(`<div class="panel">
-    <div class="ptitle">📝 Quiz Mode</div>
-    <div class="psubtitle">5 questions · Immediate feedback · Complete explanations</div>
-    <div class="pgrid">${topics.map(t=>`<button class="pbtn" onclick="startQuiz('${t}')">${t}</button>`).join('')}</div>
-  </div>`);
-}
-
-async function startQuiz(topic){
-  document.getElementById('chat').innerHTML='';
-  quizState={topic,q:0,total:5,score:0};
-  addMsg('bot',`📝 Starting ${topic} Quiz — 5 questions!`);
-  await nextQuizQ();
-}
-
-async function nextQuizQ(){
-  showTyping();
-  try{
-    const r=await api('/api/quiz/question',{topic:quizState.topic,difficulty:'medium',q_num:quizState.q+1,total:quizState.total});
-    hideTyping();quizState.q++;quizState.curAns=r.answer;quizState.curExpl=r.explanation;
-    const lines=r.question.split('\n').filter(l=>l.trim());
-    const qLine=lines.find(l=>l.startsWith('Q:'))||lines[0]||'';
-    const opts=lines.filter(l=>/^[A-D]\)/.test(l.trim()));
-    const id='qz'+Date.now();
-    const html=`<div class="qcard" id="${id}">
-      <div class="psubtitle">Q ${quizState.q}/${quizState.total} · ${quizState.topic}</div>
-      <div class="qprog"><div class="qbar" style="width:${(quizState.q/quizState.total)*100}%"></div></div>
-      <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
-      <div class="qopts">${opts.map(o=>{
-        const let_=o.trim()[0],txt=o.trim().slice(2).trim();
-        return`<button class="qopt" id="${id}${let_}" onclick="pickAns('${id}','${let_}','${quizState.curAns}')" data-l="${let_}">
-          <span class="qletter">${let_}</span><span>${escHtml(txt)}</span></button>`;
-      }).join('')}</div>
-      <div class="qexpl" id="${id}ex"></div>
-      <div class="qfooter">
-        <span style="font-size:10px;color:var(--txt3)">Score: <strong id="${id}sc">${quizState.score}</strong>/${quizState.q-1}</span>
-        <button class="qnext" id="${id}nx" style="display:none" onclick="quizNext('${id}')">${quizState.q>=quizState.total?'See Result →':'Next →'}</button>
-      </div>
-    </div>`;
-    addBotHTML(html);
-    setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},120);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-function pickAns(id,chosen,correct){
-  ['A','B','C','D'].forEach(l=>{const b=document.getElementById(id+l);if(b){b.disabled=true;
-    if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
-  const ok=chosen===correct;if(ok)quizState.score++;
-  const ex=document.getElementById(id+'ex');
-  if(ex){ex.style.display='block';ex.innerHTML=(ok?'✅ Correct! ':'❌ Incorrect. Answer: '+correct+'. ')+escHtml(quizState.curExpl||'');renderMath(ex);}
-  const sc=document.getElementById(id+'sc');if(sc)sc.textContent=quizState.score;
-  document.getElementById(id+'nx').style.display='block';
-}
-
-async function quizNext(id){document.getElementById(id+'nx').style.display='none';if(quizState.q>=quizState.total)showQuizResult();else await nextQuizQ();}
-
-function showQuizResult(){
-  const s=quizState.score,t=quizState.total,pct=Math.round(s/t*100);
-  const msg=pct===100?'Perfect! 🏆':pct>=80?'Excellent! 🌟':pct>=60?'Good! 💪':'Keep practicing! 📚';
-  addBotHTML(`<div class="qcard" style="text-align:center">
-    <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">📝 Quiz Complete</div>
-    <div style="font-size:42px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0">${s}/${t}</div>
-    <div style="font-size:14px;color:var(--txt2);margin:8px 0">${pct}% — ${msg}</div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
-      <button class="qnext" onclick="startQuiz('${quizState.topic}')">Try Again</button>
-      <button class="qnext" onclick="showQuizTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Topic</button>
-    </div>
-  </div>`);
-  quizState=null;
-}
-
-function showMockTopics(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  addBotHTML(`<div class="panel">
-    <div class="ptitle">🧪 Mock Test (30 Questions)</div>
-    <div class="psubtitle">Full exam simulation with solutions</div>
-    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock (30 Q's)</button>`).join('')}
-  </div>`);
-}
-
-async function startMock(exam){
-  document.getElementById('chat').innerHTML='';
-  mockState={exam,q:0,total:30,score:0,topics:[]};
-  addMsg('bot',`🧪 ${exam} Mock Test — 30 Questions`);
-  await nextMockQ();
-}
-
-async function nextMockQ(){
-  const topics={JAM:['Real Analysis','Linear Algebra','Calculus','Group Theory','Complex Analysis'],
-                GATE:['Calculus','Linear Algebra','Complex Analysis','PDE','ODE'],
-                CSIR:['Real Analysis','Topology','Abstract Algebra','Complex Analysis']};
-  const topicList=topics[mockState.exam]||topics['JAM'];
-  const topic=topicList[Math.floor(Math.random()*topicList.length)];
-  mockState.curTopic=topic;
-  showTyping();
-  try{
-    const r=await api('/api/quiz/question',{topic,difficulty:'hard',q_num:mockState.q+1,total:mockState.total});
-    hideTyping();mockState.q++;mockState.curAns=r.answer;mockState.curExpl=r.explanation;
-    const lines=r.question.split('\n').filter(l=>l.trim());
-    const qLine=lines.find(l=>l.startsWith('Q:'))||lines[0]||'';
-    const opts=lines.filter(l=>/^[A-D]\)/.test(l.trim()));
-    const id='mk'+Date.now();
-    const html=`<div class="qcard" id="${id}">
-      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-bottom:8px">${mockState.exam} · Q${mockState.q}/${mockState.total} · ${topic}</div>
-      <div class="qprog"><div class="qbar" style="width:${(mockState.q/mockState.total)*100}%"></div></div>
-      <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
-      <div class="qopts">${opts.map(o=>{const l=o.trim()[0],t=o.trim().slice(2).trim();
-        return`<button class="qopt" id="${id}${l}" onclick="pickMock('${id}','${l}')" data-l="${l}">
-          <span class="qletter">${l}</span><span>${escHtml(t)}</span></button>`;
-      }).join('')}</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="copy-btn" id="${id}sbtn" onclick="showMockSolution('${id}')" style="display:none">🤖 Show Solution</button>
-        <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'Finish →':'Next →'}</button>
-      </div>
-    </div>`;
-    addBotHTML(html);
-    setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},120);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-function pickMock(id,chosen){
-  if(!mockState)return;
-  const correct=mockState.curAns;
-  ['A','B','C','D'].forEach(l=>{const b=document.getElementById(id+l);if(b){b.disabled=true;
-    if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
-  const ok=chosen===correct;if(ok)mockState.score++;else mockState.topics.push(mockState.curTopic);
-  document.getElementById(id+'sbtn').style.display='inline-block';
-  document.getElementById(id+'nx').style.display='inline-block';
-}
-
-async function showMockSolution(id){
-  const btn=document.getElementById(id+'sbtn');
-  if(btn.innerText==='Hide Solution'){
-    btn.innerText='🤖 Show Solution';
-    // Just hide, don't remove
-    return;
-  }
-  btn.innerText='Hide Solution';
-  const qText=document.getElementById(id+'q')?.innerText||'Question';
-  try{
-    const r=await api('/api/question/solve',{question:qText});
-    const solDiv=document.createElement('div');
-    solDiv.style.cssText='background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:8px;padding:12px;margin-top:10px;font-size:12px;color:var(--txt2);line-height:1.6';
-    solDiv.innerHTML=fmt(r.solution);
-    btn.parentElement.appendChild(solDiv);
-    renderMath(solDiv);
-  }catch(e){toast('Error loading solution','err');}
-}
-
-async function mockNext(id){document.getElementById(id+'nx').style.display='none';if(mockState.q>=mockState.total)showMockResult();else await nextMockQ();}
-
-function showMockResult(){
-  const s=mockState.score,t=mockState.total,pct=Math.round(s/t*100);
-  const weak=[...new Set(mockState.topics)].slice(0,3).join(', ')||'None';
-  addBotHTML(`<div class="qcard" style="text-align:center">
-    <div style="font-size:12px;color:var(--txt2)">🧪 ${mockState.exam} Mock Complete</div>
-    <div style="font-size:42px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0">${s}/${t}</div>
-    <div style="font-size:14px;color:var(--txt2)">${pct}%</div>
-    ${weak!=='None'?`<div style="background:rgba(232,64,64,.08);border-left:3px solid var(--red);padding:10px;border-radius:5px;margin:12px 0;font-size:11px;color:var(--txt2);text-align:left"><strong>Review:</strong> ${weak}</div>`:''}
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
-      <button class="qnext" onclick="startMock('${mockState.exam}')">Retry</button>
-      <button class="qnext" onclick="showMockTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">New Exam</button>
-    </div>
-  </div>`);
-  mockState=null;
-}
-
-function showPYQTopics(){
-  rmWelcome();document.getElementById('chat').innerHTML='';
-  addBotHTML(`<div class="panel">
-    <div class="ptitle">📜 Previous Year Questions</div>
-    <div class="psubtitle">Real exam questions with solutions</div>
-    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="loadPYQ('${e}')">🎓 ${e} PYQs</button>`).join('')}
-  </div>`);
-}
-
-async function loadPYQ(exam){
-  rmWelcome();showTyping();
-  try{
-    const d=await(await fetch('/api/pyq?exam='+exam)).json();hideTyping();
-    const qid='pq'+Date.now();const aid='pa'+Date.now();
-    const html=`<div class="qcard">
-      <div class="psubtitle">📜 ${exam} · ${escHtml(d.topic)}</div>
-      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc);margin:8px 0">
-        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-bottom:4px">Question</div>
-        <div id="${qid}" style="font-size:12px;color:var(--txt);line-height:1.7">${escHtml(d.q)}</div>
-      </div>
-      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc3);margin:8px 0">
-        <div style="font-size:10px;color:var(--acc3);text-transform:uppercase;margin-bottom:4px">Solution</div>
-        <div id="${aid}" style="font-size:12px;color:var(--txt2);line-height:1.7">${escHtml(d.a)}</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadPYQ('${exam}')">Next Question</button>
-        <button class="copy-btn" onclick="copyTxt('Q: '+document.getElementById('${qid}').innerText+' \\n\\nSolution:\\n'+document.getElementById('${aid}').innerText)">Copy Q+A</button>
-      </div>
-    </div>`;
-    addBotHTML(html);
-    setTimeout(()=>{[qid,aid].forEach(i=>{const el=document.getElementById(i);if(el)renderMath(el);});},100);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-async function showExam(exam){
-  setModeTitle(`🎓 ${exam}`);
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/exam/'+exam)).json();hideTyping();
-    const html=`<div class="qcard">
-      <div class="ptitle">🎓 ${escHtml(d.full_name)}</div>
-      <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;color:var(--txt2);line-height:1.6">
-        <div><strong style="color:var(--acc)">Pattern:</strong> ${escHtml(d.pattern).replace(/\n/g,'<br>')}</div>
-        <div><strong style="color:var(--acc)">Syllabus:</strong> ${escHtml(d.syllabus)}</div>
-      </div>
-      <button class="qnext" style="margin-top:12px;width:100%" onclick="toast('More info at '+d.website,'info')">📚 Official Website</button>
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
-}
-
-/* ══ DOM HELPERS ════════════════════════════════ */
 function addMsg(role,text,isErr=false){
   rmWelcome();
   const chat=document.getElementById('chat');
-  const div=document.createElement('div');div.className=`msg ${role}`;
-  const avHtml=role==='user'
-    ?'<div class="avatar">👤</div>'
-    :'<div class="avatar">🧮</div>';
-  div.innerHTML=avHtml+`<div class="bubble"></div>`;
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  div.innerHTML=`<div class="avatar">${role==='user'?'👤':'∑'}</div><div class="bubble"></div>`;
   const bubble=div.querySelector('.bubble');
   bubble.innerHTML=fmt(text);
-
-  if(role==='bot'&&!isErr){
-    const cw=document.createElement('div');cw.className='copy-wrap';
-    const cb=document.createElement('button');cb.className='copy-btn';cb.textContent='📋 Copy';
-    cb.onclick=()=>copyTxt(text);
-    cw.appendChild(cb);bubble.appendChild(cw);
-  }
-
-  bubble.querySelectorAll('pre').forEach(pre=>{
-    const cb=document.createElement('button');cb.className='pre-copy';cb.textContent='Copy';
-    cb.onclick=()=>copyTxt(pre.innerText);pre.style.position='relative';pre.appendChild(cb);
-  });
-
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
   requestAnimationFrame(()=>{renderMath(bubble);chat.scrollTop=chat.scrollHeight;});
 }
 
-function addBotHTML(html){
-  rmWelcome();
-  const chat=document.getElementById('chat');
-  const div=document.createElement('div');div.className='msg bot';
-  div.innerHTML=`<div class="avatar">🧮</div><div class="bubble">${html}</div>`;
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
-  div.querySelectorAll('pre').forEach(pre=>{
-    const cb=document.createElement('button');cb.className='pre-copy';cb.textContent='Copy';
-    cb.onclick=()=>copyTxt(pre.innerText);pre.style.position='relative';pre.appendChild(cb);
-  });
-}
-
 function showTyping(){
-  busy=true;document.getElementById('send-btn').disabled=true;
+  busy=true;
   const chat=document.getElementById('chat');
-  const div=document.createElement('div');div.className='msg bot';div.id='typing-ind';
-  div.innerHTML=`<div class="avatar">🧮</div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
-}
-function hideTyping(){
-  busy=false;document.getElementById('send-btn').disabled=false;
-  const t=document.getElementById('typing-ind');if(t)t.remove();
-}
-function setModeTitle(title){
-  const mt=document.getElementById('mode-title');
-  mt.style.opacity='0';setTimeout(()=>{mt.textContent=title;mt.style.opacity='1';},150);
+  const div=document.createElement('div');
+  div.className='msg bot';
+  div.id='typing-ind';
+  div.innerHTML=`<div class="avatar">∑</div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
 }
 
-/* ══ TEXT FORMATTING ═════════════════════════════ */
+function hideTyping(){
+  busy=false;
+  const t=document.getElementById('typing-ind');
+  if(t)t.remove();
+}
+
+/* ════ TEXT FORMATTING ════ */
 function fmt(text){
   if(!text)return'';
-  const latexBlocks=[];let t=text;
+  const latexBlocks=[];
+  let t=text;
   t=t.replace(/\\\[([\s\S]*?)\\\]/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
   t=t.replace(/\\\(([\s\S]*?)\\\)/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
-  t=t.replace(/\$\$([\s\S]*?)\$\$/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
-  t=t.replace(/\$([^\$\n]+?)\$/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
   t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   t=t.replace(/\x00L(\d+)\x00/g,(_,i)=>latexBlocks[parseInt(i)]);
-  t=t.replace(/(https?:\/\/[^\s<&"]+)/g,'<a href="$1" target="_blank" rel="noopener">Link</a>');
   t=t.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>');
-  t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
-  t=t.replace(/^(📌|💡|📖|📐|✏️|📚|📝|✅|⚠️|🎯|🔢|🔷|📊|🏆|🧩|🌐|🔬|💼|🌍|⭐|🛠️|🔍|🎓)\s+(.+)$/gm,'<span class="sec">$1 $2</span>');
   t=t.replace(/\n/g,'<br>');
   return t;
 }
 
-function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function escQ(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n');}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escQ(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
-
-function handleKey(e){
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
-}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 async function quickSend(msg){document.getElementById('input').value=msg;await sendMsg();}
-
 async function api(url,data){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||`Server error ${r.status}`);}
+  if(!r.ok)throw new Error(`Error ${r.status}`);
   return r.json();
 }
 
-function copyTxt(text){
-  navigator.clipboard.writeText(text).then(()=>toast('✅ Copied!','ok')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');toast('✅ Copied!','ok');}catch(e){toast('Copy failed','err');}
-    document.body.removeChild(ta);
-  });
-}
 function toast(msg,type='ok'){
-  const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.body.appendChild(t);
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.textContent=msg;
+  document.body.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);
 }
 
 function handleImg(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
-  r.onload=ev=>{const res=ev.target.result;imgB64=res.split(',')[1];imgType=file.type;
-    document.getElementById('prev-img').src=res;document.getElementById('imgpreview').style.display='block';
-    document.getElementById('input').placeholder='Image uploaded! Ask about this problem...';};
+  r.onload=ev=>{
+    const res=ev.target.result;
+    imgB64=res.split(',')[1];
+    imgType=file.type;
+    document.getElementById('prev-img').src=res;
+    document.getElementById('imgpreview').style.display='block';
+  };
   r.readAsDataURL(file);
 }
+
 function removeImg(){
   imgB64=null;imgType=null;
   document.getElementById('imgpreview').style.display='none';
   document.getElementById('filein').value='';
-  document.getElementById('input').placeholder=MODE_CFG[mode]?.ph||'Type here...';
 }
-document.addEventListener('paste',e=>{
-  const items=e.clipboardData?.items;if(!items)return;
-  for(const it of items){
-    if(it.type.startsWith('image/')){
-      const file=it.getAsFile();const r=new FileReader();
-      r.onload=ev=>{const res=ev.target.result;imgB64=res.split(',')[1];imgType=file.type;
-        document.getElementById('prev-img').src=res;document.getElementById('imgpreview').style.display='block';};
-      r.readAsDataURL(file);break;
-    }
-  }
-});
 
 function initTheme(){
   const t=localStorage.getItem('ms_theme')||'dark';
   document.body.classList.toggle('light',t==='light');
-  const b=document.getElementById('theme-btn');
-  if(b)b.textContent=t==='light'?'☀️ Light':'🌙 Dark';
+  document.getElementById('theme-btn').textContent=t==='light'?'☀️ Light':'🌙 Dark';
 }
+
 function toggleTheme(){
   const nowLight=!document.body.classList.contains('light');
   document.body.classList.toggle('light',nowLight);
   localStorage.setItem('ms_theme',nowLight?'light':'dark');
-  const b=document.getElementById('theme-btn');
-  if(b)b.textContent=nowLight?'☀️ Light':'🌙 Dark';
+  document.getElementById('theme-btn').textContent=nowLight?'☀️ Light':'🌙 Dark';
 }
 </script>
 </body>
