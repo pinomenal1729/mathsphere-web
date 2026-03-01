@@ -576,53 +576,259 @@ async function runGraph(){
   setLoading(btn,true,'Plotting...');
   try{
     const r=await apiPost('/api/graph',{expression:expr,type:'2d'});
-    const plot=document.getElementById('g-plotbox');
-    plot.style.display='block';
-    if(r.sympy&&r.points){
-      const pts=r.points.filter(p=>p.y!==null&&p.y!==undefined);
-      Plotly.newPlot(plot,[{
-        x:pts.map(p=>p.x),y:pts.map(p=>p.y),
-        type:'scatter',mode:'lines',
-        line:{color:'#00d9ff',width:2.5},
-        name:`f(x) = ${expr}`
+    const plotbox=document.getElementById('g-plotbox');
+
+    if(r.sympy&&r.points&&r.points.length>0){
+      // SymPy available — draw real graph with Plotly
+      plotbox.style.display='block';
+      plotbox.style.height='380px';
+      const pts=r.points.filter(p=>p.y!==null&&p.y!==undefined&&isFinite(p.y));
+      Plotly.newPlot(plotbox,[{
+        x:pts.map(p=>p.x),
+        y:pts.map(p=>p.y),
+        type:'scatter',
+        mode:'lines',
+        line:{color:'#00d9ff',width:2.5,shape:'spline'},
+        name:`f(x) = ${expr}`,
+        fill:'tozeroy',
+        fillcolor:'rgba(0,217,255,0.05)'
       }],{
-        paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
-        font:{color:'#a8b7d1',family:'JetBrains Mono'},
-        xaxis:{gridcolor:'rgba(0,217,255,.1)',zerolinecolor:'rgba(0,217,255,.3)',title:'x'},
-        yaxis:{gridcolor:'rgba(0,217,255,.1)',zerolinecolor:'rgba(0,217,255,.3)',title:'f(x)'},
-        margin:{l:50,r:20,t:30,b:40},showlegend:true,
-        legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#a8b7d1'}}
-      },{responsive:true,displayModeBar:false});
+        paper_bgcolor:'rgba(15,20,55,0.95)',
+        plot_bgcolor:'rgba(15,20,55,0.95)',
+        font:{color:'#a8b7d1',family:'JetBrains Mono',size:11},
+        xaxis:{
+          gridcolor:'rgba(0,217,255,.12)',
+          zerolinecolor:'rgba(0,217,255,.4)',
+          zerolinewidth:1.5,
+          title:{text:'x',font:{color:'#00d9ff'}},
+          tickfont:{color:'#6b7a94'}
+        },
+        yaxis:{
+          gridcolor:'rgba(0,217,255,.12)',
+          zerolinecolor:'rgba(0,217,255,.4)',
+          zerolinewidth:1.5,
+          title:{text:'f(x)',font:{color:'#00d9ff'}},
+          tickfont:{color:'#6b7a94'}
+        },
+        margin:{l:55,r:20,t:40,b:50},
+        showlegend:true,
+        legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#a8b7d1',size:11}},
+        title:{text:`f(x) = ${expr}`,font:{color:'#f8fafc',size:14},x:0.5}
+      },{responsive:true,displayModeBar:true,
+        modeBarButtonsToRemove:['pan2d','select2d','lasso2d','resetScale2d'],
+        displaylogo:false});
+      showResult('g-result',r.analysis||'');
+    } else {
+      // No SymPy — show AI analysis only
+      plotbox.style.display='none';
+      showResult('g-result',r.analysis||'Could not plot graph. Analysis:\n\n'+JSON.stringify(r));
     }
-    showResult('g-result',r.analysis||'Graph plotted above.');
-  }catch(e){showResult('g-result','Error: '+e.message,true);}
-  finally{setLoading(btn,false,'Plot & Analyze');}
+  }catch(e){
+    showResult('g-result','⚠️ Error: '+e.message,true);
+  }finally{
+    setLoading(btn,false,'Plot & Analyze');
+  }
 }
 
 async function runMathematician(){
   const name=document.getElementById('m-name').value.trim();
-  await runPanel('/api/mathematician',{name},'m-result',r=>{
-    if(r.biography&&typeof r.biography==='string') return r.biography;
-    if(r.name&&r.biography) return `${r.name}\n\n${r.biography}`;
-    return JSON.stringify(r,null,2);
-  });
+  const btn=document.querySelector('#chat .action-btn');
+  const resBox=document.getElementById('m-result');
+  setLoading(btn,true,'Exploring...');
+  resBox.style.display='none';
+  try{
+    const r=await apiPost('/api/mathematician',{name});
+    resBox.style.display='block';
+    resBox.innerHTML=formatMathematician(r);
+    setTimeout(()=>renderMath(resBox),100);
+  }catch(e){
+    resBox.style.display='block';
+    resBox.innerHTML='⚠️ Error: '+e.message;
+  }finally{setLoading(btn,false,'Explore');}
 }
 
 async function runRandomMathematician(){
   document.getElementById('m-name').value='';
-  await runPanel('/api/mathematician',{},'m-result',r=>{
+  const btn=document.querySelectorAll('#chat .action-btn')[0];
+  const resBox=document.getElementById('m-result');
+  setLoading(btn,true,'Loading...');
+  resBox.style.display='none';
+  try{
+    const r=await apiPost('/api/mathematician',{});
     if(r.name) document.getElementById('m-name').value=r.name;
-    if(r.biography&&typeof r.biography==='string') return `${r.name||''}\n\n${r.biography}`;
-    return JSON.stringify(r,null,2);
-  });
+    resBox.style.display='block';
+    resBox.innerHTML=formatMathematician(r);
+    setTimeout(()=>renderMath(resBox),100);
+  }catch(e){
+    resBox.style.display='block';
+    resBox.innerHTML='⚠️ Error: '+e.message;
+  }finally{setLoading(btn,false,'Explore');}
 }
+
+function formatMathematician(r){
+  if(!r||(!r.name&&!r.biography)) return '⚠️ Could not load mathematician data.';
+  const name=r.name||'Unknown';
+  const period=r.period||'';
+  const country=r.country||'';
+  const fields=Array.isArray(r.fields)?r.fields.join(' · '):(r.fields||'');
+  const bio=r.biography||r.bio||'';
+  const quote=r.famous_quote||'';
+  const contributions=Array.isArray(r.major_contributions)?r.major_contributions:[];
+  const achievements=r.key_achievements||{};
+  const impact=r.impact_today||'';
+  const resources=Array.isArray(r.learning_resources)?r.learning_resources:[];
+  const wiki=r.wikipedia||`https://en.wikipedia.org/wiki/${encodeURIComponent(name)}`;
+
+  let html=`
+  <div style="border-bottom:1px solid rgba(0,217,255,.2);padding-bottom:16px;margin-bottom:16px">
+    <div style="font-family:var(--font-display);font-size:22px;font-weight:800;background:linear-gradient(135deg,#f8fafc,#00d9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">${escHtml(name)}</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+      ${period?`<span style="background:rgba(0,217,255,.12);border:1px solid rgba(0,217,255,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--accent-primary)">📅 ${escHtml(period)}</span>`:''}
+      ${country?`<span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:#a78bfa)">🌍 ${escHtml(country)}</span>`:''}
+    </div>
+    ${fields?`<div style="font-size:11px;color:var(--accent-tertiary);font-family:var(--font-mono)">🔬 ${escHtml(fields)}</div>`:''}
+  </div>`;
+
+  if(bio){
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">📖 BIOGRAPHY</div>
+      <div style="color:var(--text-secondary);line-height:1.9;font-size:13px">${escHtml(bio)}</div>
+    </div>`;
+  }
+
+  if(quote){
+    html+=`<div style="background:rgba(212,165,116,.08);border-left:3px solid var(--gold);padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;font-style:italic;color:var(--gold);font-size:13px">
+      "${escHtml(quote)}"
+    </div>`;
+  }
+
+  if(contributions.length>0){
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🏆 MAJOR CONTRIBUTIONS</div>
+      ${contributions.map(c=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--accent-primary);flex-shrink:0">▸</span><span style="color:var(--text-secondary);font-size:13px">${escHtml(c)}</span></div>`).join('')}
+    </div>`;
+  }
+
+  if(Object.keys(achievements).length>0){
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">📐 KEY RESULTS & THEOREMS</div>
+      ${Object.entries(achievements).map(([k,v])=>`
+        <div style="background:rgba(0,217,255,.06);border:1px solid rgba(0,217,255,.15);border-radius:8px;padding:10px 14px;margin-bottom:8px">
+          <div style="color:var(--accent-primary);font-weight:600;font-size:12px;margin-bottom:4px">${escHtml(k)}</div>
+          <div style="color:var(--text-secondary);font-size:12px;line-height:1.7">${escHtml(String(v))}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  if(impact){
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🌍 IMPACT TODAY</div>
+      <div style="color:var(--text-secondary);font-size:13px;line-height:1.8">${escHtml(impact)}</div>
+    </div>`;
+  }
+
+  if(resources.length>0){
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">📚 LEARNING RESOURCES</div>
+      ${resources.map(r=>`<div style="color:var(--accent-tertiary);font-size:12px;margin-bottom:4px">→ ${escHtml(r)}</div>`).join('')}
+    </div>`;
+  }
+
+  html+=`<div style="margin-top:4px">
+    <a href="${escHtml(wiki)}" target="_blank" style="display:inline-block;background:rgba(0,217,255,.1);border:1px solid rgba(0,217,255,.3);color:var(--accent-primary);padding:8px 18px;border-radius:8px;text-decoration:none;font-size:12px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(0,217,255,.2)'" onmouseout="this.style.background='rgba(0,217,255,.1)'">🔗 Wikipedia →</a>
+  </div>`;
+
+  return html;
+}
+
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 async function runProjects(){
   const topic=document.getElementById('p-topic').value.trim()||'Machine Learning';
-  await runPanel('/api/projects/generate',{topic},'p-result',r=>{
-    if(!r.projects||!r.projects.length) return 'Could not generate projects. Try again.';
-    return r.projects.map((p,i)=>`PROJECT ${i+1}: ${p.title||''}\nDifficulty: ${p.difficulty||''}\n\n${p.description||''}\n\nSteps:\n${(p.step_by_step||[]).join('\n')}\n\nCode:\n${p.code_snippet||''}\n\nCareer: ${p.career_salary||''}`).join('\n\n─────────────────\n\n');
-  });
+  const btn=document.querySelector('#chat .action-btn');
+  const resBox=document.getElementById('p-result');
+  setLoading(btn,true,'Generating Projects...');
+  resBox.style.display='none';
+  try{
+    const r=await apiPost('/api/projects/generate',{topic});
+    resBox.style.display='block';
+    if(!r.projects||!r.projects.length){
+      resBox.innerHTML='⚠️ Could not generate projects. Please try again.';
+      return;
+    }
+    resBox.innerHTML=r.projects.map((p,i)=>formatProject(p,i)).join('');
+    setTimeout(()=>renderMath(resBox),100);
+  }catch(e){
+    resBox.style.display='block';
+    resBox.innerHTML='⚠️ Error: '+e.message;
+  }finally{setLoading(btn,false,'Generate Projects');}
+}
+
+function formatProject(p,i){
+  const diffColor={'Beginner':'#06f7d6','Intermediate':'#00d9ff','Advanced':'#a78bfa'}[p.difficulty]||'#00d9ff';
+  const concepts=Array.isArray(p.math_concepts)?p.math_concepts:[];
+  const steps=Array.isArray(p.step_by_step)?p.step_by_step:[];
+  const resources=Array.isArray(p.resources)?p.resources:[];
+  const searchQuery=encodeURIComponent((p.title||'')+ ' mathematics project tutorial');
+  const githubQuery=encodeURIComponent(p.title||'');
+  const youtubeUrl=`https://www.youtube.com/results?search_query=${searchQuery}`;
+  const githubUrl=`https://github.com/search?q=${githubQuery}&type=repositories`;
+  const googleUrl=`https://www.google.com/search?q=${searchQuery}`;
+
+  return `
+  <div style="background:rgba(0,217,255,.05);border:1px solid rgba(0,217,255,.18);border-radius:12px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent-primary),var(--accent-secondary),var(--accent-tertiary))"></div>
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);margin-bottom:4px">PROJECT ${i+1}</div>
+        <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--text-primary)">${escHtml(p.title||'')}</div>
+      </div>
+      <span style="background:rgba(0,217,255,.1);border:1px solid ${diffColor}33;color:${diffColor};padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--font-mono);white-space:nowrap;flex-shrink:0">${escHtml(p.difficulty||'')}</span>
+    </div>
+
+    <div style="color:var(--text-secondary);font-size:13px;line-height:1.8;margin-bottom:14px">${escHtml(p.description||'')}</div>
+
+    ${concepts.length?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">🔢 MATH CONCEPTS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${concepts.map(c=>`<span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);color:#a78bfa;padding:3px 10px;border-radius:6px;font-size:11px;font-family:var(--font-mono)">${escHtml(c)}</span>`).join('')}
+      </div>
+    </div>`:''}
+
+    ${steps.length?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">📋 STEP-BY-STEP GUIDE</div>
+      ${steps.map((s,si)=>`
+        <div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start">
+          <span style="background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary));color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${si+1}</span>
+          <span style="color:var(--text-secondary);font-size:12.5px;line-height:1.7">${escHtml(s)}</span>
+        </div>`).join('')}
+    </div>`:''}
+
+    ${p.code_snippet?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">💻 CODE EXAMPLE</div>
+      <pre style="background:rgba(0,0,0,.4);border:1px solid rgba(0,217,255,.15);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:11px;color:var(--accent-tertiary);overflow-x:auto;line-height:1.6">${escHtml(p.code_snippet)}</pre>
+    </div>`:''}
+
+    ${p.expected_outcome?`<div style="background:rgba(6,247,214,.07);border:1px solid rgba(6,247,214,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--accent-tertiary)">🎯 <strong>Outcome:</strong> ${escHtml(p.expected_outcome)}</div>`:''}
+
+    ${p.career_salary?`<div style="background:rgba(212,165,116,.07);border:1px solid rgba(212,165,116,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--gold)">💼 <strong>Career:</strong> ${escHtml(p.career_salary)}</div>`:''}
+
+    ${resources.length?`
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">📚 RESOURCES</div>
+      ${resources.map(res=>`<div style="color:var(--accent-primary);font-size:12px;margin-bottom:3px">→ ${escHtml(res)}</div>`).join('')}
+    </div>`:''}
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(0,217,255,.1)">
+      <a href="${youtubeUrl}" target="_blank" style="background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);color:#ff6b6b;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(255,0,0,.2)'" onmouseout="this.style.background='rgba(255,0,0,.1)'">▶ YouTube Tutorials</a>
+      <a href="${githubUrl}" target="_blank" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--text-secondary);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">⌨ GitHub Projects</a>
+      <a href="${googleUrl}" target="_blank" style="background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.25);color:var(--accent-primary);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(0,217,255,.15)'" onmouseout="this.style.background='rgba(0,217,255,.08)'">🔍 Search More</a>
+    </div>
+  </div>`;
 }
 
 async function runTheorem(){

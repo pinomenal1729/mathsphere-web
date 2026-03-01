@@ -23,7 +23,7 @@ import json
 import random
 import sys
 from datetime import datetime
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -330,7 +330,7 @@ Confidence: HIGH/MEDIUM/LOW"""
 
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    return "MathSphere v8.0 Backend is running!"
 
 @app.route("/api/health", methods=["GET"])
 def health():
@@ -599,11 +599,18 @@ Return ONLY valid JSON array:
 Make COMPLETE with code and formulas."""
         
         response = ask_simple(prompt, temperature=0.4)
-        try:
-            projects = json.loads(response)
+        projects = None
+        try: projects = json.loads(response)
+        except: pass
+        if not projects:
+            import re as _re
+            m = _re.search(r'\[[\s\S]*\]', response)
+            if m:
+                try: projects = json.loads(m.group(0))
+                except: pass
+        if projects and isinstance(projects, list):
             return jsonify({"topic": topic, "projects": projects})
-        except:
-            return jsonify({"topic": topic, "projects": []})
+        return jsonify({"topic": topic, "projects": [{"title": "Projects for " + topic, "description": response[:800], "difficulty": "Various", "step_by_step": [], "math_concepts": [], "resources": [], "code_snippet": ""}]})
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
