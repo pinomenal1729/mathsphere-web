@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
-<title>MathSphere v7.0 — Professor Edition by Anupam Nigam</title>
+<title>MathSphere v8.0 — Professor Edition by Anupam Nigam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
@@ -59,7 +59,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .logo-wrap{padding:16px 14px 12px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:10px}
 .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--acc),var(--acc2));
   border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
-  box-shadow:0 0 20px rgba(79,142,247,.3);animation:iconP 3s ease-in-out infinite}
+  box-shadow:0 0 20px rgba(79,142,247,.3);animation:iconP 3s ease-in-out infinite;font-size:20px}
 @keyframes iconP{0%,100%{box-shadow:0 0 18px rgba(79,142,247,.3)}50%{box-shadow:0 0 30px rgba(79,142,247,.55)}}
 .logo-name{font-family:var(--fH);font-weight:800;font-size:15px;letter-spacing:-.2px;
   background:linear-gradient(90deg,#dde1f0,#7d879e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -210,15 +210,12 @@ body.light{
   margin:6px 0;border-radius:5px;font-size:12px;color:var(--txt2);line-height:1.6}
 .formula-item .eq{font-family:var(--fM);color:var(--acc3);margin:4px 0;display:block}
 
-/* ── CONCEPT MAP ─────────────────────────────────── */
-.concept-tree{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;
-  padding:16px;margin:8px 0;font-family:var(--fM);font-size:12px;color:var(--txt2);
-  line-height:1.9;overflow-x:auto}
-.concept-tree code{background:var(--sur3);padding:2px 6px;border-radius:3px;color:var(--acc3)}
-
 /* ── GRAPH CONTAINER ─────────────────────────────── */
 .graph-container{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;
-  padding:14px;margin:8px 0;width:100%;height:400px}
+  padding:14px;margin:8px 0;width:100%;height:400px;position:relative}
+.graph-info{background:var(--sur3);border:1px solid rgba(79,142,247,.2);border-radius:8px;
+  padding:12px;margin:8px 0;font-size:12px;color:var(--txt2);line-height:1.6}
+.graph-info strong{color:var(--acc);display:block;margin-bottom:6px}
 .graph-controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
 .graph-input{background:var(--sur3);border:1px solid var(--bor);color:var(--txt);
   padding:6px 10px;border-radius:5px;font-family:var(--fM);font-size:12px}
@@ -274,36 +271,12 @@ body.light{
   box-shadow:0 0 14px rgba(79,142,247,.25);transition:all .22s;white-space:nowrap}
 .qnext:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(79,142,247,.4)}
 
-/* ── MOCK TEST QUESTION ──────────────────────────── */
-.mock-question-wrap{background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:16px;margin:8px 0}
-.mock-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;
-  font-size:11px;color:var(--txt3);font-family:var(--fM)}
-.mock-progress{height:4px;background:var(--bor);border-radius:2px;overflow:hidden;margin-bottom:10px}
-.mock-progress-bar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .5s}
-.mock-question-text{font-size:13px;color:var(--txt);line-height:1.7;margin-bottom:12px}
-.mock-action-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.mock-solve-btn{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.3);
-  color:var(--acc2);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;
-  font-family:var(--fM);transition:all .2s}
-.mock-solve-btn:hover{background:rgba(124,92,252,.25);border-color:var(--acc2)}
-.solution-box{background:rgba(45,214,122,.06);border:1px solid rgba(45,214,122,.2);
-  border-radius:8px;padding:12px;margin:8px 0;font-size:12px;color:var(--txt2);
-  line-height:1.7;display:none}
-.solution-box.show{display:block}
-
-/* ── TYPING ─────────────────────────────────────────── */
-.typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
-  border-radius:13px;border-top-left-radius:3px;width:fit-content}
-.td{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:td 1.2s ease-in-out infinite}
-.td:nth-child(2){animation-delay:.2s;background:var(--acc2)}
-.td:nth-child(3){animation-delay:.4s;background:var(--acc3)}
-@keyframes td{0%,60%,100%{transform:translateY(0) scale(.8);opacity:.4}30%{transform:translateY(-7px) scale(1);opacity:1}}
-
-/* ── INPUT AREA ──────────────────────────────────────── */
-#inputarea{padding:12px 20px 14px;border-top:1px solid var(--bor);
+/* ── INPUT AREA (FIXED) ──────────────────────────────── */
+#inputarea{padding:14px 20px 16px;border-top:1px solid var(--bor);
   background:rgba(7,9,14,.93);backdrop-filter:blur(22px);
-  flex-shrink:0;z-index:999;will-change:transform;transform:translateZ(0)}
-#imgpreview{display:none;margin-bottom:8px;position:relative}
+  flex-shrink:0;z-index:999;will-change:transform;transform:translateZ(0);
+  position:relative;margin-top:auto}
+#imgpreview{display:none;margin-bottom:10px;position:relative}
 #imgpreview img{width:70px;height:52px;object-fit:cover;border-radius:7px;border:1px solid var(--bor2)}
 #imgpreview button{position:absolute;top:-4px;right:-4px;width:15px;height:15px;
   background:var(--red);border-radius:50%;border:none;color:white;font-size:9px;
@@ -337,6 +310,14 @@ body.light{
 .toast.info{background:var(--sur3);border:1px solid var(--acc);color:var(--acc)}
 .toast.err{background:var(--sur3);border:1px solid var(--red);color:var(--red)}
 
+/* ── TYPING ─────────────────────────────────────────── */
+.typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
+  border-radius:13px;border-top-left-radius:3px;width:fit-content}
+.td{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:td 1.2s ease-in-out infinite}
+.td:nth-child(2){animation-delay:.2s;background:var(--acc2)}
+.td:nth-child(3){animation-delay:.4s;background:var(--acc3)}
+@keyframes td{0%,60%,100%{transform:translateY(0) scale(.8);opacity:.4}30%{transform:translateY(-7px) scale(1);opacity:1}}
+
 /* mobile */
 @media(max-width:700px){
   #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:100;transform:translateX(-100%)}
@@ -346,7 +327,9 @@ body.light{
   #welcome h1{font-size:22px}
   .pgrid{grid-template-columns:1fr}
   .graph-container{height:300px}
-  .books-input-form{flex-direction:column}
+  #inputarea{padding:12px 16px 14px}
+  .inp-wrap{padding:8px 8px 8px 12px}
+  #input{font-size:13px}
 }
 </style>
 </head>
@@ -360,13 +343,13 @@ body.light{
     <div class="logo-icon">🧮</div>
     <div>
       <div class="logo-name">MathSphere</div>
-      <div class="logo-by">v7.0 Professor Edition</div>
+      <div class="logo-by">v8.0 Professor Edition</div>
     </div>
   </div>
 
   <div class="sb-scroll">
     <div class="sb-section">CORE LEARNING</div>
-    <button class="nav-btn" id="nav-ask" onclick="setMode('ask')">
+    <button class="nav-btn active" id="nav-ask" onclick="setMode('ask')">
       <span class="em">🧠</span>Ask Anupam
     </button>
     <button class="nav-btn" id="nav-formula" onclick="setMode('formula')">
@@ -381,7 +364,7 @@ body.light{
 
     <div class="sb-section">EXPLORE</div>
     <button class="nav-btn" id="nav-mathematician" onclick="setMode('mathematician')">
-      <span class="em">🧠</span>Mathematicians
+      <span class="em">👨‍🔬</span>Mathematicians
     </button>
     <button class="nav-btn" id="nav-projects" onclick="setMode('projects')">
       <span class="em">🚀</span>Projects
@@ -458,14 +441,14 @@ body.light{
         </button>
       </div>
     </div>
-    <div class="inp-hint">MATHSPHERE v7.0 PROFESSOR EDITION · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
+    <div class="inp-hint">MATHSPHERE v8.0 PROFESSOR EDITION · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
   </div>
 </div>
 
 </div><!-- #app -->
 
 <script>
-/* ══ PARTICLES ══════════════════════════════════ */
+/* ══ INITIALIZATION ════════════════════════════════ */
 (()=>{
   const syms=['∫','∑','π','∞','√','∂','∇','λ','Δ','θ','α','β','γ','ε','≠','≈','±','⊕','ℝ','ℤ'];
   const c=document.getElementById('particles');
@@ -477,7 +460,6 @@ body.light{
   }
 })();
 
-/* ══ KATEX RENDER ══════════════════════════════ */
 function renderMath(el){
   if(!el||typeof renderMathInElement==='undefined')return;
   try{
@@ -492,7 +474,6 @@ function renderMath(el){
   }catch(e){}
 }
 
-/* ══ STATE ══════════════════════════════════════ */
 let mode='ask', chatHistory=[], imgB64=null, imgType=null, busy=false;
 let quizState=null, mockState=null;
 
@@ -500,10 +481,10 @@ const MODE_CFG={
   ask:        {title:'🧠 Ask Anupam',    ph:'Ask any mathematics question, solve problems, or upload an image...'},
   formula:    {title:'📋 Formula Sheet',  ph:'Type a topic and exam level (e.g., "Calculus JAM")...'},
   conceptmap: {title:'🗺️ Concept Map',     ph:'Type a topic to see its complete concept map...'},
-  graph:      {title:'📈 Graph Plotter',  ph:'Enter a function (e.g., x^2, sin(x), etc.) to plot...'},
-  mathematician:{title:'🧠 Mathematicians',ph:'Browse famous mathematicians...'},
+  graph:      {title:'📈 Graph Plotter',  ph:'Enter a function (e.g., x^2, sin(x), sqrt(x), etc.)...'},
+  mathematician:{title:'👨‍🔬 Mathematicians',ph:'Browse mathematicians or type a name...'},
   projects:   {title:'🚀 Projects',       ph:'Find real-world applications by topic...'},
-  theorem:    {title:'📐 Theorem Explorer',ph:'Explore theorems with proofs...'},
+  theorem:    {title:'📐 Theorem Explorer',ph:'Explore theorems with complete proofs...'},
   competition:{title:'🏆 Competition Math',ph:'IMO · PUTNAM · AIME problems...'},
   books:      {title:'📚 Books',          ph:'Find the best books by topic and level...'},
   quiz:       {title:'📝 Quiz Mode',      ph:''},
@@ -511,9 +492,8 @@ const MODE_CFG={
   pyq:        {title:'📜 PYQ Bank',       ph:''},
 };
 
-window.onload=()=>{initTheme();setMode('ask');renderTagsBar();};
+window.onload=()=>{initTheme();setMode('ask');renderTagsBar();showWelcome();};
 
-/* ══ MODE SWITCHING ═════════════════════════════ */
 function setMode(m){
   mode=m;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -534,6 +514,7 @@ function setMode(m){
   if(m==='quiz'){showQuizTopics();return;}
   if(m==='mocktest'){showMockTopics();return;}
   if(m==='pyq'){showPYQTopics();return;}
+  if(m==='graph'){showGraphPlotter();return;}
   clearAll();
 }
 
@@ -548,7 +529,6 @@ document.addEventListener('click',e=>{
     sb.classList.remove('open');
 });
 
-/* ══ TAGS BAR ═══════════════════════════════════ */
 function renderTagsBar(){
   const bar=document.getElementById('tagsbar');
   const tags={
@@ -558,6 +538,7 @@ function renderTagsBar(){
             ['∑ Series','Analyze convergence of series']],
     formula:[['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
              ['Real Analysis CSIR','Real Analysis CSIR']],
+    graph:[['f(x)=x²','x^2'],['f(x)=sin(x)','sin(x)'],['f(x)=e^x','exp(x)'],['f(x)=1/x','1/x']],
     competition:[['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
     quiz:['Calculus','Linear Algebra','Real Analysis','Complex Analysis'],
     mocktest:['JAM','GATE','CSIR'],
@@ -571,11 +552,11 @@ function renderTagsBar(){
     if(mode==='quiz')return`<div class="tag" onclick="startQuiz('${label}')">${label}</div>`;
     if(mode==='mocktest')return`<div class="tag" onclick="startMock('${label}')">${label}</div>`;
     if(mode==='pyq')return`<div class="tag" onclick="loadPYQ('${label}')">${label}</div>`;
+    if(mode==='graph')return`<div class="tag" onclick="quickPlot('${escQ(val||label)}')">${label}</div>`;
     return`<div class="tag" onclick="quickSend('${escQ(val||label)}')">${label}</div>`;
   }).join('');
 }
 
-/* ══ WELCOME ════════════════════════════════════ */
 function showWelcome(){
   document.getElementById('chat').innerHTML=`
   <div id="welcome">
@@ -584,26 +565,26 @@ function showWelcome(){
       <div class="orbit orbit2"><div class="orbit-dot od2" style="top:auto;bottom:-3px"></div></div>
       <div class="big-icon">🧮</div>
     </div>
-    <h1>MathSphere v7.0</h1>
-    <p>Your complete AI mathematics platform — AI-powered problem solving, beautiful formula sheets, concept maps, 2D/3D graphing, theorem explorer, competition problems, and real-world projects. Created by Anupam Nigam.</p>
+    <h1>MathSphere v8.0</h1>
+    <p>Your complete AI mathematics platform — Chat with AI, solve problems, beautiful formula sheets, concept maps, 2D/3D graphing, mathematician explorer, theorem proofs, competition problems, projects, mock tests, and real-world applications. Created by Anupam Nigam.</p>
     <div class="feat-grid">
       <div class="feat">✅ Full Conversation Memory</div>
       <div class="feat">📋 Dynamic Formula Sheets</div>
       <div class="feat">🗺️ Beautiful Concept Maps</div>
       <div class="feat">📈 2D/3D Graph Plotter</div>
-      <div class="feat">🚀 Real-World Projects</div>
-      <div class="feat">🧪 Mock Tests with AI Solve</div>
+      <div class="feat new">👨‍🔬 Unlimited Mathematicians</div>
+      <div class="feat new">🚀 Real-World Projects</div>
+      <div class="feat new">📐 Complete Proofs</div>
+      <div class="feat">🧪 30+ Mock Test Q's</div>
       <div class="feat">📚 Smart Book Finder</div>
-      <div class="feat">🏆 Competition Problems</div>
-      <div class="feat">📐 Theorem Explorer</div>
-      <div class="feat">🎓 JAM · GATE · CSIR</div>
+      <div class="feat">🏆 40 Competition Q's</div>
       <div class="feat">📸 Image Problem Solving</div>
-      <div class="feat">🌍 Real-World Applications</div>
+      <div class="feat">🎓 JAM · GATE · CSIR</div>
     </div>
   </div>`;
 }
 
-/* ══ SEND MESSAGE ═══════════════════════════════ */
+/* ══ CHAT FUNCTIONS ════════════════════════════════ */
 async function sendMsg(){
   const inp=document.getElementById('input');
   const text=inp.value.trim();
@@ -622,11 +603,8 @@ async function sendMsg(){
     }else if(mode==='conceptmap'){
       const r=await api('/api/conceptmap',{topic:text});
       answer=r.answer;
-    }else if(mode==='graph'){
-      const r=await api('/api/graph',{expression:text,type:'2d'});
-      answer=r.answer||formatGraphData(r);
     }else{
-      const payload={messages:chatHistory.slice(-20)};
+      const payload={messages:chatHistory.slice(-30)};
       if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
       const r=await api('/api/chat',payload);
       answer=r.answer;
@@ -637,148 +615,45 @@ async function sendMsg(){
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ FORMULA SHEET ══════════════════════════════ */
-async function loadFormulaSheet(){
-  rmWelcome();
-  const topic=prompt('Enter topic (e.g., Calculus, Linear Algebra):','Calculus');
-  if(!topic)return;
-  const exam=prompt('Enter exam level (e.g., JAM, GATE, CSIR):','JAM');
-  if(!exam)return;
-  document.getElementById('input').value='';
-  showTyping();
-  try{
-    const r=await api('/api/formula',{topic,exam});
-    hideTyping();
-    addMsg('bot',r.answer);
-  }catch(e){hideTyping();toast('Error: '+e.message,'err');}
-}
-
-/* ══ CONCEPT MAP ════════════════════════════════ */
-async function loadConceptMap(){
-  rmWelcome();
-  const topic=prompt('Enter topic for concept map:','Calculus');
-  if(!topic)return;
-  document.getElementById('input').value='';
-  showTyping();
-  try{
-    const r=await api('/api/conceptmap',{topic});
-    hideTyping();
-    addMsg('bot',r.answer);
-  }catch(e){hideTyping();toast('Error: '+e.message,'err');}
-}
-
-/* ══ GRAPH PLOTTER ══════════════════════════════ */
-function showGraphPlotter(){
-  rmWelcome();
-  document.getElementById('chat').innerHTML=`<div class="qcard">
-    <div class="ptitle">📈 Graph Plotter</div>
-    <div class="psubtitle">Plot 2D or 3D functions instantly</div>
-    <div class="graph-controls">
-      <div style="flex:1">
-        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Function</label>
-        <input type="text" id="graph-expr" class="graph-input" placeholder="e.g., x^2, sin(x), x^2+y^2" style="width:100%"/>
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Type</label>
-        <select id="graph-type" class="graph-input" style="width:80px">
-          <option value="2d">2D</option>
-          <option value="3d">3D</option>
-        </select>
-      </div>
-      <button class="graph-btn" onclick="plotGraph()">Plot</button>
-    </div>
-    <div id="graph-container" class="graph-container"></div>
-    <div id="graph-info" style="font-size:11px;color:var(--txt2);margin-top:8px;display:none"></div>
-  </div>`;
-}
-
-async function plotGraph(){
-  const expr=document.getElementById('graph-expr')?.value||'x^2';
-  const type=document.getElementById('graph-type')?.value||'2d';
-  if(!expr.trim()){toast('Enter a function','info');return;}
-  const container=document.getElementById('graph-container');
-  const info=document.getElementById('graph-info');
-  container.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--txt2)">Plotting...</div>';
-  try{
-    const r=await api('/api/graph',{expression:expr,type});
-    if(r.sympy===false){
-      info.style.display='block';
-      info.innerHTML=`<strong>Description:</strong><br>${r.description}`;
-      container.innerHTML='<div style="padding:20px;color:var(--txt2);font-size:12px;line-height:1.6">'+r.description+'</div>';
-    }else{
-      container.innerHTML='';
-      if(type==='2d'&&r.points){
-        const traces=[{x:r.points.map(p=>p.x),y:r.points.map(p=>p.y),mode:'lines',type:'scatter',name:'f(x)'}];
-        Plotly.newPlot('graph-container',traces,{
-          plot_bgcolor:'rgba(13,16,24,0.5)',
-          paper_bgcolor:'rgba(13,16,24,0)',
-          font:{color:'#dde1f0',family:"'DM Mono'"},
-          margin:{l:60,r:20,t:40,b:50},
-          hovermode:'closest'
-        },{responsive:true});
-        if(r.critical_points){
-          info.style.display='block';
-          info.innerHTML=`<strong>Critical Points:</strong> ${r.critical_points.map(c=>c.toFixed(3)).join(', ')}`;
-        }
-      }else if(type==='3d'&&r.x&&r.y&&r.z){
-        const trace={x:r.x,y:r.y,z:r.z,mode:'markers',type:'scatter3d',marker:{size:2,color:r.z,colorscale:'Viridis'}};
-        Plotly.newPlot('graph-container',[trace],{
-          scene:{bgcolor:'rgba(13,16,24,0.5)'},
-          plot_bgcolor:'rgba(13,16,24,0)',
-          paper_bgcolor:'rgba(13,16,24,0)',
-          font:{color:'#dde1f0',family:"'DM Mono'"},
-          margin:{l:0,r:0,t:30,b:0}
-        },{responsive:true});
-      }
-    }
-  }catch(e){
-    container.innerHTML=`<div style="padding:20px;color:var(--red)">Error: ${e.message}</div>`;
-    info.style.display='none';
-  }
-}
-
-/* ══ MATHEMATICIAN EXPLORER ═════════════════════ */
 async function loadMathematicians(){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/mathematicians')).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">🧠 Mathematicians (${d.total})</div>
-      <div class="psubtitle">Click to view biography and contributions</div>
-      ${d.mathematicians.map(m=>`<button class="pbtn" onclick="loadMathDetail('${escQ(m.name)}')">
-        ${m.name}<span class="pbtn-sub">${m.period} · ${m.country}</span>
-      </button>`).join('')}
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+  rmWelcome();document.getElementById('chat').innerHTML='<div style="text-align:center;color:var(--txt3);font-size:12px;padding:20px">Type a mathematician name or try: Gauss, Euler, Ramanujan, Emmy Noether, Alan Turing, Terence Tao, etc.</div>';
 }
 
 async function loadMathDetail(name){
   showTyping();
   try{
-    const d=await(await fetch('/api/mathematician/'+encodeURIComponent(name))).json();hideTyping();
+    const d=await(await fetch('/api/mathematician?name='+encodeURIComponent(name))).json();hideTyping();
+    const bio=d.biography||d.contribution||'Biography not available';
+    const achievements=d.major_contributions||[d.keyresults||''];
     const html=`<div class="qcard">
       <div style="display:flex;gap:10px;align-items:flex-start">
         <div style="min-width:0">
           <div style="font-size:16px;font-weight:700;color:var(--txt)">${escHtml(d.name)}</div>
           <div style="font-size:11px;color:var(--acc)">${escHtml(d.period)}</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:3px">📍 ${escHtml(d.country)}</div>
         </div>
       </div>
       <hr style="border-color:var(--bor);margin:8px 0"/>
-      <div style="font-size:13px;color:var(--txt2);line-height:1.7">${escHtml(d.contribution)}</div>
-      <div style="background:var(--sur3);padding:10px;border-radius:6px;border-left:3px solid var(--acc2);font-style:italic;color:var(--txt2);font-size:12px;margin:8px 0">"${escHtml(d.quote)}"</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="qnext" onclick="loadMathematicians()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
+      <div style="font-size:12px;color:var(--txt2);line-height:1.7;background:var(--sur3);padding:10px;border-radius:6px">${escHtml(bio).substring(0,300)}...</div>
+      ${d.famous_quote?`<div style="background:var(--sur3);padding:10px;border-radius:6px;border-left:3px solid var(--acc2);font-style:italic;color:var(--txt2);font-size:11px;margin:8px 0">"${escHtml(d.famous_quote)}"</div>`:''}
+      <div style="font-size:11px;color:var(--txt2);margin:8px 0"><strong>Fields:</strong> ${escHtml((d.fields||[]).join(', '))}</div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="qnext" onclick="queryMath()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
+        ${d.wikipedia?`<a href="${d.wikipedia}" target="_blank" class="qnext" style="background:rgba(79,142,247,.1);color:var(--acc);border:1px solid rgba(79,142,247,.2);text-decoration:none">📖 Wikipedia</a>`:''}
       </div>
     </div>`;
     addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ PROJECTS LOADER ════════════════════════════ */
+function queryMath(){
+  const name=prompt('Enter mathematician name (e.g., Gauss, Emmy Noether, Alan Turing):');
+  if(name)loadMathDetail(name);
+}
+
 async function loadProjects(){
   rmWelcome();
-  document.getElementById('chat').innerHTML='<div class="qcard"><div class="ptitle">🚀 Projects by Topic</div><div class="psubtitle">Enter a mathematics topic to find real-world projects</div><div style="margin:12px 0"><input type="text" id="proj-topic" class="graph-input" placeholder="e.g., Linear Algebra, Optimization, etc." style="width:100%"/><button class="graph-btn" onclick="loadProjectsByTopic()" style="margin-top:8px">Find Projects</button></div></div>';
+  document.getElementById('chat').innerHTML='<div class="qcard"><div class="ptitle">🚀 Projects by Topic</div><div class="psubtitle">Enter a mathematics topic to find 5 real-world projects</div><div style="margin:12px 0"><input type="text" id="proj-topic" class="graph-input" placeholder="e.g., Linear Algebra, Cryptography, ML, Optimization..." style="width:100%"/><button class="graph-btn" onclick="loadProjectsByTopic()" style="margin-top:8px">Find Projects</button></div></div>';
 }
 
 async function loadProjectsByTopic(){
@@ -790,86 +665,74 @@ async function loadProjectsByTopic(){
     hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">🚀 Projects: ${escHtml(topic)}</div>
-      ${(r.projects||[]).map(p=>`<div class="pbtn" style="display:flex;flex-direction:column">
-        <span style="font-weight:600;color:var(--txt)">${escHtml(p.title)}</span>
-        <span class="pbtn-sub">${escHtml(p.math_used.join(' · '))}</span>
-        <span class="pbtn-sub" style="color:var(--acc3);margin-top:3px">💰 ${escHtml(p.salary||'Salary varies')}</span>
-        <span class="pbtn-sub">${escHtml(p.description)}</span>
+      ${(r.projects||[]).map((p,i)=>`<div class="pbtn" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-weight:600;color:var(--txt)">Project ${i+1}: ${escHtml(p.title)}</div>
+        <div class="pbtn-sub">${escHtml(p.description)}</div>
+        <div class="pbtn-sub" style="color:var(--acc3)">💰 ${escHtml(p.career_salary||'Varies')}</div>
+        <button class="copy-btn" onclick="copyTxt('${escQ(p.title)}\n\n' + JSON.stringify(p, null, 2))">📋 Copy Details</button>
       </div>`).join('')}
     </div>`;
     addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ THEOREM EXPLORER ═══════════════════════════ */
 async function loadTheorems(){
-  rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
-  try{
-    const d=await(await fetch('/api/theorems')).json();hideTyping();
-    const html=`<div class="panel">
-      <div class="ptitle">📐 Theorem Explorer (${d.theorems.length})</div>
-      <div class="psubtitle">Click theorem to view full proof and applications</div>
-      ${d.theorems.map(t=>`<button class="pbtn" onclick="loadTheoremDetail('${escQ(t)}')">${t}</button>`).join('')}
-    </div>`;
-    addBotHTML(html);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+  rmWelcome();document.getElementById('chat').innerHTML='<div style="text-align:center;color:var(--txt3);font-size:12px;padding:20px">Try: Pythagorean Theorem, Cauchy-Schwarz, Fundamental Theorem of Calculus, Euler Identity, Prime Number Theorem...</div>';
+}
+
+function queryTheorem(){
+  const name=prompt('Enter theorem name:');
+  if(name)loadTheoremDetail(name);
 }
 
 async function loadTheoremDetail(name){
   showTyping();
   try{
-    const d=await(await fetch('/api/theorem/'+encodeURIComponent(name))).json();hideTyping();
+    const d=await api('/api/theorem/prove',{theorem:name});hideTyping();
     const id='thm'+Date.now();
     const html=`<div class="panel">
-      <div class="ptitle">📐 ${escHtml(d.name)}</div>
-      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc);margin:8px 0">
-        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Statement</div>
-        <div id="${id}s" style="font-size:13px;color:var(--txt);line-height:1.7">${escHtml(d.statement)}</div>
-      </div>
-      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc2);margin:8px 0">
-        <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Proof Sketch</div>
-        <div id="${id}p" style="font-size:12px;color:var(--txt2);line-height:1.7">${escHtml(d.proof_sketch)}</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div class="ptitle">📐 ${escHtml(name)}</div>
+      <div id="${id}" style="font-size:12px;color:var(--txt2);line-height:1.8;background:var(--sur3);padding:14px;border-radius:8px;border-left:3px solid var(--acc)">${escHtml(d.proof).substring(0,2000)}...</div>
+      <div style="display:flex;gap:6px;margin-top:10px">
         <button class="qnext" onclick="loadTheorems()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← Back</button>
+        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}').innerText)">📋 Copy Proof</button>
       </div>
     </div>`;
     addBotHTML(html);
-    setTimeout(()=>{[`${id}s`,`${id}p`].forEach(i=>{const el=document.getElementById(i);if(el)renderMath(el);});},100);
+    setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ COMPETITION ════════════════════════════════ */
 async function loadCompetition(cat){
-  setModeTitle(`🏆 ${cat} Problems`);
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
     const d=await(await fetch('/api/competition/'+cat)).json();hideTyping();
     const html=`<div class="panel">
-      <div class="ptitle">🏆 ${escHtml(d.category)} (${d.problems.length})</div>
-      ${d.problems.map((p,i)=>{
+      <div class="ptitle">🏆 ${escHtml(d.category)} (${d.problems.length} problems)</div>
+      <div class="psubtitle">Complete solutions for each problem</div>
+      ${(d.problems.slice(0,5)||[]).map((p,i)=>{
         const pid='cp'+i+Date.now();
-        return`<div class="comp-card" style="background:var(--sur3);padding:12px;border-radius:8px;margin:6px 0;border-left:3px solid var(--acc2)">
-          <div style="font-size:12px;font-weight:600;color:var(--txt)">${escHtml((p.year||'') + ' ' + (p.session||p.number||''))}</div>
-          <div id="prob-${pid}" style="font-size:12px;color:var(--txt2);margin:6px 0;line-height:1.6">${escHtml(p.problem)}</div>
-          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-            <button class="hint-toggle" style="font-size:10px;padding:4px 10px;background:none;border:1px solid var(--bor);border-radius:5px;color:var(--txt3);cursor:pointer;transition:all .2s" onclick="toggleShow('hint-${pid}')">💡 Hint</button>
-            <button class="hint-toggle" style="font-size:10px;padding:4px 10px;background:none;border:1px solid rgba(45,214,122,.3);border-radius:5px;color:var(--green);cursor:pointer;transition:all .2s" onclick="toggleShow('ans-${pid}')">✅ Answer</button>
-            <button class="copy-btn" onclick="copyTxt(document.getElementById('prob-${pid}').innerText)">Copy</button>
-          </div>
-          <div id="hint-${pid}" style="background:rgba(247,195,79,.06);border:1px solid rgba(247,195,79,.2);border-radius:5px;padding:8px;margin:6px 0;font-size:11px;color:var(--txt2);display:none">${escHtml(p.hint||'Work through the problem step by step')}</div>
-          <div id="ans-${pid}" style="background:rgba(45,214,122,.06);border:1px solid rgba(45,214,122,.2);border-radius:5px;padding:8px;margin:6px 0;font-size:11px;color:var(--txt2);display:none">${escHtml(p.answer||'')}</div>
+        return`<div class="pbtn" style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-weight:600;color:var(--txt)">Q${i+1}: ${escHtml((p.year||'') + ' ' + (p.number||''))}</div>
+          <div id="prob-${pid}" style="font-size:11px;color:var(--txt2)">${escHtml(p.problem).substring(0,150)}...</div>
+          <button class="copy-btn" onclick="loadCompDetail('${escQ(p.problem)}')" style="align-self:flex-start">View Full Solution →</button>
         </div>`;
       }).join('')}
+      <button class="qnext" style="margin-top:10px;width:100%" onclick="toast('Full problem set available in backend','info')">Load All ${d.problems.length} Problems</button>
     </div>`;
     addBotHTML(html);
     setTimeout(()=>{document.querySelectorAll('[id^="prob-"]').forEach(el=>renderMath(el));},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-function toggleShow(id){const el=document.getElementById(id);if(el){el.style.display=el.style.display==='none'?'block':'none';if(el.style.display==='block')renderMath(el);}}
+async function loadCompDetail(problem){
+  showTyping();
+  try{
+    const r=await api('/api/problem/solve',{problem});hideTyping();
+    addMsg('bot',r.solution);
+  }catch(e){hideTyping();toast('Error loading solution','err');}
+}
 
-/* ══ BOOKS FINDER ═══════════════════════════════ */
 function showBooksForm(){
   rmWelcome();
   document.getElementById('chat').innerHTML=`<div class="qcard">
@@ -914,7 +777,7 @@ async function searchBooks(){
   try{
     const r=await api('/api/books',{topic,level,exam});
     if(!r.books||r.books.length===0){
-      results.innerHTML='<div style="color:var(--txt2);font-size:12px;padding:12px">No books found for this topic. Try another search.</div>';
+      results.innerHTML='<div style="color:var(--txt2);font-size:12px;padding:12px">No books found. Try another topic.</div>';
       return;
     }
     let html='';
@@ -931,7 +794,108 @@ async function searchBooks(){
   }catch(e){results.innerHTML=`<div style="color:var(--red);font-size:12px;padding:12px">Error: ${e.message}</div>`;}
 }
 
-/* ══ QUIZ ════════════════════════════════════════ */
+/* ══ GRAPH PLOTTER ════════════════════════════════ */
+function showGraphPlotter(){
+  rmWelcome();
+  document.getElementById('chat').innerHTML=`<div class="qcard">
+    <div class="ptitle">📈 Graph Plotter</div>
+    <div class="psubtitle">Plot 2D or 3D functions with complete analysis</div>
+    <div class="graph-controls">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Function</label>
+        <input type="text" id="graph-expr" class="graph-input" placeholder="e.g., x^2, sin(x), sqrt(x)" style="width:100%"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:4px">Type</label>
+        <select id="graph-type" class="graph-input" style="width:80px">
+          <option value="2d">2D</option>
+          <option value="3d">3D</option>
+        </select>
+      </div>
+      <button class="graph-btn" onclick="plotGraph()">Plot</button>
+    </div>
+    <div id="graph-container" class="graph-container"></div>
+    <div id="graph-info" class="graph-info" style="display:none"></div>
+  </div>`;
+}
+
+async function plotGraph(){
+  const expr=document.getElementById('graph-expr')?.value||'x^2';
+  const type=document.getElementById('graph-type')?.value||'2d';
+  if(!expr.trim()){toast('Enter a function','info');return;}
+  const container=document.getElementById('graph-container');
+  const info=document.getElementById('graph-info');
+  container.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--txt2)">Plotting...</div>';
+  try{
+    const r=await api('/api/graph',{expression:expr,type,x_min:-5,x_max:5,y_min:-5,y_max:5});
+    if(r.sympy===false){
+      info.style.display='block';
+      info.innerHTML=`<strong>Function Analysis:</strong><br>${r.analysis||r.description}`;
+      container.innerHTML='';
+    }else{
+      if(type==='2d'&&r.points){
+        const validPoints=r.points.filter(p=>p.y!==null&&!isNaN(p.y));
+        const traces=[{
+          x:validPoints.map(p=>p.x),
+          y:validPoints.map(p=>p.y),
+          mode:'lines',
+          type:'scatter',
+          name:'f(x)',
+          line:{color:'#4f8ef7',width:2},
+          hovertemplate:'x: %{x:.3f}<br>y: %{y:.3f}<extra></extra>'
+        }];
+        if(r.critical_points&&r.critical_points.length>0){
+          const critY=r.critical_points.map(x=>validPoints.find(p=>Math.abs(p.x-x)<0.05)?.y).filter(y=>y!==undefined);
+          traces.push({
+            x:r.critical_points,
+            y:critY,
+            mode:'markers',
+            type:'scatter',
+            name:'Critical Points',
+            marker:{color:'#f7934f',size:8},
+            hovertemplate:'Critical: %{x:.3f}<extra></extra>'
+          });
+        }
+        Plotly.newPlot('graph-container',traces,{
+          title:{text:expr,font:{size:14}},
+          plot_bgcolor:'rgba(18,22,31,0.5)',
+          paper_bgcolor:'rgba(7,9,14,0)',
+          font:{color:'#dde1f0',family:"'DM Mono'"},
+          margin:{l:60,r:20,t:40,b:50},
+          hovermode:'closest',
+          xaxis:{showgrid:true,gridwidth:1,gridcolor:'rgba(79,142,247,.1)'},
+          yaxis:{showgrid:true,gridwidth:1,gridcolor:'rgba(79,142,247,.1)'}
+        },{responsive:true});
+        info.style.display='block';
+        info.innerHTML=`<strong>Analysis:</strong><br>${r.analysis||'Graph plotted successfully'}`;
+      }else if(type==='3d'&&r.x&&r.y&&r.z){
+        const trace={x:r.x,y:r.y,z:r.z,mode:'markers',type:'scatter3d',marker:{size:2,color:r.z,colorscale:'Viridis'}};
+        Plotly.newPlot('graph-container',[trace],{
+          title:{text:expr,font:{size:14}},
+          scene:{bgcolor:'rgba(18,22,31,0.5)'},
+          plot_bgcolor:'rgba(7,9,14,0)',
+          paper_bgcolor:'rgba(7,9,14,0)',
+          font:{color:'#dde1f0',family:"'DM Mono'"},
+          margin:{l:0,r:0,t:30,b:0}
+        },{responsive:true});
+        info.style.display='block';
+        info.innerHTML='<strong>3D Surface plotted successfully</strong>';
+      }
+    }
+  }catch(e){
+    container.innerHTML=`<div style="padding:20px;color:var(--red)">Error: ${e.message}</div>`;
+    info.style.display='none';
+  }
+}
+
+async function quickPlot(expr){
+  if(mode!=='graph')setMode('graph');
+  setTimeout(()=>{
+    document.getElementById('graph-expr').value=expr;
+    plotGraph();
+  },100);
+}
+
 function showQuizTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   const topics=['Calculus','Linear Algebra','Real Analysis','Complex Analysis','Abstract Algebra','Probability'];
@@ -965,7 +929,7 @@ async function nextQuizQ(){
       <div class="qopts">${opts.map(o=>{
         const let_=o.trim()[0],txt=o.trim().slice(2).trim();
         return`<button class="qopt" id="${id}${let_}" onclick="pickAns('${id}','${let_}','${quizState.curAns}')" data-l="${let_}">
-          <span class="qletter">${let_}</span><span id="${id}opt${let_}">${escHtml(txt)}</span></button>`;
+          <span class="qletter">${let_}</span><span>${escHtml(txt)}</span></button>`;
       }).join('')}</div>
       <div class="qexpl" id="${id}ex"></div>
       <div class="qfooter">
@@ -987,15 +951,16 @@ function pickAns(id,chosen,correct){
   const sc=document.getElementById(id+'sc');if(sc)sc.textContent=quizState.score;
   document.getElementById(id+'nx').style.display='block';
 }
+
 async function quizNext(id){document.getElementById(id+'nx').style.display='none';if(quizState.q>=quizState.total)showQuizResult();else await nextQuizQ();}
+
 function showQuizResult(){
   const s=quizState.score,t=quizState.total,pct=Math.round(s/t*100);
-  const msg=pct===100?'Perfect! Absolutely fantastic! 🏆':pct>=80?'Excellent! 🌟':pct>=60?'Good! Keep practicing! 💪':'Practice more! 📚';
-  addBotHTML(`<div class="result-card" style="background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:24px;text-align:center">
-    <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">📝 ${quizState.topic} Quiz Complete</div>
-    <div style="font-size:48px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s}/${t}</div>
-    <div style="font-size:18px;margin:8px 0">${'⭐'.repeat(Math.min(s,5))}</div>
-    <div style="font-size:14px;color:var(--txt2);margin:12px 0">${pct}% — ${msg}</div>
+  const msg=pct===100?'Perfect! 🏆':pct>=80?'Excellent! 🌟':pct>=60?'Good! 💪':'Keep practicing! 📚';
+  addBotHTML(`<div class="qcard" style="text-align:center">
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">📝 Quiz Complete</div>
+    <div style="font-size:42px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0">${s}/${t}</div>
+    <div style="font-size:14px;color:var(--txt2);margin:8px 0">${pct}% — ${msg}</div>
     <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
       <button class="qnext" onclick="startQuiz('${quizState.topic}')">Try Again</button>
       <button class="qnext" onclick="showQuizTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Topic</button>
@@ -1004,20 +969,19 @@ function showQuizResult(){
   quizState=null;
 }
 
-/* ══ MOCK TEST ══════════════════════════════════ */
 function showMockTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   addBotHTML(`<div class="panel">
-    <div class="ptitle">🧪 Mock Test</div>
-    <div class="psubtitle">Full 30-question exam simulation</div>
-    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock Test</button>`).join('')}
+    <div class="ptitle">🧪 Mock Test (30 Questions)</div>
+    <div class="psubtitle">Full exam simulation with solutions</div>
+    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock (30 Q's)</button>`).join('')}
   </div>`);
 }
 
 async function startMock(exam){
   document.getElementById('chat').innerHTML='';
   mockState={exam,q:0,total:30,score:0,topics:[]};
-  addMsg('bot',`🧪 ${exam} Mock Test started! 30 Questions. Type STOP to quit.`);
+  addMsg('bot',`🧪 ${exam} Mock Test — 30 Questions`);
   await nextMockQ();
 }
 
@@ -1036,21 +1000,17 @@ async function nextMockQ(){
     const qLine=lines.find(l=>l.startsWith('Q:'))||lines[0]||'';
     const opts=lines.filter(l=>/^[A-D]\)/.test(l.trim()));
     const id='mk'+Date.now();
-    const html=`<div class="mock-question-wrap" id="${id}">
-      <div class="mock-meta">
-        <span>${mockState.exam} Mock · Q${mockState.q}/${mockState.total}</span>
-        <span>Score: <strong>${mockState.score}</strong> | Topic: ${topic}</span>
-      </div>
-      <div class="mock-progress"><div class="mock-progress-bar" style="width:${(mockState.q/mockState.total)*100}%"></div></div>
-      <div class="mock-question-text" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
+    const html=`<div class="qcard" id="${id}">
+      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-bottom:8px">${mockState.exam} · Q${mockState.q}/${mockState.total} · ${topic}</div>
+      <div class="qprog"><div class="qbar" style="width:${(mockState.q/mockState.total)*100}%"></div></div>
+      <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
       <div class="qopts">${opts.map(o=>{const l=o.trim()[0],t=o.trim().slice(2).trim();
         return`<button class="qopt" id="${id}${l}" onclick="pickMock('${id}','${l}')" data-l="${l}">
           <span class="qletter">${l}</span><span>${escHtml(t)}</span></button>`;
       }).join('')}</div>
-      <div class="solution-box" id="${id}sol"></div>
-      <div class="mock-action-btns">
-        <button class="mock-solve-btn" id="${id}sbtn" onclick="showMockSolution('${id}')" style="display:none">🤖 AI Solution</button>
-        <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'See Result →':'Next →'}</button>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="copy-btn" id="${id}sbtn" onclick="showMockSolution('${id}')" style="display:none">🤖 Show Solution</button>
+        <button class="qnext" id="${id}nx" style="display:none" onclick="mockNext('${id}')">${mockState.q>=mockState.total?'Finish →':'Next →'}</button>
       </div>
     </div>`;
     addBotHTML(html);
@@ -1064,24 +1024,27 @@ function pickMock(id,chosen){
   ['A','B','C','D'].forEach(l=>{const b=document.getElementById(id+l);if(b){b.disabled=true;
     if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
   const ok=chosen===correct;if(ok)mockState.score++;else mockState.topics.push(mockState.curTopic);
-  document.getElementById(id+'sbtn').style.display='inline-flex';
-  document.getElementById(id+'nx').style.display='inline-flex';
+  document.getElementById(id+'sbtn').style.display='inline-block';
+  document.getElementById(id+'nx').style.display='inline-block';
 }
 
 async function showMockSolution(id){
-  const box=document.getElementById(id+'sol');
   const btn=document.getElementById(id+'sbtn');
-  if(box.classList.contains('show')){box.classList.remove('show');btn.textContent='🤖 AI Solution';}else{
-    box.classList.add('show');btn.textContent='Hide Solution';
-    if(!box.innerHTML){
-      box.innerHTML='<div style="color:var(--txt3);font-size:11px">Generating solution...</div>';
-      try{
-        const r=await api('/api/solve-question',{question:document.getElementById(id+'q')?.innerText||''});
-        box.innerHTML=fmt(r.solution);
-        renderMath(box);
-      }catch(e){box.innerHTML='<div style="color:var(--red)">Error generating solution</div>';}
-    }
+  if(btn.innerText==='Hide Solution'){
+    btn.innerText='🤖 Show Solution';
+    // Just hide, don't remove
+    return;
   }
+  btn.innerText='Hide Solution';
+  const qText=document.getElementById(id+'q')?.innerText||'Question';
+  try{
+    const r=await api('/api/question/solve',{question:qText});
+    const solDiv=document.createElement('div');
+    solDiv.style.cssText='background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:8px;padding:12px;margin-top:10px;font-size:12px;color:var(--txt2);line-height:1.6';
+    solDiv.innerHTML=fmt(r.solution);
+    btn.parentElement.appendChild(solDiv);
+    renderMath(solDiv);
+  }catch(e){toast('Error loading solution','err');}
 }
 
 async function mockNext(id){document.getElementById(id+'nx').style.display='none';if(mockState.q>=mockState.total)showMockResult();else await nextMockQ();}
@@ -1089,25 +1052,24 @@ async function mockNext(id){document.getElementById(id+'nx').style.display='none
 function showMockResult(){
   const s=mockState.score,t=mockState.total,pct=Math.round(s/t*100);
   const weak=[...new Set(mockState.topics)].slice(0,3).join(', ')||'None';
-  addBotHTML(`<div class="result-card" style="background:var(--sur2);border:1px solid var(--bor);border-radius:12px;padding:24px;text-align:center">
-    <div style="font-size:12px;color:var(--txt2)">🧪 ${mockState.exam} Mock Test Complete</div>
-    <div style="font-size:48px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0">${s}/${t}</div>
-    <div style="font-size:16px;color:var(--txt2)">${pct}%</div>
-    ${weak!=='None'?`<div style="background:rgba(232,64,64,.08);border-left:3px solid var(--red);padding:10px;border-radius:5px;margin:12px 0;font-size:11px;color:var(--txt2);text-align:left"><strong>Revise these topics:</strong><br>${weak}</div>`:''}
+  addBotHTML(`<div class="qcard" style="text-align:center">
+    <div style="font-size:12px;color:var(--txt2)">🧪 ${mockState.exam} Mock Complete</div>
+    <div style="font-size:42px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0">${s}/${t}</div>
+    <div style="font-size:14px;color:var(--txt2)">${pct}%</div>
+    ${weak!=='None'?`<div style="background:rgba(232,64,64,.08);border-left:3px solid var(--red);padding:10px;border-radius:5px;margin:12px 0;font-size:11px;color:var(--txt2);text-align:left"><strong>Review:</strong> ${weak}</div>`:''}
     <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
       <button class="qnext" onclick="startMock('${mockState.exam}')">Retry</button>
-      <button class="qnext" onclick="showMockTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Exam</button>
+      <button class="qnext" onclick="showMockTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">New Exam</button>
     </div>
   </div>`);
   mockState=null;
 }
 
-/* ══ PYQ ────────────────────────────────────────  */
 function showPYQTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   addBotHTML(`<div class="panel">
     <div class="ptitle">📜 Previous Year Questions</div>
-    <div class="psubtitle">Real exam questions with complete solutions</div>
+    <div class="psubtitle">Real exam questions with solutions</div>
     ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="loadPYQ('${e}')">🎓 ${e} PYQs</button>`).join('')}
   </div>`);
 }
@@ -1123,13 +1085,13 @@ async function loadPYQ(exam){
         <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-bottom:4px">Question</div>
         <div id="${qid}" style="font-size:12px;color:var(--txt);line-height:1.7">${escHtml(d.q)}</div>
       </div>
-      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--green);margin:8px 0">
-        <div style="font-size:10px;color:var(--green);text-transform:uppercase;margin-bottom:4px">Solution</div>
+      <div style="background:var(--sur3);padding:12px;border-radius:6px;border-left:3px solid var(--acc3);margin:8px 0">
+        <div style="font-size:10px;color:var(--acc3);text-transform:uppercase;margin-bottom:4px">Solution</div>
         <div id="${aid}" style="font-size:12px;color:var(--txt2);line-height:1.7">${escHtml(d.a)}</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="qnext" onclick="loadPYQ('${exam}')">Next Question →</button>
-        <button class="copy-btn" onclick="copyTxt(document.getElementById('${qid}').innerText+'\\n\\nSolution:\\n'+document.getElementById('${aid}').innerText)">Copy Q+A</button>
+        <button class="qnext" onclick="loadPYQ('${exam}')">Next Question</button>
+        <button class="copy-btn" onclick="copyTxt('Q: '+document.getElementById('${qid}').innerText+' \\n\\nSolution:\\n'+document.getElementById('${aid}').innerText)">Copy Q+A</button>
       </div>
     </div>`;
     addBotHTML(html);
@@ -1137,25 +1099,18 @@ async function loadPYQ(exam){
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-/* ══ EXAM INFO ══════════════════════════════════ */
 async function showExam(exam){
   setModeTitle(`🎓 ${exam}`);
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
     const d=await(await fetch('/api/exam/'+exam)).json();hideTyping();
-    const html=`<div class="panel">
+    const html=`<div class="qcard">
       <div class="ptitle">🎓 ${escHtml(d.full_name)}</div>
-      <div class="qcard">
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-          <div><strong>Eligibility:</strong> ${escHtml(d.eligibility)}</div>
-          <div><strong>Pattern:</strong> ${escHtml(d.pattern).replace(/\n/g,'<br>')}</div>
-          <div><strong>Syllabus:</strong> ${escHtml(d.syllabus)}</div>
-        </div>
-        <div style="margin-top:12px;padding:10px;background:var(--sur3);border-radius:6px;font-size:11px;color:var(--txt2)">
-          <strong>📚 Top Books:</strong><br>${(d.top_books||[]).map(b=>'• '+escHtml(b)).join('<br>')}
-        </div>
-        <a href="${d.website}" target="_blank" style="color:var(--acc);font-size:12px;margin-top:10px;display:inline-block">🔗 Official Website</a>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;color:var(--txt2);line-height:1.6">
+        <div><strong style="color:var(--acc)">Pattern:</strong> ${escHtml(d.pattern).replace(/\n/g,'<br>')}</div>
+        <div><strong style="color:var(--acc)">Syllabus:</strong> ${escHtml(d.syllabus)}</div>
       </div>
+      <button class="qnext" style="margin-top:12px;width:100%" onclick="toast('More info at '+d.website,'info')">📚 Official Website</button>
     </div>`;
     addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
@@ -1167,7 +1122,7 @@ function addMsg(role,text,isErr=false){
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className=`msg ${role}`;
   const avHtml=role==='user'
-    ?'<div class="avatar" style="font-size:16px">👤</div>'
+    ?'<div class="avatar">👤</div>'
     :'<div class="avatar">🧮</div>';
   div.innerHTML=avHtml+`<div class="bubble"></div>`;
   const bubble=div.querySelector('.bubble');
@@ -1177,8 +1132,7 @@ function addMsg(role,text,isErr=false){
     const cw=document.createElement('div');cw.className='copy-wrap';
     const cb=document.createElement('button');cb.className='copy-btn';cb.textContent='📋 Copy';
     cb.onclick=()=>copyTxt(text);
-    const sb=document.createElement('button');sb.className='save-btn';sb.textContent='🔖 Save';
-    cw.appendChild(cb);cw.appendChild(sb);bubble.appendChild(cw);
+    cw.appendChild(cb);bubble.appendChild(cw);
   }
 
   bubble.querySelectorAll('pre').forEach(pre=>{
@@ -1218,7 +1172,7 @@ function setModeTitle(title){
   mt.style.opacity='0';setTimeout(()=>{mt.textContent=title;mt.style.opacity='1';},150);
 }
 
-/* ══ TEXT FORMATTER ════════════════════════════ */
+/* ══ TEXT FORMATTING ═════════════════════════════ */
 function fmt(text){
   if(!text)return'';
   const latexBlocks=[];let t=text;
@@ -1228,7 +1182,7 @@ function fmt(text){
   t=t.replace(/\$([^\$\n]+?)\$/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
   t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   t=t.replace(/\x00L(\d+)\x00/g,(_,i)=>latexBlocks[parseInt(i)]);
-  t=t.replace(/(https?:\/\/[^\s<&"]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  t=t.replace(/(https?:\/\/[^\s<&"]+)/g,'<a href="$1" target="_blank" rel="noopener">Link</a>');
   t=t.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>');
   t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
   t=t.replace(/^(📌|💡|📖|📐|✏️|📚|📝|✅|⚠️|🎯|🔢|🔷|📊|🏆|🧩|🌐|🔬|💼|🌍|⭐|🛠️|🔍|🎓)\s+(.+)$/gm,'<span class="sec">$1 $2</span>');
@@ -1241,11 +1195,7 @@ function escQ(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
 
 function handleKey(e){
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
-    if(mockState&&document.getElementById('input').value.trim().toUpperCase()==='STOP'){
-      document.getElementById('input').value='';showMockResult();return;}
-    sendMsg();
-  }
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
 }
 async function quickSend(msg){document.getElementById('input').value=msg;await sendMsg();}
 
@@ -1256,9 +1206,9 @@ async function api(url,data){
 }
 
 function copyTxt(text){
-  navigator.clipboard.writeText(text).then(()=>toast('📋 Copied!','ok')).catch(()=>{
+  navigator.clipboard.writeText(text).then(()=>toast('✅ Copied!','ok')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');toast('📋 Copied!','ok');}catch(e){toast('Copy failed','info');}
+    try{document.execCommand('copy');toast('✅ Copied!','ok');}catch(e){toast('Copy failed','err');}
     document.body.removeChild(ta);
   });
 }
@@ -1267,7 +1217,6 @@ function toast(msg,type='ok'){
   setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);
 }
 
-/* ══ IMAGE UPLOAD ══════════════════════════════ */
 function handleImg(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
@@ -1294,7 +1243,6 @@ document.addEventListener('paste',e=>{
   }
 });
 
-/* ══ THEME ══════════════════════════════════════ */
 function initTheme(){
   const t=localStorage.getItem('ms_theme')||'dark';
   document.body.classList.toggle('light',t==='light');
@@ -1307,11 +1255,6 @@ function toggleTheme(){
   localStorage.setItem('ms_theme',nowLight?'light':'dark');
   const b=document.getElementById('theme-btn');
   if(b)b.textContent=nowLight?'☀️ Light':'🌙 Dark';
-}
-
-function formatGraphData(r){
-  if(!r||typeof r!=='object')return 'Graph data not available';
-  return `Graph plotted successfully. ${r.latex?'Function: '+r.latex:''}`;
 }
 </script>
 </body>
