@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
-<title>MathSphere v5.0 — Ultimate Math Platform by Anupam Nigam</title>
+<title>MathSphere v6.0 — Professor Edition by Anupam Nigam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
@@ -12,7 +12,7 @@
 <style>
 /* ── CSS VARIABLES ─────────────────────────────── */
 :root{
-  --bg:#07090e; --sur:#0d1018; --sur2:#12161f; --sur3:#181e2c;
+  --bg:#07090e; --sur:#0d1018; --sur2:#12161f; --sur3:#181e2c; --sur4:#1e2438;
   --bor:#1a2030; --bor2:#222b3d;
   --acc:#4f8ef7; --acc2:#7c5cfc; --acc3:#00d4a8; --acc4:#f7934f;
   --txt:#dde1f0; --txt2:#7d879e; --txt3:#404b60;
@@ -25,7 +25,6 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fB
 .katex-display{margin:10px 0;overflow-x:auto;overflow-y:hidden}
 .katex-display>.katex{text-align:left}
 
-/* animated grid + glow background */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(ellipse 90% 60% at 15% 0%,rgba(79,142,247,.09),transparent 55%),
              radial-gradient(ellipse 70% 50% at 85% 100%,rgba(124,92,252,.08),transparent 55%),
@@ -39,7 +38,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
                    linear-gradient(90deg,rgba(255,255,255,.013) 1px,transparent 1px);
   background-size:44px 44px}
 
-/* floating math symbols */
 #particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .particle{position:absolute;font-family:var(--fM);color:rgba(79,142,247,.11);
   animation:drift linear infinite;user-select:none}
@@ -78,6 +76,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .nav-btn.active::before{transform:scaleY(1)}
 .nav-btn .em{width:20px;text-align:center;font-size:14px;transition:transform .22s}
 .nav-btn:hover .em{transform:scale(1.2) rotate(-5deg)}
+.nav-btn .new-tag{font-size:8px;background:var(--acc3);color:#000;padding:1px 5px;border-radius:3px;font-family:var(--fM);letter-spacing:.5px;text-transform:uppercase;margin-left:auto}
 .sb-scroll{flex:1;overflow-y:auto;padding:6px 8px;scrollbar-width:none}
 .sb-scroll::-webkit-scrollbar{display:none}
 .sb-footer{padding:12px 10px;border-top:1px solid var(--bor);display:flex;gap:7px;flex-wrap:wrap}
@@ -99,14 +98,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;
   letter-spacing:.5px;transition:all .2s}
 #clear-btn:hover{border-color:var(--red);color:var(--red)}
-
 #owner-name{font-family:var(--fH);font-weight:700;font-size:12px;color:var(--acc3);padding:4px 9px;border:1px solid var(--bor2);border-radius:999px;background:var(--sur2)}
 #theme-btn{background:none;border:1px solid var(--bor);color:var(--txt3);padding:5px 10px;border-radius:6px;font-size:10px;font-family:var(--fM);cursor:pointer;letter-spacing:.5px;transition:all .2s}
 #theme-btn:hover{border-color:var(--acc);color:var(--acc)}
+
+/* SymPy status badge */
+#sympy-status{font-size:9px;font-family:var(--fM);padding:3px 8px;border-radius:20px;letter-spacing:.5px;white-space:nowrap}
+#sympy-status.active{background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);color:var(--acc3)}
+#sympy-status.inactive{background:rgba(64,75,96,.15);border:1px solid var(--bor);color:var(--txt3)}
+
 body.light{
-  --bg:#f5f7ff; --sur:#ffffff; --sur2:#eef2ff; --sur3:#e7ecfa;
-  --bor:#d6ddf1; --bor2:#c3cde6;
-  --txt:#1e2940; --txt2:#4b5a79; --txt3:#7a88a9;
+  --bg:#f5f7ff;--sur:#ffffff;--sur2:#eef2ff;--sur3:#e7ecfa;
+  --bor:#d6ddf1;--bor2:#c3cde6;--txt:#1e2940;--txt2:#4b5a79;--txt3:#7a88a9;
 }
 
 /* ── TAGS ─────────────────────────────────────────── */
@@ -143,10 +146,11 @@ body.light{
   background:linear-gradient(135deg,#dde1f0 30%,var(--acc) 70%,var(--acc2));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 #welcome p{color:var(--txt2);max-width:440px;font-size:13.5px;line-height:1.7;margin-bottom:26px}
-.feat-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px}
+.feat-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:520px}
 .feat{background:var(--sur2);border:1px solid var(--bor);border-radius:7px;padding:5px 12px;
   font-size:11px;color:var(--txt2);font-family:var(--fM);cursor:default;transition:all .25s}
 .feat:hover{background:var(--sur3);border-color:var(--acc);color:var(--acc)}
+.feat.new{border-color:rgba(0,212,168,.3);color:var(--acc3)}
 
 /* ── MESSAGES ─────────────────────────────────────── */
 .msg{display:flex;gap:10px;animation:mIn .3s cubic-bezier(.4,0,.2,1)}
@@ -163,21 +167,6 @@ body.light{
 .msg.bot  .bubble::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc3),transparent);
   border-radius:13px 13px 0 0;opacity:.5}
-.bubble:hover{box-shadow:0 4px 20px rgba(79,142,247,.07)}
-
-/* copy button on every bubble */
-.copy-wrap{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-.copy-btn{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
-  color:var(--acc);padding:4px 12px;border-radius:6px;font-size:11px;
-  cursor:pointer;font-family:var(--fM);transition:all .2s;white-space:nowrap}
-.copy-btn:hover{background:rgba(79,142,247,.18);border-color:var(--acc);box-shadow:0 0 8px rgba(79,142,247,.2)}
-.copy-btn:active{transform:scale(.95)}
-.save-btn{background:rgba(0,212,168,.07);border:1px solid rgba(0,212,168,.2);
-  color:var(--acc3);padding:4px 10px;border-radius:6px;font-size:11px;
-  cursor:pointer;font-family:var(--fM);transition:all .2s}
-.save-btn:hover{background:rgba(0,212,168,.16);border-color:var(--acc3)}
-
-/* code blocks inside bubbles */
 .bubble pre{background:var(--sur3);border:1px solid var(--bor2);border-radius:8px;
   padding:12px;margin:10px 0;overflow-x:auto;font-family:var(--fM);font-size:12px;
   line-height:1.55;color:#9dd0ff;position:relative}
@@ -190,6 +179,33 @@ body.light{
 .bubble hr{border:none;border-top:1px solid var(--bor);margin:9px 0}
 .bubble a{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(79,142,247,.3);transition:all .2s}
 .bubble a:hover{border-color:var(--acc)}
+
+/* ── VERIFICATION BADGES ──────────────────────────── */
+.vbadge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-family:var(--fM);
+  padding:3px 10px;border-radius:20px;margin:6px 4px 4px 0;letter-spacing:.4px;cursor:default}
+.vbadge.high{background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.35);color:var(--acc3)}
+.vbadge.medium{background:rgba(247,195,79,.1);border:1px solid rgba(247,195,79,.35);color:var(--yellow)}
+.vbadge.low{background:rgba(247,147,79,.1);border:1px solid rgba(247,147,79,.35);color:var(--acc4)}
+.vbadge.verified{background:rgba(0,212,168,.12);border:1px solid rgba(0,212,168,.4);color:var(--acc3)}
+.vbadge.mismatch{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:var(--red)}
+.vbadge.unverified{background:var(--sur3);border:1px solid var(--bor2);color:var(--txt3)}
+
+/* ── COPY / SAVE ACTIONS ──────────────────────────── */
+.copy-wrap{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.copy-btn{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
+  color:var(--acc);padding:4px 12px;border-radius:6px;font-size:11px;
+  cursor:pointer;font-family:var(--fM);transition:all .2s;white-space:nowrap}
+.copy-btn:hover{background:rgba(79,142,247,.18);border-color:var(--acc);box-shadow:0 0 8px rgba(79,142,247,.2)}
+.copy-btn:active{transform:scale(.95)}
+.save-btn{background:rgba(0,212,168,.07);border:1px solid rgba(0,212,168,.2);
+  color:var(--acc3);padding:4px 10px;border-radius:6px;font-size:11px;
+  cursor:pointer;font-family:var(--fM);transition:all .2s}
+.save-btn:hover{background:rgba(0,212,168,.16);border-color:var(--acc3)}
+
+/* ── SYMPY STEPS ──────────────────────────────────── */
+.sympy-steps{background:rgba(0,212,168,.05);border:1px solid rgba(0,212,168,.2);border-radius:9px;padding:12px 14px;margin:10px 0}
+.sympy-steps .step-lbl{font-family:var(--fM);font-size:9px;color:var(--acc3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.sympy-steps .step{font-size:12px;color:var(--txt2);margin:4px 0;padding-left:10px;border-left:2px solid rgba(0,212,168,.3)}
 
 /* ── TYPING ─────────────────────────────────────────── */
 .typing{display:flex;gap:4px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);
@@ -224,6 +240,44 @@ body.light{
   box-shadow:0 0 14px rgba(79,142,247,.25);transition:all .22s}
 .qnext:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(79,142,247,.4)}
 
+/* ── VERIFIER PANELS ─────────────────────────────── */
+.verifier-wrap{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.verifier-title{font-family:var(--fH);font-weight:700;font-size:16px;color:var(--txt);display:flex;align-items:center;gap:8px}
+.verifier-section{background:var(--sur3);border:1px solid var(--bor);border-radius:9px;padding:13px}
+.vsec-label{font-family:var(--fM);font-size:9px;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.vsec-label span{width:6px;height:6px;border-radius:50%;background:var(--acc);display:inline-block}
+.verifier-textarea{width:100%;background:none;border:none;outline:none;color:var(--txt);
+  font-family:var(--fB);font-size:13.5px;line-height:1.65;resize:none;min-height:40px;padding:0}
+.verifier-textarea::placeholder{color:var(--txt3)}
+.verify-btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;
+  color:white;padding:9px 22px;font-size:13px;cursor:pointer;font-family:var(--fB);
+  box-shadow:0 0 14px rgba(79,142,247,.28);transition:all .22s;align-self:flex-start}
+.verify-btn:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(79,142,247,.45)}
+.verify-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.verdict-box{border-radius:10px;padding:14px 16px;margin-top:4px}
+.verdict-box.correct{background:rgba(45,214,122,.07);border:1px solid rgba(45,214,122,.3)}
+.verdict-box.incorrect{background:rgba(232,64,64,.07);border:1px solid rgba(232,64,64,.3)}
+.verdict-box.partial{background:rgba(247,195,79,.07);border:1px solid rgba(247,195,79,.3)}
+.verdict-box.unverified{background:var(--sur3);border:1px solid var(--bor2)}
+.verdict-title{font-family:var(--fH);font-weight:700;font-size:14px;margin-bottom:8px}
+.verdict-box.correct   .verdict-title{color:var(--green)}
+.verdict-box.incorrect .verdict-title{color:var(--red)}
+.verdict-box.partial   .verdict-title{color:var(--yellow)}
+.verdict-box.unverified .verdict-title{color:var(--txt2)}
+
+/* step validator */
+.step-input-row{display:flex;gap:8px;align-items:center;margin:5px 0}
+.step-num{font-family:var(--fM);font-size:10px;color:var(--txt3);min-width:48px}
+.step-field{flex:1;background:var(--sur3);border:1px solid var(--bor);border-radius:7px;
+  padding:7px 10px;color:var(--txt);font-family:var(--fB);font-size:13px;outline:none;
+  transition:border-color .2s}
+.step-field:focus{border-color:var(--acc)}
+.add-step-btn{background:none;border:1px dashed var(--bor2);color:var(--txt3);padding:7px 14px;
+  border-radius:7px;cursor:pointer;font-size:12px;font-family:var(--fM);transition:all .2s;width:100%;margin-top:6px}
+.add-step-btn:hover{border-color:var(--acc);color:var(--acc)}
+.rmv-step{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:13px;padding:4px;transition:color .2s}
+.rmv-step:hover{color:var(--red)}
+
 /* ── PANELS ──────────────────────────────────────────── */
 .panel{display:flex;flex-direction:column;gap:9px}
 .ptitle{font-family:var(--fH);font-weight:700;font-size:14px;color:var(--txt);margin-bottom:4px}
@@ -237,14 +291,10 @@ body.light{
 .pbtn:hover::before{transform:scaleY(1)}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pbtn-sub{font-size:11px;color:var(--txt3);margin-top:2px;display:block;font-family:var(--fM)}
-
-/* stage card for learning paths */
 .stage-card{background:var(--sur3);border-radius:9px;padding:13px;border-left:3px solid var(--acc);margin:5px 0}
 .stage-name{font-size:12.5px;font-weight:600;color:var(--acc);margin-bottom:5px}
 .stage-item{font-size:11.5px;color:var(--txt2);margin:3px 0}
 .stage-outcome{font-size:11px;color:var(--acc3);margin-top:5px}
-
-/* theorem card */
 .thm-card{background:var(--sur3);border-radius:9px;padding:13px;margin:7px 0;border:1px solid var(--bor2)}
 .thm-label{font-size:10px;color:var(--acc);font-family:var(--fM);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
 .thm-text{font-size:13px;color:var(--txt);line-height:1.7}
@@ -253,8 +303,6 @@ body.light{
 .badge-hard{background:rgba(247,147,79,.12);border:1px solid rgba(247,147,79,.3);color:var(--acc4)}
 .badge-mid {background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);color:var(--acc)}
 .badge-easy{background:rgba(45,214,122,.12);border:1px solid rgba(45,214,122,.3);color:var(--green)}
-
-/* competition problem */
 .comp-card{background:var(--sur3);border-radius:9px;padding:13px;margin:7px 0;border:1px solid var(--bor2);position:relative}
 .comp-meta{font-size:10px;color:var(--txt3);font-family:var(--fM);margin-bottom:7px}
 .comp-prob{font-size:13px;color:var(--txt);line-height:1.75}
@@ -265,16 +313,17 @@ body.light{
   padding:10px;margin-top:8px;font-size:12px;color:var(--txt2);display:none}
 .ans-box{background:rgba(45,214,122,.06);border:1px solid rgba(45,214,122,.2);border-radius:7px;
   padding:10px;margin-top:8px;font-size:12px;color:var(--txt2);display:none}
-
-/* result card */
 .result-card{background:var(--sur2);border:1px solid var(--bor2);border-radius:13px;padding:24px;text-align:center}
 .result-score{font-family:var(--fH);font-size:52px;font-weight:800;
   background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;
   -webkit-text-fill-color:transparent;background-clip:text}
-
-/* info row */
 .info-row{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--txt2);margin:3px 0}
 .info-label{font-size:10px;color:var(--txt3);font-family:var(--fM);min-width:80px}
+.bm-item{background:var(--sur2);border:1px solid var(--bor);border-radius:9px;padding:12px;margin:5px 0}
+.bm-topic{font-size:10px;color:var(--acc);font-family:var(--fM);margin-bottom:4px}
+.bm-content{font-size:12px;color:var(--txt2);line-height:1.6}
+.bm-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;margin-top:5px;transition:color .2s}
+.bm-del:hover{color:var(--red)}
 
 /* ── INPUT AREA ──────────────────────────────────────── */
 #inputarea{padding:12px 20px 14px;border-top:1px solid var(--bor);
@@ -312,13 +361,7 @@ body.light{
 @keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .toast.ok{background:var(--sur3);border:1px solid var(--green);color:var(--green)}
 .toast.info{background:var(--sur3);border:1px solid var(--acc);color:var(--acc)}
-
-/* bookmarks */
-.bm-item{background:var(--sur2);border:1px solid var(--bor);border-radius:9px;padding:12px;margin:5px 0}
-.bm-topic{font-size:10px;color:var(--acc);font-family:var(--fM);margin-bottom:4px}
-.bm-content{font-size:12px;color:var(--txt2);line-height:1.6}
-.bm-del{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:11px;margin-top:5px;transition:color .2s}
-.bm-del:hover{color:var(--red)}
+.toast.err{background:var(--sur3);border:1px solid var(--red);color:var(--red)}
 
 /* mobile */
 @media(max-width:700px){
@@ -350,27 +393,30 @@ body.light{
 
   <div class="sb-scroll">
     <div class="sb-section">LEARN</div>
-
-    <button class="nav-btn"        id="nav-askanupam"   onclick="setMode('askanupam')">   <span class="em">🧠</span>Ask Anupam</button>
-    <button class="nav-btn"        id="nav-formula"     onclick="setMode('formula')">     <span class="em">📋</span>Formula Sheet</button>
-    <button class="nav-btn"        id="nav-revision"    onclick="setMode('revision')">    <span class="em">⚡</span>Rapid Revision</button>
-    <button class="nav-btn"        id="nav-conceptmap"  onclick="setMode('conceptmap')">  <span class="em">🗺️</span>Concept Map</button>
-    <button class="nav-btn"        id="nav-latex"       onclick="setMode('latex')">       <span class="em">🧾</span>LaTeX Generator</button>
+    <button class="nav-btn" id="nav-askanupam"   onclick="setMode('askanupam')">   <span class="em">🧠</span>Ask Anupam</button>
+    <button class="nav-btn" id="nav-verifier"    onclick="setMode('verifier')">    <span class="em">✅</span>Answer Verifier<span class="new-tag">NEW</span></button>
+    <button class="nav-btn" id="nav-stepcheck"   onclick="setMode('stepcheck')">   <span class="em">🔍</span>Step Validator<span class="new-tag">NEW</span></button>
+    <button class="nav-btn" id="nav-erroranalysis" onclick="setMode('erroranalysis')"><span class="em">🩺</span>Error Analysis<span class="new-tag">NEW</span></button>
+    <button class="nav-btn" id="nav-formula"     onclick="setMode('formula')">     <span class="em">📋</span>Formula Sheet</button>
+    <button class="nav-btn" id="nav-revision"    onclick="setMode('revision')">    <span class="em">⚡</span>Rapid Revision</button>
+    <button class="nav-btn" id="nav-conceptmap"  onclick="setMode('conceptmap')">  <span class="em">🗺️</span>Concept Map</button>
+    <button class="nav-btn" id="nav-latex"       onclick="setMode('latex')">       <span class="em">🧾</span>LaTeX Generator</button>
 
     <div class="sb-section">EXPLORE</div>
-    <button class="nav-btn"        id="nav-mathematician" onclick="setMode('mathematician')"><span class="em">🧠</span>Mathematicians</button>
-    <button class="nav-btn"        id="nav-projects"    onclick="setMode('projects')">    <span class="em">🚀</span>Projects</button>
-    <button class="nav-btn"        id="nav-theorem"     onclick="setMode('theorem')">     <span class="em">📐</span>Theorem Explorer</button>
-    <button class="nav-btn"        id="nav-competition" onclick="setMode('competition')"> <span class="em">🏆</span>Competition Math</button>
-    <button class="nav-btn"        id="nav-learning"    onclick="setMode('learning')">    <span class="em">🎓</span>Learning Paths</button>
-    <button class="nav-btn"        id="nav-realworld"   onclick="setMode('realworld')">   <span class="em">🌍</span>Real World Maths</button>
-    <button class="nav-btn"        id="nav-research"    onclick="setMode('research')">    <span class="em">🔬</span>Research Hub</button>
-    <button class="nav-btn"        id="nav-books"       onclick="setMode('books')">       <span class="em">📚</span>Books</button>
+    <button class="nav-btn" id="nav-mathematician" onclick="setMode('mathematician')"><span class="em">🧠</span>Mathematicians</button>
+    <button class="nav-btn" id="nav-projects"    onclick="setMode('projects')">    <span class="em">🚀</span>Projects</button>
+    <button class="nav-btn" id="nav-theorem"     onclick="setMode('theorem')">     <span class="em">📐</span>Theorem Explorer</button>
+    <button class="nav-btn" id="nav-competition" onclick="setMode('competition')"> <span class="em">🏆</span>Competition Math</button>
+    <button class="nav-btn" id="nav-learning"    onclick="setMode('learning')">    <span class="em">🎓</span>Learning Paths</button>
+    <button class="nav-btn" id="nav-realworld"   onclick="setMode('realworld')">   <span class="em">🌍</span>Real World Maths</button>
+    <button class="nav-btn" id="nav-research"    onclick="setMode('research')">    <span class="em">🔬</span>Research Hub</button>
+    <button class="nav-btn" id="nav-books"       onclick="setMode('books')">       <span class="em">📚</span>Books</button>
+
     <div class="sb-section">PRACTICE</div>
-    <button class="nav-btn"        id="nav-quiz"        onclick="setMode('quiz')">        <span class="em">📝</span>Quiz Mode</button>
-    <button class="nav-btn"        id="nav-mocktest"    onclick="setMode('mocktest')">    <span class="em">🧪</span>Mock Test (30 Q)</button>
-    <button class="nav-btn"        id="nav-challenge"   onclick="setMode('challenge')">   <span class="em">🧩</span>Daily Challenge</button>
-    <button class="nav-btn"        id="nav-pyq"         onclick="setMode('pyq')">         <span class="em">📜</span>PYQ Bank</button>
+    <button class="nav-btn" id="nav-quiz"        onclick="setMode('quiz')">        <span class="em">📝</span>Quiz Mode</button>
+    <button class="nav-btn" id="nav-mocktest"    onclick="setMode('mocktest')">    <span class="em">🧪</span>Mock Test (30 Q)</button>
+    <button class="nav-btn" id="nav-challenge"   onclick="setMode('challenge')">   <span class="em">🧩</span>Daily Challenge</button>
+    <button class="nav-btn" id="nav-pyq"         onclick="setMode('pyq')">         <span class="em">📜</span>PYQ Bank</button>
 
     <div class="sb-section">EXAMS</div>
     <button class="nav-btn" onclick="showExam('JAM')">  <span class="em">🎓</span>IIT JAM</button>
@@ -378,7 +424,7 @@ body.light{
     <button class="nav-btn" onclick="showExam('CSIR')"> <span class="em">📚</span>CSIR NET</button>
 
     <div class="sb-section">SAVED</div>
-    <button class="nav-btn"        id="nav-bookmarks"   onclick="setMode('bookmarks')">   <span class="em">🔖</span>My Bookmarks</button>
+    <button class="nav-btn" id="nav-bookmarks"   onclick="setMode('bookmarks')">   <span class="em">🔖</span>My Bookmarks</button>
   </div>
 
   <div class="sb-footer">
@@ -395,6 +441,7 @@ body.light{
     <div id="mode-title">🧠 Ask Anupam</div>
     <div class="status-dot"></div>
     <span style="font-size:10px;color:var(--txt3);font-family:var(--fM)">ONLINE</span>
+    <span id="sympy-status" class="inactive">SymPy ✗</span>
     <span id="owner-name">Anupam Nigam</span>
     <button id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
     <button id="clear-btn" onclick="clearAll()">CLEAR</button>
@@ -420,7 +467,7 @@ body.light{
         </button>
       </div>
     </div>
-    <div class="inp-hint">MATHSPHERE v5.0 · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
+    <div class="inp-hint">MATHSPHERE v6.0 PROFESSOR EDITION · BY ANUPAM NIGAM · youtube.com/@pi_nomenal1729</div>
   </div>
 </div>
 
@@ -441,45 +488,63 @@ body.light{
 
 /* ══ KATEX RENDER ══════════════════════════════ */
 function renderMath(el){
-  if(typeof renderMathInElement==='undefined')return;
-  renderMathInElement(el,{
-    delimiters:[
-      {left:'\\[',right:'\\]',display:true},
-      {left:'\\(',right:'\\)',display:false},
-      {left:'$$',right:'$$',display:true},
-      {left:'$', right:'$', display:false}
-    ],throwOnError:false,errorColor:'#e84040',strict:false
-  });
+  if(!el||typeof renderMathInElement==='undefined')return;
+  try{
+    renderMathInElement(el,{
+      delimiters:[
+        {left:'\\[',right:'\\]',display:true},
+        {left:'\\(',right:'\\)',display:false},
+        {left:'$$',right:'$$',display:true},
+        {left:'$', right:'$', display:false}
+      ],throwOnError:false,errorColor:'#e84040',strict:false
+    });
+  }catch(e){}
 }
 
 /* ══ STATE ══════════════════════════════════════ */
 let mode='askanupam', chatHistory=[], imgB64=null, imgType=null, busy=false;
 let quizState=null, mockState=null;
 let bookmarks=JSON.parse(localStorage.getItem('ms_bm')||'[]');
+let sympyAvailable=false;
 
 const MODE_CFG={
-  chat:         {title:'💬 Ask Anything',       ph:'Ask any question...'},
-  askanupam:    {title:'🧠 Ask Anupam',         ph:'Ask anything: math, coding, writing, or upload an image...'},
-  formula:      {title:'📋 Formula Sheet',       ph:'Topic + exam, e.g. "Calculus JAM" or "Linear Algebra GATE"'},
-  revision:     {title:'⚡ Rapid Revision',       ph:'Type a topic for 10 key revision points...'},
-  conceptmap:   {title:'🗺️ Concept Map',          ph:'Type a topic to explore all its connections...'},
-  latex:        {title:'🧾 LaTeX Generator',      ph:'Describe what you need LaTeX code for...'},
-  mathematician:{title:'🧠 Mathematicians',  ph:'Type a name or click a card...'},
-  projects:     {title:'🚀 Projects',        ph:'Type a domain or click a project...'},
-  theorem:      {title:'📐 Theorem Explorer',     ph:'Click a theorem to see full proof...'},
-  competition:  {title:'🏆 Competition Math',     ph:'IMO · Putnam · AIME problems...'},
-  learning:     {title:'🎓 Learning Paths',       ph:'Select a learning path...'},
-  realworld:    {title:'🌍 Real World Maths',     ph:'See where maths is used in industry...'},
-  research:     {title:'🔬 Research Hub',         ph:'Ask about research areas, open problems...'},
-  books:        {title:'📚 Books',                ph:'Type topic and optionally exam, e.g. Real Analysis GATE'},
-  quiz:         {title:'📝 Quiz Mode',            ph:''},
-  mocktest:     {title:'🧪 Mock Test (30 Q)',      ph:''},
-  challenge:    {title:'🧩 Daily Challenge',      ph:'Type your solution here...'},
-  pyq:          {title:'📜 PYQ Bank',             ph:''},
-  bookmarks:    {title:'🔖 My Bookmarks',         ph:''},
+  askanupam:    {title:'🧠 Ask Anupam',          ph:'Ask anything: math, coding, science, or upload an image of a problem...'},
+  verifier:     {title:'✅ Answer Verifier',       ph:'Type or paste your problem + answer to verify...'},
+  stepcheck:    {title:'🔍 Step Validator',        ph:'Enter your problem, then add each step of your working...'},
+  erroranalysis:{title:'🩺 Error Analysis',        ph:'Paste your full solution and the system will find every error...'},
+  formula:      {title:'📋 Formula Sheet',         ph:'Topic + exam e.g. "Calculus JAM" or "Linear Algebra GATE"'},
+  revision:     {title:'⚡ Rapid Revision',         ph:'Type a topic for 10 key revision points...'},
+  conceptmap:   {title:'🗺️ Concept Map',            ph:'Type a topic to explore all its connections...'},
+  latex:        {title:'🧾 LaTeX Generator',        ph:'Describe what you need LaTeX code for...'},
+  mathematician:{title:'🧠 Mathematicians',    ph:'Click a name for full biography...'},
+  projects:     {title:'🚀 Projects',          ph:'Click a project for the full implementation guide...'},
+  theorem:      {title:'📐 Theorem Explorer',       ph:'Click a theorem to see full proof...'},
+  competition:  {title:'🏆 Competition Math',       ph:'IMO · Putnam · AIME problems...'},
+  learning:     {title:'🎓 Learning Paths',         ph:'Select a learning path...'},
+  realworld:    {title:'🌍 Real World Maths',       ph:'See where maths is used in industry...'},
+  research:     {title:'🔬 Research Hub',           ph:'Ask about research areas, open problems...'},
+  books:        {title:'📚 Books',                  ph:'Type topic + exam e.g. Real Analysis GATE'},
+  quiz:         {title:'📝 Quiz Mode',              ph:''},
+  mocktest:     {title:'🧪 Mock Test (30 Q)',        ph:''},
+  challenge:    {title:'🧩 Daily Challenge',        ph:'Type your solution here...'},
+  pyq:          {title:'📜 PYQ Bank',               ph:''},
+  bookmarks:    {title:'🔖 My Bookmarks',           ph:''},
 };
 
-window.onload=()=>{initTheme();setMode('askanupam');renderTagsBar();};
+window.onload=()=>{initTheme();checkHealth();setMode('askanupam');renderTagsBar();};
+
+/* ══ HEALTH CHECK — detect SymPy ══════════════════ */
+async function checkHealth(){
+  try{
+    const r=await (await fetch('/api/health')).json();
+    sympyAvailable=!!r.sympy;
+    const el=document.getElementById('sympy-status');
+    if(el){
+      el.textContent=sympyAvailable?'SymPy ✓':'SymPy ✗';
+      el.className=sympyAvailable?'active':'inactive';
+    }
+  }catch(e){}
+}
 
 /* ══ WELCOME ════════════════════════════════════ */
 function showWelcome(){
@@ -493,9 +558,13 @@ function showWelcome(){
              onerror="this.style.display='none';this.parentNode.textContent='🧮'"/>
       </div>
     </div>
-    <h1>MathSphere</h1>
-    <p>Your complete AI mathematics platform — step-by-step solutions, exam prep, career guidance, theorem explorer, competition problems, and much more. By Anupam Nigam.</p>
+    <h1>MathSphere v6.0</h1>
+    <p>Your complete AI mathematics platform — verified step-by-step solutions, SymPy-powered answer checking, theorem explorer, competition problems, and career guidance. Created by Anupam Nigam.</p>
     <div class="feat-grid">
+      <div class="feat new">✅ Answer Verifier</div>
+      <div class="feat new">🔍 Step Validator</div>
+      <div class="feat new">🩺 Error Analysis</div>
+      <div class="feat new">📊 Confidence Score</div>
       <div class="feat">⚡ Groq AI</div>
       <div class="feat">🧠 16 Mathematicians</div>
       <div class="feat">🚀 20 Projects</div>
@@ -513,7 +582,7 @@ function setMode(m){
   mode=m;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const nb=document.getElementById(`nav-${m}`);if(nb)nb.classList.add('active');
-  const cfg=MODE_CFG[m]||MODE_CFG.chat;
+  const cfg=MODE_CFG[m]||MODE_CFG.askanupam;
   const mt=document.getElementById('mode-title');
   mt.style.opacity='0';mt.style.transform='translateY(-5px)';
   setTimeout(()=>{mt.textContent=cfg.title;mt.style.opacity='1';mt.style.transform='translateY(0)';},150);
@@ -521,6 +590,9 @@ function setMode(m){
   document.getElementById('sidebar').classList.remove('open');
   renderTagsBar();
 
+  if(m==='verifier')     {showVerifier();return;}
+  if(m==='stepcheck')    {showStepCheck();return;}
+  if(m==='erroranalysis'){showErrorAnalysis();return;}
   if(m==='mathematician'){loadMathematicians();return;}
   if(m==='projects')     {loadProjects();return;}
   if(m==='theorem')      {loadTheorems();return;}
@@ -552,35 +624,39 @@ document.addEventListener('click',e=>{
 function renderTagsBar(){
   const bar=document.getElementById('tagsbar');
   const tags={
-    chat:        [['∫ Integration','Explain integration by parts with worked example'],
-                  ['λ Eigenvalues','Explain eigenvalues and eigenvectors'],
-                  ['ε-δ Limits','Explain epsilon-delta definition of limit'],
-                  ['∑ Fourier','Explain Fourier series with example'],
-                  ['🎲 Probability','Explain Bayes theorem with real example'],
-                  ['🔢 Number Theory','Explain prime numbers and RSA encryption']],
-    askanupam:   [['📐 Solve Maths','Solve this calculus question step by step: evaluate integral of x^2 sin x dx'],
-                  ['🧠 Explain Clearly','Explain black holes to a class 8 student with examples'],
-                  ['💻 Coding Help','Write a simple Python script for Fibonacci using recursion and iteration'],
-                  ['📝 Writing Help','Improve this paragraph to professional English and keep same meaning']],             
+    askanupam:   [['∫ Solve Integral','Solve step by step: integral of x^2 sin(x) dx'],
+                  ['λ Eigenvalues','Find eigenvalues and eigenvectors of [[2,1],[1,2]]'],
+                  ['ε-δ Limits','Explain epsilon-delta definition of limit with worked example'],
+                  ['∑ Fourier','Derive Fourier series of f(x) = x on [-π, π]'],
+                  ['🎲 Probability','Explain Bayes theorem with a concrete example']],
+    verifier:    [['Check Integral','Problem: integrate x·sin(x) dx\nMy Answer: -x·cos(x) + sin(x) + C'],
+                  ['Check ODE','Problem: dy/dx = 2y, y(0)=1\nMy Answer: y = e^(2x)'],
+                  ['Check Eigenvalue','Problem: eigenvalues of [[3,1],[0,2]]\nMy Answer: λ = 3 and λ = 2'],
+                  ['Check Limit','Problem: lim x→0 sin(x)/x\nMy Answer: 1']],
+    stepcheck:   [['Integration by Parts','Find integral of x·e^x dx'],
+                  ['Solve ODE','Solve dy/dx + y = e^x'],
+                  ['Find Eigenvalues','Find eigenvalues of [[4,1],[2,3]]'],
+                  ['Differentiate','Differentiate f(x) = x²·sin(x)']],
     formula:     [['Calculus JAM','Calculus JAM'],['Linear Algebra GATE','Linear Algebra GATE'],
                   ['Real Analysis CSIR','Real Analysis CSIR'],['Calculus GATE','Calculus GATE']],
     competition: [['IMO','IMO'],['PUTNAM','PUTNAM'],['AIME','AIME']],
-    quiz:        [['Calculus'],['Linear Algebra'],['Real Analysis'],['Algebra'],['Probability'],['Complex Analysis']],
-    mocktest:    [['JAM'],['GATE'],['CSIR']],
+    quiz:        ['Calculus','Linear Algebra','Real Analysis','Algebra','Probability','Complex Analysis'],
+    mocktest:    ['JAM','GATE','CSIR'],
     books:       [['Real Analysis JAM','Real Analysis JAM'],['Linear Algebra GATE','Linear Algebra GATE'],['Abstract Algebra CSIR','Abstract Algebra CSIR']],
-    pyq:         [['JAM'],['GATE'],['CSIR']],
+    pyq:         ['JAM','GATE','CSIR'],
   };
-  if(tags[mode]){
-    bar.innerHTML=tags[mode].map(([label,val])=>{
-      if(mode==='competition') return `<div class="tag" onclick="loadCompetition('${val}')">${label}</div>`;
-      if(mode==='quiz')        return `<div class="tag" onclick="startQuiz('${label}')">${label}</div>`;
-      if(mode==='mocktest')    return `<div class="tag" onclick="startMock('${label}')">${label}</div>`;
-      if(mode==='pyq')        return `<div class="tag" onclick="loadPYQ('${label}')">${label}</div>`;
-      return `<div class="tag" onclick="quickSend('${escQ(val||label)}')">${label}</div>`;
-    }).join('');
-  } else {
-    bar.innerHTML='';
-  }
+  if(!tags[mode]){bar.innerHTML='';return;}
+  bar.innerHTML=tags[mode].map(item=>{
+    const label=Array.isArray(item)?item[0]:item;
+    const val=Array.isArray(item)?item[1]:item;
+    if(mode==='competition')return`<div class="tag" onclick="loadCompetition('${val}')">${label}</div>`;
+    if(mode==='quiz')       return`<div class="tag" onclick="startQuiz('${label}')">${label}</div>`;
+    if(mode==='mocktest')   return`<div class="tag" onclick="startMock('${label}')">${label}</div>`;
+    if(mode==='pyq')        return`<div class="tag" onclick="loadPYQ('${label}')">${label}</div>`;
+    if(mode==='verifier')   return`<div class="tag" onclick="prefillVerifier('${escQ(val)}')">${label}</div>`;
+    if(mode==='stepcheck')  return`<div class="tag" onclick="prefillStepCheck('${escQ(val)}')">${label}</div>`;
+    return`<div class="tag" onclick="quickSend('${escQ(val||label)}')">${label}</div>`;
+  }).join('');
 }
 
 /* ══ SEND MESSAGE ═══════════════════════════════ */
@@ -595,37 +671,273 @@ async function sendMsg(){
   chatHistory.push({role:'user',content:text||'Please solve this problem from the image.'});
   showTyping();
   try{
-    let answer;
+    let answer,confidence='HIGH';
     if(mode==='formula'){
       const parts=text.split(' ');
       const exams=['JAM','GATE','CSIR'];
       const exam=parts.find(p=>exams.includes(p.toUpperCase()))||'JAM';
       const topic=parts.filter(p=>!exams.includes(p.toUpperCase())).join(' ')||text;
       const r=await api('/api/formula',{topic,exam});answer=r.answer;
-    } else if(mode==='revision'){
+    }else if(mode==='revision'){
       const r=await api('/api/revision',{topic:text});answer=r.answer;
-    } else if(mode==='conceptmap'){
+    }else if(mode==='conceptmap'){
       const r=await api('/api/conceptmap',{topic:text});answer=r.answer;
-    } else if(mode==='latex'){
+    }else if(mode==='latex'){
       const r=await api('/api/latex',{text});answer=r.answer;
-    } else if(mode==='research'){
+    }else if(mode==='research'){
       const r=await api('/api/research',{question:text});answer=r.answer;
-    } else {
-      const payload={messages:chatHistory.slice(-30),mode: mode==='askanupam' ? 'ask_anupam' : 'normal'};
+    }else{
+      const payload={messages:chatHistory.slice(-30),mode:mode==='askanupam'?'ask_anupam':'normal'};
       if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
-      const r=await api('/api/chat',payload);answer=r.answer;
+      const r=await api('/api/chat',payload);
+      answer=r.answer;
+      confidence=r.confidence||'HIGH';
     }
     hideTyping();
     chatHistory.push({role:'assistant',content:answer});
-    addMsg('bot',answer);
-  } catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+    addMsg('bot',answer,false,confidence);
+  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
+}
+
+/* ══ ANSWER VERIFIER ════════════════════════════ */
+function showVerifier(){
+  rmWelcome();document.getElementById('chat').innerHTML='';
+  const html=`<div class="verifier-wrap">
+    <div class="verifier-title">✅ Answer Verifier
+      ${sympyAvailable?'<span class="vbadge verified">🔬 SymPy Active</span>':'<span class="vbadge unverified">SymPy Inactive</span>'}
+    </div>
+    <div style="font-size:12.5px;color:var(--txt2);line-height:1.7">
+      Enter any maths problem and your answer. The system uses ${sympyAvailable?'SymPy symbolic computation + AI':'AI'} to verify each step, check correctness, and show you exactly where errors occur.
+    </div>
+    <div class="verifier-section">
+      <div class="vsec-label"><span></span>PROBLEM</div>
+      <textarea id="vrf-problem" class="verifier-textarea" rows="3" placeholder="e.g. Find the derivative of f(x) = x²·sin(x)&#10;or: Solve dy/dx = 2xy with y(0) = 1&#10;or: Find eigenvalues of [[2,1],[1,3]]"></textarea>
+    </div>
+    <div class="verifier-section">
+      <div class="vsec-label"><span style="background:var(--acc3)"></span>YOUR ANSWER</div>
+      <textarea id="vrf-answer" class="verifier-textarea" rows="2" placeholder="e.g. f'(x) = 2x·sin(x) + x²·cos(x)"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="verify-btn" id="vrf-btn" onclick="runVerifier()">✅ Verify My Answer</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3);cursor:pointer">
+        <input type="checkbox" id="vrf-sympy" ${sympyAvailable?'':'disabled'}/>
+        <span>Use SymPy symbolic engine</span>
+      </label>
+    </div>
+    <div id="vrf-result" style="display:none"></div>
+  </div>
+  <div style="font-size:11.5px;color:var(--txt3);margin-top:4px;font-family:var(--fM)">
+    💡 You can also type "Check: [problem] — My answer: [answer]" in the chat below for a quick AI check.
+  </div>`;
+  addBotHTML(html);
+  if(sympyAvailable)document.getElementById('vrf-sympy').checked=true;
+}
+
+function prefillVerifier(text){
+  const lines=text.split('\n');
+  const probLine=lines.find(l=>l.toLowerCase().startsWith('problem'))||lines[0]||'';
+  const ansLine=lines.find(l=>l.toLowerCase().startsWith('my answer'))||lines[1]||'';
+  const pe=document.getElementById('vrf-problem');const ae=document.getElementById('vrf-answer');
+  if(pe)pe.value=probLine.replace(/^[Pp]roblem:\s*/,'');
+  if(ae)ae.value=ansLine.replace(/^[Mm]y [Aa]nswer:\s*/,'');
+}
+
+async function runVerifier(){
+  const prob=(document.getElementById('vrf-problem')||{}).value||'';
+  const ans=(document.getElementById('vrf-answer')||{}).value||'';
+  const useSympy=document.getElementById('vrf-sympy')&&document.getElementById('vrf-sympy').checked;
+  if(!prob.trim()||!ans.trim()){toast('Please enter both the problem and your answer','info');return;}
+  const res=document.getElementById('vrf-result');
+  res.style.display='block';
+  res.innerHTML='<div style="color:var(--txt3);font-family:var(--fM);font-size:12px;padding:14px">🔍 Verifying your answer...</div>';
+  const btn=document.getElementById('vrf-btn');if(btn)btn.disabled=true;
+  try{
+    let verdict='UNVERIFIED',symSteps=[],correctLatex='',aiExpl='',numericalVerified=null,symbolicVerified=null;
+    // Try SymPy quick check first if available
+    if(useSympy&&sympyAvailable){
+      try{
+        const r=await api('/api/verify/check',{problem:prob,answer:ans});
+        verdict=r.verdict;
+        correctLatex=r.correct_answer_latex||'';
+        symSteps=r.sympy_steps||[];
+        aiExpl=r.ai_explanation||'';
+      }catch(e){}
+    }else{
+      // Fallback to AI-only check
+      const r=await api('/api/chat',{
+        messages:[{role:'user',content:`VERIFY THIS ANSWER:\n\nProblem: ${prob}\n\nStudent's answer: ${ans}\n\nVerdict must be: CORRECT, INCORRECT, or PARTIALLY CORRECT. Show full working.`}],
+        mode:'normal'
+      });
+      aiExpl=r.answer;
+      verdict=aiExpl.includes('CORRECT')&&!aiExpl.includes('INCORRECT')?'CORRECT':aiExpl.includes('INCORRECT')?'INCORRECT':'UNVERIFIED';
+    }
+    const vClass=verdict==='CORRECT'?'correct':verdict==='INCORRECT'?'incorrect':verdict==='PARTIAL'?'partial':'unverified';
+    const vIcon=verdict==='CORRECT'?'✅':verdict==='INCORRECT'?'❌':verdict==='PARTIAL'?'⚠️':'❓';
+    const vMsg=verdict==='CORRECT'?'Your answer is CORRECT! Zabardast! 🏆':
+                verdict==='INCORRECT'?'Your answer is INCORRECT. Dekho correction below.':
+                verdict==='PARTIAL'?'Partially Correct — some errors found.':'Could not auto-verify — AI analysis below.';
+    let stepsHtml='';
+    if(symSteps.length>0){
+      stepsHtml=`<div class="sympy-steps">
+        <div class="step-lbl">🔬 SymPy Computation Steps</div>
+        ${symSteps.map(s=>`<div class="step">${escHtml(s)}</div>`).join('')}
+      </div>`;
+    }
+    const corrHtml=correctLatex?`<div style="margin:8px 0;font-size:12.5px;color:var(--txt2)">Correct answer: \\(${correctLatex}\\)</div>`:'';
+    const id='vrf'+Date.now();
+    res.innerHTML=`<div class="verdict-box ${vClass}">
+      <div class="verdict-title">${vIcon} ${vMsg}</div>
+      ${corrHtml}
+      ${stepsHtml}
+      <div id="${id}exp" style="font-size:13px;color:var(--txt2);line-height:1.8;margin-top:8px">${fmt(aiExpl||'')}</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}exp').innerText)">📋 Copy Explanation</button>
+        <button class="save-btn" onclick="saveBm('Verifier: ${escQ(prob.substring(0,40))}',document.getElementById('${id}exp').innerText)">🔖 Save</button>
+      </div>
+    </div>`;
+    setTimeout(()=>renderMath(res),100);
+  }catch(e){
+    res.innerHTML=`<div style="color:var(--red);font-size:12.5px;padding:12px">⚠️ Verification error: ${e.message}</div>`;
+  }finally{
+    if(btn)btn.disabled=false;
+  }
+}
+
+/* ══ STEP VALIDATOR ═════════════════════════════ */
+let stepCount=1;
+function showStepCheck(){
+  rmWelcome();document.getElementById('chat').innerHTML='';
+  stepCount=1;
+  const html=`<div class="verifier-wrap">
+    <div class="verifier-title">🔍 Step Validator</div>
+    <div style="font-size:12.5px;color:var(--txt2);line-height:1.7">
+      Enter your problem and each step of your working. The AI professor will check every step and mark exactly where errors occur.
+    </div>
+    <div class="verifier-section">
+      <div class="vsec-label"><span></span>PROBLEM</div>
+      <textarea id="sv-problem" class="verifier-textarea" rows="2" placeholder="e.g. Find integral of x·sin(x) dx using integration by parts"></textarea>
+    </div>
+    <div class="verifier-section">
+      <div class="vsec-label"><span style="background:var(--acc3)"></span>YOUR STEPS (one per box)</div>
+      <div id="sv-steps">
+        <div class="step-input-row">
+          <span class="step-num">Step 1</span>
+          <input id="sv-step-1" class="step-field" placeholder="e.g. Let u = x, dv = sin(x)dx"/>
+          <button class="rmv-step" onclick="removeStep(1)" title="Remove">✕</button>
+        </div>
+      </div>
+      <button class="add-step-btn" onclick="addStep()">+ Add Next Step</button>
+    </div>
+    <button class="verify-btn" onclick="runStepCheck()">🔍 Validate All Steps</button>
+    <div id="sv-result" style="display:none"></div>
+  </div>`;
+  addBotHTML(html);
+}
+
+function prefillStepCheck(problem){
+  const el=document.getElementById('sv-problem');
+  if(el)el.value=problem;
+}
+
+function addStep(){
+  stepCount++;
+  const container=document.getElementById('sv-steps');
+  if(!container)return;
+  const row=document.createElement('div');row.className='step-input-row';row.id='sv-row-'+stepCount;
+  row.innerHTML=`<span class="step-num">Step ${stepCount}</span>
+    <input id="sv-step-${stepCount}" class="step-field" placeholder="Next step..."/>
+    <button class="rmv-step" onclick="removeStep(${stepCount})" title="Remove">✕</button>`;
+  container.appendChild(row);
+  document.getElementById('sv-step-'+stepCount).focus();
+}
+
+function removeStep(n){
+  if(n===1&&stepCount===1){toast('Need at least one step','info');return;}
+  const row=document.getElementById('sv-row-'+n);
+  if(row)row.remove();
+}
+
+async function runStepCheck(){
+  const prob=(document.getElementById('sv-problem')||{}).value||'';
+  if(!prob.trim()){toast('Please enter the problem first','info');return;}
+  const steps=[];
+  for(let i=1;i<=stepCount+5;i++){
+    const el=document.getElementById('sv-step-'+i);
+    if(el&&el.value.trim())steps.push(el.value.trim());
+  }
+  if(steps.length===0){toast('Please enter at least one step','info');return;}
+  const res=document.getElementById('sv-result');
+  res.style.display='block';
+  res.innerHTML='<div style="color:var(--txt3);font-family:var(--fM);font-size:12px;padding:14px">🔍 Analysing your steps...</div>';
+  try{
+    const r=await api('/api/verify/steps',{problem:prob,steps});
+    const id='sv'+Date.now();
+    res.innerHTML=`<div class="verdict-box unverified" style="border-color:var(--bor2)">
+      <div class="verdict-title" style="color:var(--acc)">📊 Step-by-Step Analysis</div>
+      <div id="${id}an" style="font-size:13px;color:var(--txt2);line-height:1.85;margin-top:6px">${fmt(r.analysis)}</div>
+      ${r.sympy_checks&&r.sympy_checks.length>0?`
+        <div class="sympy-steps" style="margin-top:10px">
+          <div class="step-lbl">🔬 SymPy Parsed Expressions</div>
+          ${r.sympy_checks.map(c=>`<div class="step">Step ${c.step}: \\(${c.sympy_parsed}\\)</div>`).join('')}
+        </div>`:''}
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}an').innerText)">📋 Copy Analysis</button>
+        <button class="save-btn" onclick="saveBm('Step Analysis',document.getElementById('${id}an').innerText)">🔖 Save</button>
+      </div>
+    </div>`;
+    setTimeout(()=>renderMath(res),100);
+  }catch(e){res.innerHTML=`<div style="color:var(--red);padding:12px">⚠️ Error: ${e.message}</div>`;}
+}
+
+/* ══ ERROR ANALYSIS ═════════════════════════════ */
+function showErrorAnalysis(){
+  rmWelcome();document.getElementById('chat').innerHTML='';
+  const html=`<div class="verifier-wrap">
+    <div class="verifier-title">🩺 Error Analysis Mode</div>
+    <div style="font-size:12.5px;color:var(--txt2);line-height:1.7">
+      Paste your complete (wrong) solution. The AI professor will identify every error, classify each mistake, and provide the fully correct working.
+    </div>
+    <div class="verifier-section">
+      <div class="vsec-label"><span></span>PROBLEM</div>
+      <textarea id="ea-problem" class="verifier-textarea" rows="2" placeholder="e.g. Differentiate f(x) = x²·e^x"></textarea>
+    </div>
+    <div class="verifier-section">
+      <div class="vsec-label"><span style="background:var(--red)"></span>YOUR (WRONG) SOLUTION</div>
+      <textarea id="ea-solution" class="verifier-textarea" rows="6" placeholder="Paste your complete working here — even if you know it is wrong. The more you write, the more detailed the error analysis."></textarea>
+    </div>
+    <button class="verify-btn" onclick="runErrorAnalysis()">🩺 Analyse Errors</button>
+    <div id="ea-result" style="display:none"></div>
+  </div>`;
+  addBotHTML(html);
+}
+
+async function runErrorAnalysis(){
+  const prob=(document.getElementById('ea-problem')||{}).value||'';
+  const sol=(document.getElementById('ea-solution')||{}).value||'';
+  if(!prob.trim()||!sol.trim()){toast('Please enter both problem and your solution','info');return;}
+  const res=document.getElementById('ea-result');
+  res.style.display='block';
+  res.innerHTML='<div style="color:var(--txt3);font-family:var(--fM);font-size:12px;padding:14px">🩺 Analysing your solution...</div>';
+  try{
+    const r=await api('/api/analyze/error',{problem:prob,wrong_solution:sol});
+    const id='ea'+Date.now();
+    res.innerHTML=`<div class="verdict-box incorrect">
+      <div class="verdict-title">🩺 Professor's Error Report</div>
+      <div id="${id}an" style="font-size:13px;color:var(--txt2);line-height:1.85;margin-top:6px">${fmt(r.analysis)}</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}an').innerText)">📋 Copy Report</button>
+        <button class="save-btn" onclick="saveBm('Error Analysis',document.getElementById('${id}an').innerText)">🔖 Save</button>
+      </div>
+    </div>`;
+    setTimeout(()=>renderMath(res),100);
+  }catch(e){res.innerHTML=`<div style="color:var(--red);padding:12px">⚠️ Error: ${e.message}</div>`;}
 }
 
 /* ══ MATHEMATICIAN EXPLORER ═════════════════════ */
 async function loadMathematicians(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/mathematicians')).json();hideTyping();
+    const d=await(await fetch('/api/mathematicians')).json();hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">🧠 Mathematicians Explorer (${d.total})</div>
       <div class="psubtitle">Click any name to view full biography, research papers, and legacy</div>
@@ -644,7 +956,7 @@ async function loadMathematicians(){
 async function loadMathDetail(name){
   showTyping();
   try{
-    const d=await (await fetch('/api/mathematician/'+encodeURIComponent(name))).json();hideTyping();
+    const d=await(await fetch('/api/mathematician/'+encodeURIComponent(name))).json();hideTyping();
     const resLinks=d.resources?d.resources.map(r=>`<a href="${r.split(': ')[1]}" target="_blank">${r.split(': ')[0]}</a>`).join(' · '):'';
     const id='md-'+Date.now();
     const html=`<div class="qcard">
@@ -663,7 +975,7 @@ async function loadMathDetail(name){
         <div class="thm-text" id="${id}-k">${escHtml(d.keyresults)}</div>
       </div>
       <div style="background:var(--sur3);border-left:3px solid var(--acc2);padding:10px 13px;border-radius:0 8px 8px 0;font-style:italic;color:var(--txt2);font-size:13px">"${escHtml(d.quote)}"</div>
-      <div style="font-size:11px;color:var(--acc3)">🌍 Impact: ${escHtml(d.impact)}</div>
+      <div style="font-size:11px;color:var(--acc3)">🌍 ${escHtml(d.impact)}</div>
       ${resLinks?`<div style="font-size:11px;color:var(--txt3);margin-top:4px">📚 ${resLinks}</div>`:''}
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="qnext" onclick="loadMathematicians()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Mathematicians</button>
@@ -671,27 +983,20 @@ async function loadMathDetail(name){
       </div>
     </div>`;
     addBotHTML(html);
-    setTimeout(()=>{
-      [id+'-c',id+'-k'].forEach(i=>{const el=document.getElementById(i);if(el)renderMath(el);});
-    },100);
+    setTimeout(()=>{[id+'-c',id+'-k'].forEach(i=>{const el=document.getElementById(i);if(el)renderMath(el);});},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
-
-function askAboutMath(name){
-  mode='askanupam';
-  document.getElementById('input').value=`Tell me deeply about ${name}'s mathematical contributions and how they impact modern mathematics`;
-  sendMsg();
-}
+function askAboutMath(name){mode='askanupam';document.getElementById('input').value=`Tell me deeply about ${name}'s mathematical contributions and how they impact modern mathematics`;sendMsg();}
 
 /* ══ PROJECTS EXPLORER ══════════════════════════ */
 async function loadProjects(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/projects')).json();hideTyping();
+    const d=await(await fetch('/api/projects')).json();hideTyping();
     const diffs={'Advanced':'badge-hard','Intermediate':'badge-mid','Very Advanced':'badge-hard','Easy':'badge-easy'};
     const html=`<div class="panel">
-      <div class="ptitle">🚀 Math Projects (${d.total})</div>
-      <div class="psubtitle">${d.source==='dynamic'?'Live AI curated projects with links':'Local fallback projects'}</div>
+      <div class="ptitle">🚀 Projects (${d.total})</div>
+      <div class="psubtitle">${d.source==='dynamic'?'Live AI curated projects':'Local projects'}</div>
       ${d.projects.map(p=>`
         <button class="pbtn" onclick="loadProjectDetail(${p.id})">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -710,24 +1015,22 @@ async function loadProjectDetail(pid){
   showTyping();
   try{
     const r=await api('/api/project/'+pid,{});hideTyping();
-    const p=r.project;
-    const id='prj-'+Date.now();
-    const explHtml=`<div class="panel">
+    const p=r.project;const id='prj-'+Date.now();
+    addBotHTML(`<div class="panel">
       <div class="ptitle">🚀 ${p.title}</div>
       <div class="info-row"><span class="info-label">MATH TOPICS</span>${p.math.join(' · ')}</div>
       <div class="info-row"><span class="info-label">DESCRIPTION</span>${escHtml(p.desc)}</div>
       <div class="info-row"><span class="info-label">REAL-WORLD</span>${escHtml(p.real)}</div>
       <div class="info-row"><span class="info-label">COMPANIES</span><span style="color:var(--acc2)">${escHtml(p.companies)}</span></div>
       <div class="info-row"><span class="info-label">SALARIES</span><span style="color:var(--green)">${escHtml(p.salary||'N/A')}</span></div>
-      ${Array.isArray(p.links)&&p.links.length?`<div class="info-row"><span class="info-label">LINKS</span>${p.links.map(l=>`<a href="${escHtml((l.split(': ')[1]||'').trim())}" target="_blank" style="color:var(--acc)">${escHtml((l.split(': ')[0]||l).trim())}</a>`).join(' · ')}</div>`:''}
+      ${Array.isArray(p.links)&&p.links.length?`<div class="info-row"><span class="info-label">LINKS</span>${p.links.map(l=>`<a href="${escHtml((l.split(': ')[1]||'').trim())}" target="_blank">${escHtml((l.split(': ')[0]||l).trim())}</a>`).join(' · ')}</div>`:''}
       <hr style="border-color:var(--bor);margin:8px 0"/>
       <div style="font-size:12.5px;color:var(--txt2);line-height:1.8" id="${id}-exp">${fmt(r.explanation)}</div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="qnext" onclick="loadProjects()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Projects</button>
         <button class="copy-btn" onclick="copyTxt(document.getElementById('${id}-exp').innerText)">📋 Copy</button>
       </div>
-    </div>`;
-    addBotHTML(explHtml);
+    </div>`);
     setTimeout(()=>{const el=document.getElementById(`${id}-exp`);if(el)renderMath(el);},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
@@ -736,10 +1039,10 @@ async function loadProjectDetail(pid){
 async function loadTheorems(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/theorems')).json();hideTyping();
+    const d=await(await fetch('/api/theorems')).json();hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">📐 Theorem Explorer (${d.total})</div>
-      <div class="psubtitle">Full statements, proofs, exam relevance, and applications</div>
+      <div class="psubtitle">Full statements, formal proofs, exam relevance, and applications</div>
       ${d.theorems.map(t=>`<button class="pbtn" onclick="loadTheoremDetail('${escQ(t)}')">${t}</button>`).join('')}
     </div>`;
     addBotHTML(html);
@@ -749,31 +1052,19 @@ async function loadTheorems(){
 async function loadTheoremDetail(name){
   showTyping();
   try{
-    const d=await (await fetch('/api/theorem/'+encodeURIComponent(name))).json();hideTyping();
+    const d=await(await fetch('/api/theorem/'+encodeURIComponent(name))).json();hideTyping();
     const diff={'Basic':'badge-easy','Core':'badge-easy','Intermediate':'badge-mid','Advanced':'badge-hard','Hard':'badge-hard','Very Hard':'badge-hard'}[d.difficulty]||'badge-mid';
     const ids={s:'s'+Date.now(),p:'p'+Date.now(),f:'f'+Date.now()};
     const html=`<div class="panel">
       <div class="ptitle">📐 ${d.name}</div>
-      <div style="margin-bottom:2px">
+      <div style="margin-bottom:4px">
         <span class="thm-badge ${diff}">${d.difficulty}</span>
         <span class="thm-badge" style="background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);color:var(--acc3)">📋 ${d.exam_relevance||'Key theorem'}</span>
       </div>
-      <div class="thm-card">
-        <div class="thm-label">STATEMENT</div>
-        <div class="thm-text" id="${ids.s}">${escHtml(d.statement)}</div>
-      </div>
-      <div class="thm-card">
-        <div class="thm-label">PROOF SKETCH</div>
-        <div class="thm-text" id="${ids.p}">${escHtml(d.proof_sketch)}</div>
-      </div>
-      <div class="thm-card">
-        <div class="thm-label">FORMAL PROOF</div>
-        <div class="thm-text" id="${ids.f}">${escHtml(d.formal_proof)}</div>
-      </div>
-      <div class="thm-card" style="border-color:rgba(0,212,168,.2)">
-        <div class="thm-label">APPLICATIONS</div>
-        <div class="thm-text">${escHtml(d.applications)}</div>
-      </div>
+      <div class="thm-card"><div class="thm-label">STATEMENT</div><div class="thm-text" id="${ids.s}">${escHtml(d.statement)}</div></div>
+      <div class="thm-card"><div class="thm-label">PROOF SKETCH</div><div class="thm-text" id="${ids.p}">${escHtml(d.proof_sketch)}</div></div>
+      <div class="thm-card"><div class="thm-label">FORMAL PROOF</div><div class="thm-text" id="${ids.f}">${escHtml(d.formal_proof)}</div></div>
+      <div class="thm-card" style="border-color:rgba(0,212,168,.2)"><div class="thm-label">APPLICATIONS</div><div class="thm-text">${escHtml(d.applications)}</div></div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="qnext" onclick="loadTheorems()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">← All Theorems</button>
         <button class="qnext" onclick="askAboutTheorem('${escQ(d.name)}')">Ask AI to explain</button>
@@ -784,19 +1075,14 @@ async function loadTheoremDetail(name){
     setTimeout(()=>{Object.values(ids).forEach(id=>{const el=document.getElementById(id);if(el)renderMath(el);});},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
-
-function askAboutTheorem(name){
-  mode='askanupam';
-  document.getElementById('input').value=`Explain ${name} in depth with all the details, intuition, proof, and real-world applications`;
-  sendMsg();
-}
+function askAboutTheorem(name){mode='askanupam';document.getElementById('input').value=`Explain ${name} in depth with all details, intuition, proof, and real-world applications`;sendMsg();}
 
 /* ══ COMPETITION MATH ═══════════════════════════ */
 async function loadCompetition(cat){
   setModeTitle(`🏆 Competition Math — ${cat}`);
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/competition/'+cat)).json();hideTyping();
+    const d=await(await fetch('/api/competition/'+cat)).json();hideTyping();
     const tagBar=document.getElementById('tagsbar');
     tagBar.innerHTML=['IMO','PUTNAM','AIME'].map(c=>
       `<div class="tag" onclick="loadCompetition('${c}')" style="${cat===c?'border-color:var(--acc);color:var(--acc)':''}">${c}</div>`).join('');
@@ -806,52 +1092,40 @@ async function loadCompetition(cat){
       <div class="psubtitle">
         ${cat==='IMO'?'International Mathematical Olympiad — world\'s hardest math competition':
           cat==='PUTNAM'?'William Lowell Putnam Examination — top US/Canada university math competition':
-          'American Invitational Mathematics Examination — leading to USA(J)MO'}
+          'American Invitational Mathematics Examination'}
       </div>
       ${d.problems.map((p,i)=>{
         const metaLine=p.session?`${p.year} ${p.session}`:p.number?`${p.year} Problem ${p.number}`:`Problem ${i+1}`;
         const diffBadge={Hard:'badge-hard',Medium:'badge-mid','Very Hard':'badge-hard',Easy:'badge-easy'}[p.difficulty]||'badge-mid';
         const pid='cp'+i+Date.now();
-        return `<div class="comp-card">
+        return`<div class="comp-card">
           <div class="comp-meta">${metaLine} · <span class="thm-badge ${diffBadge}">${p.difficulty}</span></div>
           <div class="comp-prob" id="prob-${pid}">${escHtml(p.problem)}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
             <button class="hint-toggle" onclick="toggleHint('${pid}')">💡 Hint</button>
             <button class="hint-toggle" onclick="toggleAns('${pid}')" style="color:var(--green);border-color:rgba(45,214,122,.3)">✅ Answer</button>
-            <button class="copy-btn" onclick="copyTxt(document.getElementById('prob-${pid}').innerText)">📋 Copy Problem</button>
-            <button class="copy-btn" onclick="solveCompProblem('${escQ(p.problem)}')">🤖 Ask AI to Solve</button>
+            <button class="copy-btn" onclick="copyTxt(document.getElementById('prob-${pid}').innerText)">📋 Copy</button>
+            <button class="copy-btn" onclick="solveCompProblem('${escQ(p.problem)}')">🤖 AI Solve</button>
           </div>
-          <div class="hint-box" id="hint-${pid}" style="display:none">${escHtml(p.hint)}</div>
-          <div class="ans-box"  id="ans-${pid}"  style="display:none" >${escHtml(p.answer||'Work through the hint to find the answer!')}</div>
+          <div class="hint-box" id="hint-${pid}">${escHtml(p.hint)}</div>
+          <div class="ans-box"  id="ans-${pid}" >${escHtml(p.answer||'Work through the hint!')}</div>
         </div>`;
       }).join('')}
     </div>`;
     addBotHTML(html);
-    setTimeout(()=>{
-      document.querySelectorAll('[id^="prob-"]').forEach(el=>renderMath(el));
-    },100);
+    setTimeout(()=>{document.querySelectorAll('[id^="prob-"]').forEach(el=>renderMath(el));},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
-function toggleHint(pid){
-  const h=document.getElementById('hint-'+pid);
-  if(h){h.style.display=h.style.display==='none'?'block':'none';if(h.style.display==='block')renderMath(h);}
-}
-function toggleAns(pid){
-  const a=document.getElementById('ans-'+pid);
-  if(a){a.style.display=a.style.display==='none'?'block':'none';if(a.style.display==='block')renderMath(a);}
-}
-function solveCompProblem(prob){
-  mode='askanupam';
-  document.getElementById('input').value='Solve this competition problem with full solution:\n\n'+prob;
-  sendMsg();
-}
+function toggleHint(pid){const h=document.getElementById('hint-'+pid);if(h){h.style.display=h.style.display==='none'?'block':'none';if(h.style.display==='block')renderMath(h);}}
+function toggleAns(pid){const a=document.getElementById('ans-'+pid);if(a){a.style.display=a.style.display==='none'?'block':'none';if(a.style.display==='block')renderMath(a);}}
+function solveCompProblem(prob){mode='askanupam';document.getElementById('input').value='Solve this competition problem with full solution:\n\n'+prob;sendMsg();}
 
 /* ══ LEARNING PATHS ═════════════════════════════ */
 async function loadLearningPaths(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/learning-paths')).json();hideTyping();
+    const d=await(await fetch('/api/learning-paths')).json();hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">🎓 Learning Paths (${d.total})</div>
       <div class="psubtitle">Complete roadmaps from undergraduate to research/industry with salary milestones</div>
@@ -868,7 +1142,7 @@ async function loadLearningPaths(){
 async function loadPathDetail(name){
   showTyping();
   try{
-    const d=await (await fetch('/api/learning-path/'+encodeURIComponent(name))).json();hideTyping();
+    const d=await(await fetch('/api/learning-path/'+encodeURIComponent(name))).json();hideTyping();
     const stagesHtml=(d.stages||[]).map((s,i)=>`
       <div class="stage-card">
         <div class="stage-name">Stage ${i+1}: ${escHtml(s.name)}</div>
@@ -877,7 +1151,6 @@ async function loadPathDetail(name){
         <div class="stage-item">💡 <strong>Tips:</strong> ${escHtml(s.tips)}</div>
         <div class="stage-outcome">✅ ${escHtml(s.outcome)}</div>
       </div>`).join('');
-
     const html=`<div class="panel">
       <div class="ptitle">🎓 ${escHtml(d.name)}</div>
       <div style="font-size:12px;color:var(--txt2);margin:4px 0">${escHtml(d.overview)}</div>
@@ -897,7 +1170,7 @@ async function loadPathDetail(name){
 async function loadRealWorld(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/realworld')).json();hideTyping();
+    const d=await(await fetch('/api/realworld')).json();hideTyping();
     const id='rw-'+Date.now();
     const html=`<div class="panel">
       <div class="ptitle">🌍 Real World Mathematics</div>
@@ -920,28 +1193,22 @@ async function loadRealWorld(){
     setTimeout(()=>{const el=document.getElementById(id);if(el)renderMath(el);},100);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
-
-function askAboutRealWorld(concept){
-  mode='askanupam';
-  document.getElementById('input').value=`Explain in detail how ${concept} is used in the real world. Include all the mathematics with LaTeX formulas.`;
-  sendMsg();
-}
+function askAboutRealWorld(concept){mode='askanupam';document.getElementById('input').value=`Explain in detail how ${concept} is used in the real world with full LaTeX mathematics.`;sendMsg();}
 
 /* ══ RESEARCH HUB ═══════════════════════════════ */
 async function loadResearchHub(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/research-hub')).json();hideTyping();
+    const d=await(await fetch('/api/research-hub')).json();hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">🔬 Research Hub (${d.total_topics} Topics)</div>
-      <div class="psubtitle">Explore active research areas in mathematics. Click to see all topics.</div>
+      <div class="psubtitle">Explore active research areas. Click to see all topics.</div>
       ${d.categories.map(cat=>`
-        <button class="pbtn" onclick="loadResearchCat('${escQ(cat)}')">
-          ${cat}
-          <span class="pbtn-sub">Click to explore research topics →</span>
+        <button class="pbtn" onclick="loadResearchCat('${escQ(cat)}')">${cat}
+          <span class="pbtn-sub">Click to explore →</span>
         </button>`).join('')}
       <div style="margin-top:8px;padding:12px;background:var(--sur3);border-radius:8px;font-size:12px;color:var(--txt2)">
-        💡 You can also type any research question in the input below to get a detailed AI explanation.
+        💡 Type any research question in the input below for a detailed AI explanation.
       </div>
     </div>`;
     addBotHTML(html);
@@ -951,12 +1218,11 @@ async function loadResearchHub(){
 async function loadResearchCat(cat){
   showTyping();
   try{
-    const d=await (await fetch('/api/research-hub/'+encodeURIComponent(cat))).json();hideTyping();
+    const d=await(await fetch('/api/research-hub/'+encodeURIComponent(cat))).json();hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">🔬 ${escHtml(d.category)} (${d.total} Topics)</div>
       ${d.topics.map((t,i)=>`
-        <button class="pbtn" onclick="askResearchTopic('${escQ(t)}')">
-          ${i+1}. ${escHtml(t)}
+        <button class="pbtn" onclick="askResearchTopic('${escQ(t)}')">${i+1}. ${escHtml(t)}
           <span class="pbtn-sub">Click to explore with AI →</span>
         </button>`).join('')}
       <button class="qnext" onclick="loadResearchHub()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor);margin-top:4px">← All Categories</button>
@@ -964,19 +1230,14 @@ async function loadResearchCat(cat){
     addBotHTML(html);
   }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
-
-function askResearchTopic(t){
-  mode='research';
-  document.getElementById('input').value='Tell me about research in: '+t;
-  sendMsg();
-}
+function askResearchTopic(t){mode='research';document.getElementById('input').value='Tell me about research in: '+t;sendMsg();}
 
 /* ══ EXAM INFO ══════════════════════════════════ */
 async function showExam(exam){
   setModeTitle('🎓 Exam Info — '+exam);
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/exam/'+exam)).json();hideTyping();
+    const d=await(await fetch('/api/exam/'+exam)).json();hideTyping();
     const html=`<div class="panel">
       <div class="ptitle">🎓 ${escHtml(d.full_name)}</div>
       <div class="qcard">
@@ -985,19 +1246,16 @@ async function showExam(exam){
         <div class="info-row"><span class="info-label">PATTERN</span><span style="white-space:pre-line">${escHtml(d.pattern)}</span></div>
         <div class="info-row"><span class="info-label">SYLLABUS</span>${escHtml(d.syllabus)}</div>
         <div class="info-row"><span class="info-label">WEIGHTAGE</span>${escHtml(d.weightage)}</div>
-        <div>
-          <div class="info-label" style="display:block;margin-bottom:5px">TOP BOOKS</div>
+        <div><div class="info-label" style="display:block;margin-bottom:5px">TOP BOOKS</div>
           ${(d.top_books||[]).map(b=>`<div style="font-size:12px;color:var(--txt2);padding:2px 0">📖 ${escHtml(b)}</div>`).join('')}
         </div>
         <div style="background:rgba(0,212,168,.06);border:1px solid rgba(0,212,168,.2);border-radius:8px;padding:10px;font-size:12.5px;color:var(--txt2)">
           💡 <strong style="color:var(--acc3)">Strategy:</strong> ${escHtml(d.strategy||'')}
         </div>
-        <div style="margin-top:8px">
-          <a href="${d.website}" target="_blank" style="color:var(--acc);font-size:13px">🔗 Official Website: ${d.website}</a>
-        </div>
+        <a href="${d.website}" target="_blank" style="color:var(--acc);font-size:13px">🔗 ${d.website}</a>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
           <button class="qnext" onclick="loadPYQ('${exam}')">📜 View PYQs</button>
-          <button class="qnext" onclick="startMock('${exam}')" style="background:var(--acc2)">🧪 Take Mock Test</button>
+          <button class="qnext" onclick="startMock('${exam}')" style="background:var(--acc2)">🧪 Mock Test</button>
         </div>
       </div>
     </div>`;
@@ -1021,7 +1279,7 @@ function showQuizTopics(){
 async function startQuiz(topic){
   document.getElementById('chat').innerHTML='';
   quizState={topic,q:0,total:5,score:0};
-  addMsg('bot',`📝 Starting ${topic} Quiz — 5 questions! Karo shuru! 🚀`);
+  addMsg('bot',`📝 Starting ${topic} Quiz — 5 questions! Let's go! 🚀`);
   await nextQuizQ();
 }
 
@@ -1031,7 +1289,7 @@ async function nextQuizQ(){
     const r=await api('/api/quiz/question',{topic:quizState.topic,difficulty:'medium',q_num:quizState.q+1,total:quizState.total});
     hideTyping();quizState.q++;quizState.curAns=r.answer;quizState.curExpl=r.explanation;
     renderQuizCard(r.question,r.answer,r.explanation);
-  }catch(e){hideTyping();addMsg('bot','⚠️ Error. '+e.message,true);}
+  }catch(e){hideTyping();addMsg('bot','⚠️ Error: '+e.message,true);}
 }
 
 function renderQuizCard(question,answer,explanation){
@@ -1045,7 +1303,7 @@ function renderQuizCard(question,answer,explanation){
     <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
     <div class="qopts">${opts.map(o=>{
       const let_=o.trim()[0],txt=o.trim().slice(2).trim();
-      return `<button class="qopt" id="${id}${let_}" onclick="pickAns('${id}','${let_}','${answer}')" data-l="${let_}">
+      return`<button class="qopt" id="${id}${let_}" onclick="pickAns('${id}','${let_}','${answer}')" data-l="${let_}">
         <span class="qletter">${let_}</span><span id="${id}opt${let_}">${escHtml(txt)}</span></button>`;
     }).join('')}</div>
     <div class="qexpl" id="${id}ex"></div>
@@ -1063,14 +1321,11 @@ function pickAns(id,chosen,correct){
     if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
   const ok=chosen===correct;if(ok)quizState.score++;
   const ex=document.getElementById(id+'ex');
-  if(ex){ex.style.display='block';ex.innerHTML=(ok?'✅ Bilkul sahi! ':'❌ Wrong. Answer: '+correct+'. ')+escHtml(quizState.curExpl||'');renderMath(ex);}
+  if(ex){ex.style.display='block';ex.innerHTML=(ok?'✅ Correct! Bohot achha! ':'❌ Wrong. Answer: '+correct+'. ')+escHtml(quizState.curExpl||'');renderMath(ex);}
   const sc=document.getElementById(id+'sc');if(sc)sc.textContent=quizState.score;
   document.getElementById(id+'nx').style.display='block';
 }
-
-async function quizNext(id){document.getElementById(id+'nx').style.display='none';
-  if(quizState.q>=quizState.total)showQuizResult();else await nextQuizQ();}
-
+async function quizNext(id){document.getElementById(id+'nx').style.display='none';if(quizState.q>=quizState.total)showQuizResult();else await nextQuizQ();}
 function showQuizResult(){
   const s=quizState.score,t=quizState.total,pct=Math.round(s/t*100);
   const msg=pct===100?'Perfect! Ekdum zabardast! 🏆':pct>=80?'Bahut achha! Excellent! 🌟':pct>=60?'Achha kiya! Keep going! 💪':'Aur practice karo! 📚';
@@ -1092,24 +1347,20 @@ function showMockTopics(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   addBotHTML(`<div class="panel">
     <div class="ptitle">🧪 Mock Test — 30 Questions</div>
-    <div class="psubtitle">Full-length exam simulation with immediate feedback after each question</div>
-    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock Test (30 Questions, Mixed Topics)</button>`).join('')}
+    <div class="psubtitle">Full-length exam simulation with feedback after each question</div>
+    ${['JAM','GATE','CSIR'].map(e=>`<button class="pbtn" onclick="startMock('${e}')">🎓 ${e} Mock Test (30 Questions)</button>`).join('')}
   </div>`);
 }
 
 async function startMock(exam){
   document.getElementById('chat').innerHTML='';
   mockState={exam,q:0,total:30,score:0,topics:[]};
-  addMsg('bot',`🧪 ${exam} Mock Test shuru! 30 Questions · Answer each to continue · Type STOP to end early.`);
+  addMsg('bot',`🧪 ${exam} Mock Test started! 30 Questions. Type STOP to end.`);
   await nextMockQ();
 }
 
 function getMockTopic(exam){
-  const topics={
-    JAM: ['Real Analysis','Linear Algebra','Calculus','Group Theory','Complex Analysis','Probability'],
-    GATE:['Calculus','Linear Algebra','Complex Analysis','PDE','ODE','Numerical Analysis'],
-    CSIR:['Real Analysis','Topology','Abstract Algebra','Functional Analysis','Complex Analysis']
-  };
+  const topics={JAM:['Real Analysis','Linear Algebra','Calculus','Group Theory','Complex Analysis','Probability'],GATE:['Calculus','Linear Algebra','Complex Analysis','PDE','ODE','Numerical Analysis'],CSIR:['Real Analysis','Topology','Abstract Algebra','Functional Analysis','Complex Analysis']};
   const list=topics[exam]||topics['JAM'];
   return list[Math.floor(Math.random()*list.length)];
 }
@@ -1129,7 +1380,7 @@ async function nextMockQ(){
       <div class="qprog"><div class="qbar" style="width:${(mockState.q/mockState.total)*100}%"></div></div>
       <div class="qquestion" id="${id}q">${escHtml(qLine.replace(/^Q:\s*/,''))}</div>
       <div class="qopts">${opts.map(o=>{const l=o.trim()[0],t=o.trim().slice(2).trim();
-        return `<button class="qopt" id="${id}${l}" onclick="pickMock('${id}','${l}')" data-l="${l}">
+        return`<button class="qopt" id="${id}${l}" onclick="pickMock('${id}','${l}')" data-l="${l}">
           <span class="qletter">${l}</span><span>${escHtml(t)}</span></button>`;
       }).join('')}</div>
       <div class="qexpl" id="${id}ex" style="display:none"></div>
@@ -1152,21 +1403,12 @@ function pickMock(id,chosen){
   ['A','B','C','D'].forEach(l=>{const b=document.getElementById(id+l);if(b){b.disabled=true;
     if(l===correct)b.classList.add('correct');else if(l===chosen&&l!==correct)b.classList.add('wrong');}});
   const ok=chosen===correct;if(ok)mockState.score++;else mockState.topics.push(mockState.curTopic);
-  const ex=document.getElementById(id+'ex');
-  if(ex){ex.innerHTML=(ok?'✅ Sahi! ':'❌ Wrong. Answer: '+correct+'. ')+fmt(mockState.curExpl||'');}
   const sc=document.getElementById(id+'sc');if(sc)sc.textContent=mockState.score;
   document.getElementById(id+'sol').style.display='inline-flex';
   document.getElementById(id+'nx').style.display='inline-flex';
 }
-
-function showMockSolution(id){
-  const ex=document.getElementById(id+'ex');
-  if(ex){ex.style.display='block';renderMath(ex);}
-}
-
-async function mockNext(id){document.getElementById(id+'nx').style.display='none';
-  if(mockState.q>=mockState.total)showMockResult();else await nextMockQ();}
-
+function showMockSolution(id){const ex=document.getElementById(id+'ex');if(ex){ex.style.display='block';ex.innerHTML=fmt(mockState.curExpl||'');renderMath(ex);}}
+async function mockNext(id){document.getElementById(id+'nx').style.display='none';if(mockState.q>=mockState.total)showMockResult();else await nextMockQ();}
 function showMockResult(){
   const s=mockState.score,t=mockState.total,pct=Math.round(s/t*100);
   const grade=pct>=80?'Outstanding! 🏆':pct>=60?'Achha kiya! 💪':'Aur mehnat karo! 📚';
@@ -1176,8 +1418,8 @@ function showMockResult(){
     <div class="result-score">${s}/${t}</div>
     <div style="font-size:20px;margin:6px 0">${pct}%</div>
     <div style="font-size:14px;color:var(--txt2);margin-bottom:10px">${grade}</div>
-    ${weak!=='None — perfect!'?`<div style="font-size:12px;color:var(--txt2);background:var(--sur3);padding:10px;border-radius:8px;margin-bottom:12px">⚠️ Revise these topics: ${weak}</div>`:''}
-    <button class="qnext" onclick="startMock('${mockState.exam}')">Retry Same Exam</button>
+    ${weak!=='None — perfect!'?`<div style="font-size:12px;color:var(--txt2);background:var(--sur3);padding:10px;border-radius:8px;margin-bottom:12px">⚠️ Revise: ${weak}</div>`:''}
+    <button class="qnext" onclick="startMock('${mockState.exam}')">Retry</button>
     &nbsp;&nbsp;
     <button class="qnext" onclick="showMockTopics()" style="background:var(--sur3);color:var(--txt2);border:1px solid var(--bor)">Change Exam</button>
   </div>`);
@@ -1197,7 +1439,7 @@ function showPYQTopics(){
 async function loadPYQ(exam){
   rmWelcome();showTyping();
   try{
-    const d=await (await fetch('/api/pyq?exam='+exam)).json();hideTyping();
+    const d=await(await fetch('/api/pyq?exam='+exam)).json();hideTyping();
     const qid='pq'+Date.now();const aid='pa'+Date.now();
     const html=`<div class="qcard">
       <div class="psubtitle">📜 ${exam} · ~${d.year} · ${escHtml(d.topic)}</div>
@@ -1218,16 +1460,17 @@ async function loadPYQ(exam){
 async function loadChallenge(){
   rmWelcome();document.getElementById('chat').innerHTML='';showTyping();
   try{
-    const d=await (await fetch('/api/challenge')).json();hideTyping();
+    const d=await(await fetch('/api/challenge')).json();hideTyping();
     const cid='ch'+Date.now();
     addBotHTML(`<div class="qcard">
       <div class="ptitle">🧩 Aaj Ka Challenge!</div>
       <div class="thm-card"><div class="thm-text" id="${cid}">${escHtml(d.challenge)}</div></div>
-      <div style="font-size:12px;color:var(--txt3);margin:4px 0">Apna solution chat mein type karo below!</div>
+      <div style="font-size:12px;color:var(--txt3);margin:4px 0">Type your solution in the chat below. Use the Answer Verifier to check it! ✅</div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="qnext" onclick="loadChallenge()">New Challenge</button>
         <button class="copy-btn" onclick="copyTxt(document.getElementById('${cid}').innerText)">📋 Copy</button>
         <button class="save-btn" onclick="saveBm('Daily Challenge',document.getElementById('${cid}').innerText)">🔖 Save</button>
+        <button class="qnext" onclick="setMode('verifier');document.getElementById('vrf-problem')&&(document.getElementById('vrf-problem').value=document.getElementById('${cid}').innerText)" style="background:rgba(0,212,168,.15);color:var(--acc3);border:1px solid rgba(0,212,168,.3);box-shadow:none">✅ Verify Answer</button>
       </div>
     </div>`);
     setTimeout(()=>{const el=document.getElementById(cid);if(el)renderMath(el);},100);
@@ -1236,17 +1479,17 @@ async function loadChallenge(){
 }
 
 /* ══ BOOKS ══════════════════════════════════════ */
-async function loadBooks(topic='Mathematics', exam=''){
+async function loadBooks(topic='Mathematics',exam=''){
   rmWelcome();showTyping();
   try{
     const r=await api('/api/books',{topic,exam});hideTyping();
-    if(!r.books||!r.books.length){addBotHTML(`<div class="qcard"><div class="ptitle">📚 Books</div><div style="color:var(--txt2)">No books found right now. Try another topic.</div></div>`);return;}
+    if(!r.books||!r.books.length){addBotHTML(`<div class="qcard"><div class="ptitle">📚 Books</div><div style="color:var(--txt2)">No books found. Try another topic.</div></div>`);return;}
     const html=`<div class="panel">
       <div class="ptitle">📚 Books (${r.total})</div>
-      <div class="psubtitle">${escHtml(topic)} ${exam?('· '+escHtml(exam)):''} · ${r.source==='dynamic'?'Live curated links':'Fallback list'}</div>
+      <div class="psubtitle">${escHtml(topic)} ${exam?'· '+escHtml(exam):''}</div>
       ${r.books.map((b,i)=>`<div class="qcard" style="margin-bottom:8px">
         <div style="font-weight:700;color:var(--txt)">${i+1}. ${escHtml(b.name||'Unknown')}</div>
-        <div style="font-size:12px;color:var(--acc2)">${escHtml(b.author||'')}${b.level?` · ${escHtml(b.level)}`:''}</div>
+        <div style="font-size:12px;color:var(--acc2)">${escHtml(b.author||'')}${b.level?' · '+escHtml(b.level):''}</div>
         <div style="font-size:12px;color:var(--txt2);margin-top:4px">${escHtml(b.why||'')}</div>
         <a href="${escHtml(b.link||'#')}" target="_blank" style="font-size:12px;color:var(--acc)">🔗 Open Link</a>
       </div>`).join('')}
@@ -1260,7 +1503,7 @@ function showBookmarks(){
   rmWelcome();document.getElementById('chat').innerHTML='';
   if(!bookmarks.length){
     addBotHTML(`<div class="qcard"><div class="ptitle">🔖 My Bookmarks</div>
-      <div style="color:var(--txt2);font-size:13px;margin-top:8px">Abhi koi bookmark nahi hai!<br>Kisi bhi response mein 🔖 Save click karo to save it here.</div>
+      <div style="color:var(--txt2);font-size:13px;margin-top:8px">No bookmarks yet!<br>Click 🔖 Save on any response to save it here.</div>
     </div>`);return;
   }
   let html=`<div class="panel"><div class="ptitle">🔖 My Bookmarks (${bookmarks.length})</div>`;
@@ -1278,14 +1521,12 @@ function showBookmarks(){
   html+=`<button class="qnext" onclick="clrBm()" style="background:var(--red);margin-top:6px;font-size:12px;padding:6px 14px">Clear All</button></div>`;
   addBotHTML(html);
 }
-
 function saveBm(topic,content){
   bookmarks.push({topic,content,date:new Date().toLocaleDateString()});
   if(bookmarks.length>40)bookmarks.shift();
   localStorage.setItem('ms_bm',JSON.stringify(bookmarks));
   toast('🔖 Saved!','ok');
 }
-
 function delBm(i){bookmarks.splice(i,1);localStorage.setItem('ms_bm',JSON.stringify(bookmarks));showBookmarks();}
 function clrBm(){if(confirm('Delete all bookmarks?')){bookmarks=[];localStorage.setItem('ms_bm','[]');showBookmarks();}}
 
@@ -1297,34 +1538,42 @@ function copyTxt(text){
     document.body.removeChild(ta);
   });
 }
-
 function copySection(title){
   const nodes=document.querySelectorAll('.stage-card');
-  let text=title+'\n\n';
-  nodes.forEach(n=>text+=n.innerText+'\n\n');
+  let text=title+'\n\n';nodes.forEach(n=>text+=n.innerText+'\n\n');
   copyTxt(text||title);
 }
-
 function toast(msg,type='ok'){
-  const t=document.createElement('div');
-  t.className=`toast ${type}`;t.textContent=msg;document.body.appendChild(t);
+  const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;document.body.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);
 }
 
+/* ══ CONFIDENCE BADGE ═══════════════════════════ */
+function makeBadge(confidence){
+  if(!confidence||confidence==='HIGH')
+    return`<span class="vbadge verified" title="SymPy verified or AI high-confidence">✓ HIGH CONFIDENCE</span>`;
+  if(confidence==='MEDIUM')
+    return`<span class="vbadge medium" title="Standard result, verify if critical">⚠ MEDIUM CONFIDENCE</span>`;
+  return`<span class="vbadge low" title="Complex problem — please verify independently">⚠ LOW CONFIDENCE</span>`;
+}
+
 /* ══ DOM HELPERS ════════════════════════════════ */
-function addMsg(role,text,isErr=false){
+function addMsg(role,text,isErr=false,confidence=null){
   rmWelcome();
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className=`msg ${role}`;
   const avHtml=role==='user'
     ?'<div class="avatar" style="font-size:16px">👤</div>'
-    :`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div>`;
+    :`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML=\'🧮\'"/></div>`;
   div.innerHTML=avHtml+`<div class="bubble"></div>`;
   const bubble=div.querySelector('.bubble');
   bubble.innerHTML=fmt(text);
 
   if(role==='bot'&&!isErr){
     const cw=document.createElement('div');cw.className='copy-wrap';
+    if(confidence){
+      const badge=document.createElement('span');badge.innerHTML=makeBadge(confidence);cw.appendChild(badge.firstChild);
+    }
     const cb=document.createElement('button');cb.className='copy-btn';cb.textContent='📋 Copy';
     cb.onclick=()=>copyTxt(text);
     const sb=document.createElement('button');sb.className='save-btn';sb.textContent='🔖 Save';
@@ -1332,7 +1581,6 @@ function addMsg(role,text,isErr=false){
     cw.appendChild(cb);cw.appendChild(sb);bubble.appendChild(cw);
   }
 
-  // make pre elements have copy buttons
   bubble.querySelectorAll('pre').forEach(pre=>{
     const cb=document.createElement('button');cb.className='pre-copy';cb.textContent='Copy';
     cb.onclick=()=>copyTxt(pre.innerText);pre.style.position='relative';pre.appendChild(cb);
@@ -1346,9 +1594,8 @@ function addBotHTML(html){
   rmWelcome();
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='msg bot';
-  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div><div class="bubble">${html}</div>`;
+  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML=\'🧮\'"/></div><div class="bubble">${html}</div>`;
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
-  // wire copy buttons on pre
   div.querySelectorAll('pre').forEach(pre=>{
     const cb=document.createElement('button');cb.className='pre-copy';cb.textContent='Copy';
     cb.onclick=()=>copyTxt(pre.innerText);pre.style.position='relative';pre.appendChild(cb);
@@ -1359,15 +1606,13 @@ function showTyping(){
   busy=true;document.getElementById('send-btn').disabled=true;
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='msg bot';div.id='typing-ind';
-  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML='🧮'"/></div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  div.innerHTML=`<div class="avatar"><img src="/logo.png" style="width:28px;height:28px;object-fit:contain" onerror="this.parentNode.innerHTML=\'🧮\'"/></div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
 }
-
 function hideTyping(){
   busy=false;document.getElementById('send-btn').disabled=false;
   const t=document.getElementById('typing-ind');if(t)t.remove();
 }
-
 function setModeTitle(title){
   const mt=document.getElementById('mode-title');
   mt.style.opacity='0';setTimeout(()=>{mt.textContent=title;mt.style.opacity='1';},150);
@@ -1375,52 +1620,26 @@ function setModeTitle(title){
 
 /* ══ TEXT FORMATTER ════════════════════════════ */
 function fmt(text){
-  if(!text)return '';
+  if(!text)return'';
   const latexBlocks=[];let t=text;
-
-  // protect LaTeX
   t=t.replace(/\\\[([\s\S]*?)\\\]/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
   t=t.replace(/\\\(([\s\S]*?)\\\)/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
   t=t.replace(/\$\$([\s\S]*?)\$\$/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
   t=t.replace(/\$([^\$\n]+?)\$/g,m=>{latexBlocks.push(m);return`\x00L${latexBlocks.length-1}\x00`;});
-
   t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  // restore LaTeX
   t=t.replace(/\x00L(\d+)\x00/g,(_,i)=>latexBlocks[parseInt(i)]);
-
-  // links
   t=t.replace(/(https?:\/\/[^\s<&"]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
-
-  // code blocks
   t=t.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>');
   t=t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
-
-  // section headers (lines starting with emoji)
-  t=t.replace(/^(📌|💡|📖|📐|✏️|📚|📝|✅|⚠️|🎯|🔢|🔷|📊|🏆|🧩|🌐|🔬|💼|🌍|⭐|🛠️|🔍)\s+(.+)$/gm,'<span class="sec">$1 $2</span>');
-
+  t=t.replace(/^(📌|💡|📖|📐|✏️|📚|📝|✅|⚠️|🎯|🔢|🔷|📊|🏆|🧩|🌐|🔬|💼|🌍|⭐|🛠️|🔍|🎓)\s+(.+)$/gm,'<span class="sec">$1 $2</span>');
   t=t.replace(/\n/g,'<br>');
   return t;
 }
-function initTheme(){
-  const t=localStorage.getItem('ms_theme')||'dark';
-  document.body.classList.toggle('light', t==='light');
-  const b=document.getElementById('theme-btn');
-  if(b) b.textContent = t==='light' ? '☀️ Light' : '🌙 Dark';
-}
 
-function toggleTheme(){
-  const nowLight=!document.body.classList.contains('light');
-  document.body.classList.toggle('light', nowLight);
-  localStorage.setItem('ms_theme', nowLight?'light':'dark');
-  const b=document.getElementById('theme-btn');
-  if(b) b.textContent = nowLight ? '☀️ Light' : '🌙 Dark';
-}
-/* ══ UTILITIES ═════════════════════════════════ */
-function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escQ(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n');}
-
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+
 function handleKey(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
     if(mockState&&document.getElementById('input').value.trim().toUpperCase()==='STOP'){
@@ -1428,9 +1647,7 @@ function handleKey(e){
     sendMsg();
   }
 }
-async function quickSend(msg){
-  document.getElementById('input').value=msg;await sendMsg();
-}
+async function quickSend(msg){document.getElementById('input').value=msg;await sendMsg();}
 
 async function api(url,data){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
@@ -1444,17 +1661,15 @@ function handleImg(e){
   const r=new FileReader();
   r.onload=ev=>{const res=ev.target.result;imgB64=res.split(',')[1];imgType=file.type;
     document.getElementById('prev-img').src=res;document.getElementById('imgpreview').style.display='block';
-    document.getElementById('input').placeholder='Image ke baare mein poocho...';};
+    document.getElementById('input').placeholder='Image uploaded! Ask about this problem...';};
   r.readAsDataURL(file);
 }
-
 function removeImg(){
   imgB64=null;imgType=null;
   document.getElementById('imgpreview').style.display='none';
   document.getElementById('filein').value='';
   document.getElementById('input').placeholder=MODE_CFG[mode]?.ph||'Type here...';
 }
-
 document.addEventListener('paste',e=>{
   const items=e.clipboardData?.items;if(!items)return;
   for(const it of items){
@@ -1466,6 +1681,21 @@ document.addEventListener('paste',e=>{
     }
   }
 });
+
+/* ══ THEME ══════════════════════════════════════ */
+function initTheme(){
+  const t=localStorage.getItem('ms_theme')||'dark';
+  document.body.classList.toggle('light',t==='light');
+  const b=document.getElementById('theme-btn');
+  if(b)b.textContent=t==='light'?'☀️ Light':'🌙 Dark';
+}
+function toggleTheme(){
+  const nowLight=!document.body.classList.contains('light');
+  document.body.classList.toggle('light',nowLight);
+  localStorage.setItem('ms_theme',nowLight?'light':'dark');
+  const b=document.getElementById('theme-btn');
+  if(b)b.textContent=nowLight?'☀️ Light':'🌙 Dark';
+}
 </script>
 </body>
 </html>
