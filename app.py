@@ -23,7 +23,7 @@ import json
 import random
 import sys
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -59,14 +59,14 @@ if GEMINI_AVAILABLE:
         print(f"⚠️ Gemini init failed: {e}")
         GEMINI_AVAILABLE = False
 
-# ════ SymPy Setup — FIXED: catches ALL errors, not just ImportError ════
+# ════ SymPy Setup ════
 try:
     print(f"🔍 Python version: {sys.version}")
     print(f"🔍 Attempting sympy import...")
-    
+
     import sympy as sp
     print(f"🔍 sympy version: {sp.__version__}")
-    
+
     from sympy import (
         symbols, sympify, diff, integrate, solve, simplify, expand,
         factor, latex as sp_latex, Matrix, eigenvals, eigenvects,
@@ -87,7 +87,6 @@ try:
 except ImportError as e:
     print(f"⚠️ SymPy ImportError: {e}")
 except Exception as e:
-    # THIS IS THE KEY FIX — was silently missing other errors before
     print(f"⚠️ SymPy failed with unexpected error: {type(e).__name__}: {e}")
 
 TEACHER_YOUTUBE = "https://youtube.com/@pi_nomenal1729"
@@ -97,6 +96,7 @@ SYMPY_TRANSFORMATIONS = (
     standard_transformations +
     (implicit_multiplication_application, convert_xor)
 ) if SYMPY_AVAILABLE else None
+
 
 def safe_parse(expr_str: str):
     """Parse mathematical expression safely"""
@@ -113,37 +113,48 @@ def safe_parse(expr_str: str):
         except Exception:
             return None
 
+
 # ════ RESPONSE CLEANING ════
 def clean_response(text: str) -> str:
     """Remove asterisks, preserve LaTeX"""
     if not text:
         return text
-    
+
     # Preserve LaTeX blocks
     latex_blocks = []
     latex_inline = re.findall(r'\\\(.*?\\\)', text, flags=re.DOTALL)
     latex_display = re.findall(r'\\\[.*?\\\]', text, flags=re.DOTALL)
-    
+
     for i, l in enumerate(latex_inline):
         key = f"LTXI{i}X"
         latex_blocks.append((key, l))
         text = text.replace(l, key, 1)
-    
+
     for i, l in enumerate(latex_display):
         key = f"LTXD{i}X"
         latex_blocks.append((key, l))
         text = text.replace(l, key, 1)
-    
+
     # Remove asterisks
     text = re.sub(r'\*{3}(.+?)\*{3}', r'\1', text, flags=re.DOTALL)
     text = re.sub(r'\*{2}(.+?)\*{2}', r'\1', text, flags=re.DOTALL)
     text = re.sub(r'\*', '', text)
-    
+
     # Restore LaTeX
     for key, latex in latex_blocks:
         text = text.replace(key, latex)
-    
+
     return text.strip()
+
+
+def strip_markdown_json(text: str) -> str:
+    """Strip markdown code fences from JSON responses"""
+    text = text.strip()
+    text = re.sub(r'^```json\s*', '', text)
+    text = re.sub(r'^```\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    return text.strip()
+
 
 # ════ AI CORE ════
 def ask_ai(messages, system=None, temperature=0.2):
@@ -152,7 +163,7 @@ def ask_ai(messages, system=None, temperature=0.2):
         full = ([{"role": "system", "content": system}] if system else []) + messages
         if len(full) > 30:
             full = [full[0]] + full[-28:]
-        
+
         for model in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]:
             try:
                 r = groq_client.chat.completions.create(
@@ -166,7 +177,7 @@ def ask_ai(messages, system=None, temperature=0.2):
                 if any(x in str(e).lower() for x in ["429", "rate_limit", "does not exist"]):
                     continue
                 raise
-    
+
     if GEMINI_AVAILABLE:
         try:
             parts = ([f"SYSTEM:\n{system}\n\n"] if system else []) + \
@@ -178,12 +189,14 @@ def ask_ai(messages, system=None, temperature=0.2):
             return clean_response(r.text)
         except Exception as e:
             print(f"Gemini error: {e}")
-    
+
     return "⚠️ AI temporarily unavailable"
+
 
 def ask_simple(prompt, system=None, temperature=0.2):
     """Single-turn AI"""
     return ask_ai([{"role": "user", "content": prompt}], system=system, temperature=temperature)
+
 
 def ask_ai_with_image(messages, image_b64=None, image_type=None, system=None):
     """AI with image analysis"""
@@ -196,7 +209,7 @@ def ask_ai_with_image(messages, image_b64=None, image_type=None, system=None):
                 role = "User" if m.get("role") == "user" else "Assistant"
                 prompt_parts.append(f"{role}: {m.get('content', '')}\n")
             prompt_parts.append("Analyze the image step by step. Solve every problem completely.")
-            
+
             contents = [
                 {"text": "\n".join(prompt_parts)},
                 {"inline_data": {"mime_type": image_type, "data": image_b64}}
@@ -208,11 +221,12 @@ def ask_ai_with_image(messages, image_b64=None, image_type=None, system=None):
             return clean_response(r.text)
         except Exception as e:
             print(f"Gemini image error: {e}")
-    
+
     fallback = list(messages)
     if image_b64:
         fallback.append({"role": "user", "content": "Solve this image step by step"})
     return ask_ai(fallback, system=system)
+
 
 # ════ SYSTEM PROMPTS ════
 ASK_ANUPAM_PROMPT = """You are Ask Anupam — an expert AI mathematics tutor.
@@ -226,12 +240,15 @@ CORE RULES:
 6. Box final answers: \\[\\boxed{{answer}}\\]
 7. Handle ANY topic: academics, advice, code, debugging
 8. State confidence: [CONFIDENCE: HIGH/MEDIUM/LOW]
+9. NEVER repeat the same answer multiple times
+10. Give ONE clean, complete answer only
 
 RESPONSE STYLE:
 - Natural language, warm, helpful tone
 - Math format: "Step 1: ..., Step 2: ..., Final: \\[\\boxed{{...}}\\]"
 - For images: "I see [problem description]. Let me solve each..."
 - CRISP answers unless depth requested
+- Do NOT repeat yourself
 
 This is a CHAT like ChatGPT - be conversational, not robotic."""
 
@@ -326,11 +343,13 @@ Result:
 
 Confidence: HIGH/MEDIUM/LOW"""
 
+
 # ════ ROUTES ════
 
 @app.route("/")
 def index():
-    return app.send_static_file("index.html")
+    return send_from_directory("static", "index.html")
+
 
 @app.route("/api/health", methods=["GET"])
 def health():
@@ -343,6 +362,7 @@ def health():
         "python": sys.version
     })
 
+
 # ════ CHAT ENDPOINT ════
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -351,21 +371,38 @@ def chat():
         messages = data.get("messages", [])
         image_b64 = data.get("image_b64")
         image_type = data.get("image_type")
-        
+
         if not messages:
             return jsonify({"error": "messages required"}), 400
-        
-        clean = [{"role": m["role"], "content": str(m["content"])}
-                 for m in messages if m.get("role") in ("user", "assistant")]
-        if len(clean) > 30:
-            clean = clean[-30:]
-        
-        answer = ask_ai_with_image(clean, image_b64=image_b64, image_type=image_type, 
-                                   system=ASK_ANUPAM_PROMPT)
-        
+
+        # Deduplicate consecutive duplicate messages
+        clean = []
+        seen = set()
+        for m in messages:
+            if m.get("role") in ("user", "assistant"):
+                key = m["role"] + str(m["content"])[:100]
+                if key not in seen:
+                    seen.add(key)
+                    clean.append({
+                        "role": m["role"],
+                        "content": str(m["content"])
+                    })
+
+        # Keep last 20 messages only
+        if len(clean) > 20:
+            clean = clean[-20:]
+
+        answer = ask_ai_with_image(
+            clean,
+            image_b64=image_b64,
+            image_type=image_type,
+            system=ASK_ANUPAM_PROMPT
+        )
+
         return jsonify({"answer": answer, "confidence": "HIGH"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ FORMULA SHEET ════
 @app.route("/api/formula", methods=["POST"])
@@ -374,7 +411,7 @@ def formula():
         data = request.get_json()
         topic = data.get("topic", "Calculus")
         exam = data.get("exam", "JAM")
-        
+
         prompt = f"""Generate a COMPLETE, exam-ready formula sheet.
 
 Topic: {topic}
@@ -394,11 +431,12 @@ Include ALL standard formulas for this topic.
 Minimum 30 formulas.
 Use PROPER LaTeX notation.
 No explanations - just formulas."""
-        
+
         answer = ask_simple(prompt, temperature=0.1)
         return jsonify({"answer": answer})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ GRAPH PLOTTER ════
 @app.route("/api/graph", methods=["POST"])
@@ -407,7 +445,7 @@ def graph_plotter():
         data = request.get_json()
         expr_str = data.get("expression", "x**2")
         graph_type = data.get("type", "2d")
-        
+
         if not SYMPY_AVAILABLE:
             prompt = f"""Analyze function: f(x) = {expr_str}
 
@@ -435,21 +473,21 @@ Provide COMPLETE analysis using LATEX notation:
 🔢 DERIVATIVE: \\[f'(x) = ...\\]
 
 Use PROPER mathematical notation throughout."""
-            
+
             analysis = ask_simple(prompt, temperature=0.1)
             return jsonify({
                 "sympy": False,
                 "expression": expr_str,
                 "analysis": analysis
             })
-        
+
         # With SymPy
         f = safe_parse(re.sub(r'\^', '**', expr_str.strip()))
         if not f:
             return jsonify({"error": "Could not parse expression"}), 400
-        
+
         x = Symbol('x')
-        
+
         if graph_type == "2d":
             points = []
             x_min, x_max = -5, 5
@@ -463,7 +501,7 @@ Use PROPER mathematical notation throughout."""
                         points.append({"x": round(xv, 4), "y": None})
                 except:
                     points.append({"x": round(xv, 4), "y": None})
-            
+
             try:
                 df = diff(f, x)
                 df_latex = sp_latex(simplify(df))
@@ -472,7 +510,7 @@ Use PROPER mathematical notation throughout."""
             except:
                 df_latex = ""
                 critical = []
-            
+
             analysis_prompt = f"""COMPLETE MATHEMATICAL ANALYSIS of f(x) = {expr_str}
 
 Use PROPER LaTeX notation for everything:
@@ -505,9 +543,9 @@ Use PROPER LaTeX notation for everything:
 - As \\(x \\to -\\infty\\): \\(f(x) \\to ...\\)
 
 Format EVERYTHING in proper mathematical notation."""
-            
+
             analysis = ask_simple(analysis_prompt, temperature=0.1)
-            
+
             return jsonify({
                 "sympy": True,
                 "type": "2d",
@@ -518,9 +556,10 @@ Format EVERYTHING in proper mathematical notation."""
                 "critical_points": critical,
                 "analysis": analysis
             })
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ MATHEMATICIAN EXPLORER ════
 @app.route("/api/mathematician", methods=["GET", "POST"])
@@ -530,42 +569,55 @@ def mathematician():
         if request.method == "GET":
             name = request.args.get("name")
         else:
-            name = request.get_json().get("name") if request.get_json() else None
-        
+            body = request.get_json()
+            name = body.get("name") if body else None
+
         if not name:
             name = random.choice([
                 "Gauss", "Euler", "Ramanujan", "Emmy Noether", "Alan Turing",
                 "Terence Tao", "Maryam Mirzakhani", "Kurt Gödel"
             ])
-        
-        prompt = f"""Generate COMPLETE biography of mathematician: {name}
 
-Return ONLY valid JSON:
+        prompt = f"""Generate biography of mathematician: {name}
+
+IMPORTANT: Return ONLY a valid JSON object. No explanation, no markdown, no backticks.
+Just pure JSON starting with {{ and ending with }}
+
 {{
-  "name": "Full name",
-  "period": "Birth–Death years",
-  "country": "Country",
-  "fields": ["Field1", "Field2"],
-  "biography": "3-4 paragraph detailed biography",
-  "major_contributions": ["Contribution 1", "Contribution 2"],
-  "famous_quote": "Famous quote",
-  "key_achievements": {{"theorem1": "Description", "theorem2": "Description"}},
-  "impact_today": "How work impacts modern world",
-  "learning_resources": ["Book/Paper 1", "Resource 2"],
-  "wikipedia": "Wikipedia URL"
-}}
+  "name": "Full name here",
+  "period": "Birth-Death years",
+  "country": "Country of origin",
+  "fields": ["Field1", "Field2", "Field3"],
+  "biography": "3-4 paragraph detailed biography as a single string with no line breaks",
+  "major_contributions": ["Contribution 1", "Contribution 2", "Contribution 3", "Contribution 4"],
+  "famous_quote": "One famous quote by this mathematician",
+  "key_achievements": {{"Achievement 1": "Description 1", "Achievement 2": "Description 2"}},
+  "impact_today": "How their work impacts the modern world today",
+  "learning_resources": ["Book 1", "Online Course", "Paper or Article"],
+  "wikipedia": "https://en.wikipedia.org/wiki/{name.replace(' ', '_')}"
+}}"""
 
-Make biography COMPREHENSIVE."""
-        
-        response = ask_simple(prompt, temperature=0.3)
+        response = ask_simple(prompt, temperature=0.2)
+        response = strip_markdown_json(response)
+
         try:
             data = json.loads(response)
             return jsonify(data)
         except:
+            # Try to extract JSON object
+            m = re.search(r'\{[\s\S]*\}', response)
+            if m:
+                try:
+                    data = json.loads(m.group(0))
+                    return jsonify(data)
+                except:
+                    pass
+            # Fallback
             return jsonify({"name": name, "biography": response})
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ PROJECTS ════
 @app.route("/api/projects/generate", methods=["POST"])
@@ -573,47 +625,69 @@ def projects_generate():
     try:
         data = request.get_json()
         topic = data.get("topic", "Machine Learning")
-        
-        prompt = f"""Generate 5 DETAILED projects for topic: {topic}
 
-Return ONLY valid JSON array:
-[{{
-  "number": 1,
-  "title": "Project title",
-  "difficulty": "Beginner/Intermediate/Advanced",
-  "description": "3-4 sentence description",
-  "math_concepts": ["Concept 1: formula", "Concept 2: formula"],
-  "step_by_step": [
-    "Step 1: [detailed subtitle] - Full explanation with math",
-    "Step 2: ...",
-    "Step 3: ...",
-    "Step 4: ...",
-    "Step 5: ..."
-  ],
-  "code_snippet": "Complete working Python code",
-  "expected_outcome": "What you'll build",
-  "career_salary": "Job title + salary range",
-  "resources": ["Book", "Course", "GitHub"]
-}}]
+        prompt = f"""Generate 5 detailed math/coding projects for topic: {topic}
 
-Make COMPLETE with code and formulas."""
-        
-        response = ask_simple(prompt, temperature=0.4)
+IMPORTANT: Return ONLY a valid JSON array. No explanation, no markdown, no backticks.
+Just pure JSON starting with [ and ending with ]
+
+[
+  {{
+    "number": 1,
+    "title": "Project title here",
+    "difficulty": "Beginner",
+    "description": "3-4 sentence description of the project",
+    "math_concepts": ["Concept 1: formula or explanation", "Concept 2: formula or explanation"],
+    "step_by_step": [
+      "Step 1: Detailed explanation of first step",
+      "Step 2: Detailed explanation of second step",
+      "Step 3: Detailed explanation of third step",
+      "Step 4: Detailed explanation of fourth step",
+      "Step 5: Detailed explanation of fifth step"
+    ],
+    "code_snippet": "# Python code example\\nimport numpy as np\\nprint('Hello')",
+    "expected_outcome": "What you will build or learn",
+    "career_salary": "Related job title and salary range",
+    "resources": ["Book or tutorial 1", "Online course 2", "GitHub example 3"]
+  }}
+]
+
+Generate all 5 projects in this exact format."""
+
+        response = ask_simple(prompt, temperature=0.3)
+        response = strip_markdown_json(response)
+
         projects = None
-        try: projects = json.loads(response)
-        except: pass
-        if not projects:
-            import re as _re
-            m = _re.search(r'\[[\s\S]*\]', response)
+        try:
+            projects = json.loads(response)
+        except:
+            m = re.search(r'\[[\s\S]*\]', response)
             if m:
-                try: projects = json.loads(m.group(0))
-                except: pass
+                try:
+                    projects = json.loads(m.group(0))
+                except:
+                    pass
+
         if projects and isinstance(projects, list):
             return jsonify({"topic": topic, "projects": projects})
-        return jsonify({"topic": topic, "projects": [{"title": "Projects for " + topic, "description": response[:800], "difficulty": "Various", "step_by_step": [], "math_concepts": [], "resources": [], "code_snippet": ""}]})
-    
+
+        # Fallback
+        return jsonify({
+            "topic": topic,
+            "projects": [{
+                "title": "Projects for " + topic,
+                "description": response[:500],
+                "difficulty": "Various",
+                "step_by_step": [],
+                "math_concepts": [],
+                "resources": [],
+                "code_snippet": ""
+            }]
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ THEOREM PROVER ════
 @app.route("/api/theorem/prove", methods=["POST"])
@@ -621,7 +695,7 @@ def theorem_prove():
     try:
         data = request.get_json()
         theorem_name = data.get("theorem", "Pythagorean Theorem")
-        
+
         prompt = f"""Prove theorem COMPLETELY: {theorem_name}
 
 OUTPUT REQUIRED:
@@ -652,12 +726,13 @@ Final: Conclusion - QED ✓
 [What students get wrong]
 
 Make proof COMPLETE and RIGOROUS."""
-        
+
         proof = ask_simple(prompt, system=THEOREM_PROMPT, temperature=0.1)
         return jsonify({"theorem": theorem_name, "proof": proof})
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ COMPETITION PROBLEMS ════
 @app.route("/api/competition/problems", methods=["POST"])
@@ -666,7 +741,7 @@ def competition_problems():
         data = request.get_json()
         category = data.get("category", "IMO")
         count = int(data.get("count", 30))
-        
+
         prompt = f"""Generate {count} {category} problems with COMPLETE solutions.
 
 For EACH problem:
@@ -687,16 +762,17 @@ Final Answer: \\[\\boxed{{...}}\\]
 **Insight:** [Why this works]
 
 Generate {count} complete problems."""
-        
+
         problems_text = ask_simple(prompt, temperature=0.2)
         return jsonify({
             "category": category,
             "count": count,
             "problems": problems_text
         })
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ QUIZ GENERATION ════
 @app.route("/api/quiz/generate", methods=["POST"])
@@ -705,7 +781,7 @@ def quiz_generate():
         data = request.get_json()
         topic = data.get("topic", "Calculus")
         count = int(data.get("count", 30))
-        
+
         prompt = f"""Generate {count} exam-style questions for {topic}.
 
 For EACH question:
@@ -722,16 +798,17 @@ Step 2: [Continue]
 **Explanation:** [Why correct]
 
 Generate {count} varied questions with COMPLETE solutions."""
-        
+
         questions = ask_simple(prompt, temperature=0.3)
         return jsonify({
             "topic": topic,
             "count": count,
             "questions": questions
         })
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ PHASE 1: ACCURACY IMPROVEMENTS ════
 
@@ -741,7 +818,7 @@ def verify_solution():
         data = request.get_json()
         problem = data.get("problem")
         solution = data.get("solution")
-        
+
         prompt = f"""VERIFY this solution:
 
 Problem: {problem}
@@ -756,19 +833,20 @@ Check:
 Result:
 ✅ VERIFIED - Correct
 ❌ ERROR - [Correction]"""
-        
+
         verification = ask_simple(prompt, system=VERIFY_PROMPT, temperature=0.1)
         return jsonify({"verification": verification})
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/solution-paths", methods=["POST"])
 def solution_paths():
     try:
         data = request.get_json()
         problem = data.get("problem")
-        
+
         prompt = f"""Show 3-5 DIFFERENT methods to solve:
 
 Problem: {problem}
@@ -784,19 +862,20 @@ For EACH method:
 [Repeat for methods 2-5]
 
 **COMPARISON:** Which is best? Why?"""
-        
+
         paths = ask_simple(prompt, temperature=0.3)
         return jsonify({"methods": paths})
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/common-mistakes", methods=["POST"])
 def common_mistakes():
     try:
         data = request.get_json()
         topic = data.get("topic")
-        
+
         prompt = f"""Common mistakes in {topic}:
 
 For EACH mistake (7-10 total):
@@ -806,12 +885,13 @@ For EACH mistake (7-10 total):
 ✅ Correct: \\[...\\]
 💡 Why: [Why students make this mistake]
 🔧 Fix: [How to avoid it]"""
-        
+
         mistakes = ask_simple(prompt, temperature=0.2)
         return jsonify({"mistakes": mistakes})
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ════ EXAM INFO ════
 @app.route("/api/exam/<exam>", methods=["GET"])
@@ -838,14 +918,17 @@ def exam_info(exam):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 # ════ ERROR HANDLERS ════
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Endpoint not found"}), 404
 
+
 @app.errorhandler(405)
 def method_not_allowed(e):
     return jsonify({"error": "Method not allowed"}), 405
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))

@@ -127,7 +127,7 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
 .action-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
 .action-btn-secondary { background:rgba(0,217,255,.1); border:1px solid rgba(0,217,255,.3); color:var(--accent-primary); padding:9px 18px; border-radius:8px; font-family:var(--font-body); font-size:12px; font-weight:600; cursor:pointer; transition:all .25s; }
 .action-btn-secondary:hover { background:rgba(0,217,255,.2); transform:translateY(-1px); }
-.result-box { background:rgba(0,0,0,.25); border:1px solid rgba(0,217,255,.15); border-radius:10px; padding:16px; margin-top:14px; line-height:1.9; font-size:13.5px; color:var(--text-primary); white-space:pre-wrap; overflow-wrap:break-word; max-height:55vh; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(0,217,255,.2) transparent; }
+.result-box { background:rgba(0,0,0,.25); border:1px solid rgba(0,217,255,.15); border-radius:10px; padding:16px; margin-top:14px; line-height:1.9; font-size:13.5px; color:var(--text-primary); overflow-wrap:break-word; max-height:55vh; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(0,217,255,.2) transparent; }
 .result-box::-webkit-scrollbar { width:4px; }
 .result-box::-webkit-scrollbar-thumb { background:rgba(0,217,255,.2); border-radius:2px; }
 .graph-box { background:rgba(0,0,0,.3); border:1px solid rgba(0,217,255,.2); border-radius:10px; padding:12px; margin-top:12px; height:360px; }
@@ -231,9 +231,9 @@ body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:
 
 <script>
 /* ════════════════════════════════════════════
-   🔧 CONFIG — YOUR RENDER BACKEND URL
+   🔧 CONFIG — BACKEND URL
    ════════════════════════════════════════════ */
-const API_BASE = "https://mathsphere-dlbt.onrender.com";
+const API_BASE = "";  // Empty = same origin (Flask serves both frontend + backend)
 
 /* ════ Floating symbols ════ */
 (()=>{
@@ -247,9 +247,14 @@ const API_BASE = "https://mathsphere-dlbt.onrender.com";
   }
 })();
 
-/* ════ KaTeX ════ */
+/* ════ KaTeX render ════ */
 function renderMath(el){
-  if(!el||typeof renderMathInElement==='undefined')return;
+  if(!el) return;
+  // Wait for KaTeX to load
+  if(typeof renderMathInElement === 'undefined'){
+    setTimeout(()=>renderMath(el), 300);
+    return;
+  }
   try{
     renderMathInElement(el,{
       delimiters:[
@@ -257,74 +262,88 @@ function renderMath(el){
         {left:'\\(',right:'\\)',display:false},
         {left:'$$',right:'$$',display:true},
         {left:'$',right:'$',display:false}
-      ],throwOnError:false,errorColor:'#ff6b6b',strict:false
+      ],
+      throwOnError:false,
+      errorColor:'#ff6b6b',
+      strict:false
     });
-  }catch(e){}
+  }catch(e){ console.warn('KaTeX error:',e); }
 }
 
 /* ════ STATE ════ */
-let mode='ask', chatHistory=[], imgB64=null, imgType=null, busy=false;
+let mode = 'ask';
+let chatHistory = [];   // Stores {role, content} — kept lean, max 20 items
+let imgB64 = null;
+let imgType = null;
+let busy = false;
 
-const MODE_CFG={
-  ask:{title:'💬 Ask Anupam',ph:'Ask any mathematics question...'},
-  formula:{title:'📊 Formula Sheet',ph:''},
-  graph:{title:'📈 Graph Plotter',ph:''},
+const MODE_CFG = {
+  ask:          {title:'💬 Ask Anupam',         ph:'Ask any mathematics question...'},
+  formula:      {title:'📊 Formula Sheet',       ph:''},
+  graph:        {title:'📈 Graph Plotter',        ph:''},
   mathematician:{title:'👨‍🔬 Mathematician Explorer',ph:''},
-  projects:{title:'🚀 Math Projects',ph:''},
-  theorem:{title:'📐 Theorem Prover',ph:''},
-  competition:{title:'🏆 Competition Problems',ph:''},
-  quiz:{title:'📝 Quiz Mode',ph:''},
-  verify:{title:'✅ Verify Answer',ph:''},
-  mistakes:{title:'⚠️ Common Mistakes',ph:''},
+  projects:     {title:'🚀 Math Projects',        ph:''},
+  theorem:      {title:'📐 Theorem Prover',       ph:''},
+  competition:  {title:'🏆 Competition Problems', ph:''},
+  quiz:         {title:'📝 Quiz Mode',            ph:''},
+  verify:       {title:'✅ Verify Answer',         ph:''},
+  mistakes:     {title:'⚠️ Common Mistakes',      ph:''},
 };
 
-window.onload=()=>{
+window.onload = () => {
   initTheme();
   setMode('ask');
 };
 
 /* ════ MODE SWITCHING ════ */
 function setMode(m){
-  mode=m;
+  mode = m;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const nb=document.getElementById(`nav-${m}`);
-  if(nb)nb.classList.add('active');
-  const cfg=MODE_CFG[m]||MODE_CFG.ask;
-  const mt=document.getElementById('mode-title');
-  mt.style.opacity='0';
-  setTimeout(()=>{mt.textContent=cfg.title;mt.style.opacity='1';},150);
-  if(cfg.ph)document.getElementById('input').placeholder=cfg.ph;
+  const nb = document.getElementById(`nav-${m}`);
+  if(nb) nb.classList.add('active');
+
+  const cfg = MODE_CFG[m] || MODE_CFG.ask;
+  const mt = document.getElementById('mode-title');
+  mt.style.opacity = '0';
+  setTimeout(()=>{ mt.textContent = cfg.title; mt.style.opacity = '1'; }, 150);
+
+  if(cfg.ph) document.getElementById('input').placeholder = cfg.ph;
   document.getElementById('sidebar').classList.remove('open');
+
   clearAll();
   renderTagsBar();
 
-  // Show mode-specific UI instead of welcome for non-chat modes
-  if(m!=='ask') renderModePanel(m);
+  if(m !== 'ask') renderModePanel(m);
 }
 
 function clearAll(){
-  chatHistory=[];imgB64=null;imgType=null;removeImg();
-  document.getElementById('chat').innerHTML='';
-  showWelcome();
+  chatHistory = [];
+  imgB64 = null;
+  imgType = null;
+  removeImg();
+  document.getElementById('chat').innerHTML = '';
+  if(mode === 'ask') showWelcome();
 }
 
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
 
-document.addEventListener('click',e=>{
-  const sb=document.getElementById('sidebar');
-  if(window.innerWidth<=700&&sb.classList.contains('open')&&
-     !sb.contains(e.target)&&e.target.id!=='menu-toggle')
+document.addEventListener('click', e => {
+  const sb = document.getElementById('sidebar');
+  if(window.innerWidth <= 700 && sb.classList.contains('open') &&
+     !sb.contains(e.target) && e.target.id !== 'menu-toggle')
     sb.classList.remove('open');
 });
 
 /* ════ TAGS BAR ════ */
 function renderTagsBar(){
-  const bar=document.getElementById('tagsbar');
-  const tags={
-    ask:[['∫ Integral','Solve: ∫ x² sin(x) dx step by step'],
-         ['Matrix','Find eigenvalues of matrix [[2,1],[1,2]]'],
-         ['Series','Test convergence of Σ 1/n²'],
-         ['ODE','Solve dy/dx + 2y = 4x, y(0)=1']],
+  const bar = document.getElementById('tagsbar');
+  const tags = {
+    ask:[
+      ['∫ Integral','Solve: ∫ x² sin(x) dx step by step'],
+      ['Matrix','Find eigenvalues of matrix [[2,1],[1,2]]'],
+      ['Series','Test convergence of Σ 1/n²'],
+      ['ODE','Solve dy/dx + 2y = 4x, y(0)=1']
+    ],
     formula:[['Calculus','Calculus'],['Linear Algebra','Linear Algebra'],['Real Analysis','Real Analysis'],['Complex Analysis','Complex Analysis']],
     graph:[['x²','x**2'],['sin(x)','sin(x)'],['e^x','exp(x)'],['x³-3x','x**3-3*x'],['1/x','1/x']],
     mathematician:[['Ramanujan','Srinivasa Ramanujan'],['Euler','Leonhard Euler'],['Gauss','Carl Friedrich Gauss'],['Noether','Emmy Noether'],['Turing','Alan Turing']],
@@ -333,25 +352,32 @@ function renderTagsBar(){
     quiz:[['Calculus','Calculus'],['Linear Algebra','Linear Algebra'],['Real Analysis','Real Analysis'],['Probability','Probability']],
     mistakes:[['Calculus','Calculus'],['Integration','Integration'],['Linear Algebra','Linear Algebra'],['Limits','Limits']],
   };
-  const list=tags[mode];
-  if(!list){bar.innerHTML='';return;}
-  bar.innerHTML=list.map(item=>{
-    const label=Array.isArray(item)?item[0]:item;
-    const val=Array.isArray(item)?item[1]:item;
-    return`<div class="tag" onclick="tagClick('${esc(val)}')">${label}</div>`;
+  const list = tags[mode];
+  if(!list){ bar.innerHTML=''; return; }
+  bar.innerHTML = list.map(item => {
+    const label = Array.isArray(item) ? item[0] : item;
+    const val   = Array.isArray(item) ? item[1] : item;
+    return `<div class="tag" onclick="tagClick('${esc(val)}')">${label}</div>`;
   }).join('');
 }
 
 function tagClick(val){
-  if(mode==='ask'){quickChat(val);return;}
-  const panels={formula:fillFormula,graph:fillGraph,mathematician:fillMathematician,theorem:fillTheorem,competition:fillCompetition,quiz:fillQuiz,mistakes:fillMistakes};
-  if(panels[mode])panels[mode](val);
+  if(mode === 'ask'){ quickChat(val); return; }
+  const panels = {
+    formula:       ()=>{ document.getElementById('f-topic').value=val; runFormula(); },
+    graph:         ()=>{ document.getElementById('g-expr').value=val;  runGraph(); },
+    mathematician: ()=>{ document.getElementById('m-name').value=val;  runMathematician(); },
+    theorem:       ()=>{ document.getElementById('t-name').value=val;  runTheorem(); },
+    competition:   ()=>{ document.getElementById('c-cat').value=val;   runCompetition(); },
+    quiz:          ()=>{ document.getElementById('q-topic').value=val; runQuiz(); },
+    mistakes:      ()=>{ document.getElementById('mk-topic').value=val;runMistakes(); },
+  };
+  if(panels[mode]) panels[mode]();
 }
 
 /* ════ WELCOME SCREEN ════ */
 function showWelcome(){
-  const chat=document.getElementById('chat');
-  chat.innerHTML=`
+  document.getElementById('chat').innerHTML = `
   <div id="welcome">
     <div class="big-icon">∑</div>
     <h1>MathSphere</h1>
@@ -374,343 +400,327 @@ function showWelcome(){
 
 /* ════ MODE PANELS ════ */
 function renderModePanel(m){
-  const chat=document.getElementById('chat');
-  chat.innerHTML='';
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
 
-  if(m==='formula') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">📊 Formula Sheet Generator</div>
-      <div class="panel-sub">Get complete exam-ready formula sheets for any topic</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Topic</label>
-          <input class="form-input" id="f-topic" placeholder="e.g. Calculus, Linear Algebra..." value="Calculus"/>
+  const panels = {
+    formula: `
+      <div class="panel-card">
+        <div class="panel-title">📊 Formula Sheet Generator</div>
+        <div class="panel-sub">Get complete exam-ready formula sheets for any topic</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Topic</label>
+            <input class="form-input" id="f-topic" placeholder="e.g. Calculus, Linear Algebra..." value="Calculus"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Exam</label>
+            <select class="form-select" id="f-exam">
+              <option value="JAM">IIT JAM</option>
+              <option value="GATE">GATE</option>
+              <option value="CSIR">CSIR NET</option>
+              <option value="General">General</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Exam</label>
-          <select class="form-select" id="f-exam">
-            <option value="JAM">IIT JAM</option>
-            <option value="GATE">GATE</option>
-            <option value="CSIR">CSIR NET</option>
-            <option value="General">General</option>
-          </select>
-        </div>
-      </div>
-      <button class="action-btn" onclick="runFormula()">Generate Formula Sheet</button>
-      <div id="f-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="f-btn" onclick="runFormula()">Generate Formula Sheet</button>
+        <div id="f-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='graph') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">📈 Graph Plotter</div>
-      <div class="panel-sub">Plot and analyze any mathematical function</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="form-label">Function f(x) =</label>
-          <input class="form-input" id="g-expr" placeholder="e.g. x**2, sin(x), exp(x), x**3-3*x" value="x**2"/>
+    graph: `
+      <div class="panel-card">
+        <div class="panel-title">📈 Graph Plotter</div>
+        <div class="panel-sub">Plot and analyze any mathematical function</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Function f(x) =</label>
+            <input class="form-input" id="g-expr" placeholder="e.g. x**2, sin(x), exp(x), x**3-3*x" value="x**2"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="g-type">
+              <option value="2d">2D Plot</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Type</label>
-          <select class="form-select" id="g-type">
-            <option value="2d">2D Plot</option>
-          </select>
-        </div>
-      </div>
-      <button class="action-btn" onclick="runGraph()">Plot & Analyze</button>
-      <div id="g-plotbox" class="graph-box" style="display:none"></div>
-      <div id="g-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="g-btn" onclick="runGraph()">Plot & Analyze</button>
+        <div id="g-plotbox" class="graph-box" style="display:none"></div>
+        <div id="g-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='mathematician') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">👨‍🔬 Mathematician Explorer</div>
-      <div class="panel-sub">Discover the lives and contributions of great mathematicians</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="form-label">Mathematician Name</label>
-          <input class="form-input" id="m-name" placeholder="e.g. Ramanujan, Euler, Gauss, Emmy Noether..."/>
+    mathematician: `
+      <div class="panel-card">
+        <div class="panel-title">👨‍🔬 Mathematician Explorer</div>
+        <div class="panel-sub">Discover the lives and contributions of great mathematicians</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Mathematician Name</label>
+            <input class="form-input" id="m-name" placeholder="e.g. Ramanujan, Euler, Gauss, Emmy Noether..."/>
+          </div>
         </div>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="action-btn" onclick="runMathematician()">Explore</button>
-        <button class="action-btn-secondary" onclick="runRandomMathematician()">🎲 Random</button>
-      </div>
-      <div id="m-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <div style="display:flex;gap:10px">
+          <button class="action-btn" id="m-btn" onclick="runMathematician()">Explore</button>
+          <button class="action-btn-secondary" onclick="runRandomMathematician()">🎲 Random</button>
+        </div>
+        <div id="m-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='projects') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">🚀 Math Projects Generator</div>
-      <div class="panel-sub">Get 5 detailed, actionable projects with code for any topic</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="form-label">Topic</label>
-          <input class="form-input" id="p-topic" placeholder="e.g. Machine Learning, Statistics, Graph Theory..." value="Machine Learning"/>
+    projects: `
+      <div class="panel-card">
+        <div class="panel-title">🚀 Math Projects Generator</div>
+        <div class="panel-sub">Get 5 detailed, actionable projects with code for any topic</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Topic</label>
+            <input class="form-input" id="p-topic" placeholder="e.g. Machine Learning, Statistics, Graph Theory..." value="Machine Learning"/>
+          </div>
         </div>
-      </div>
-      <button class="action-btn" onclick="runProjects()">Generate Projects</button>
-      <div id="p-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="p-btn" onclick="runProjects()">Generate Projects</button>
+        <div id="p-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='theorem') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">📐 Theorem Prover</div>
-      <div class="panel-sub">Get complete, rigorous proofs from scratch</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="form-label">Theorem Name</label>
-          <input class="form-input" id="t-name" placeholder="e.g. Pythagorean Theorem, Fundamental Theorem of Calculus..." value="Pythagorean Theorem"/>
+    theorem: `
+      <div class="panel-card">
+        <div class="panel-title">📐 Theorem Prover</div>
+        <div class="panel-sub">Get complete, rigorous proofs from scratch</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Theorem Name</label>
+            <input class="form-input" id="t-name" placeholder="e.g. Pythagorean Theorem, Fundamental Theorem of Calculus..." value="Pythagorean Theorem"/>
+          </div>
         </div>
-      </div>
-      <button class="action-btn" onclick="runTheorem()">Prove Theorem</button>
-      <div id="t-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="t-btn" onclick="runTheorem()">Prove Theorem</button>
+        <div id="t-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='competition') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">🏆 Competition Problems</div>
-      <div class="panel-sub">Practice with olympiad-level problems and complete solutions</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Competition</label>
-          <select class="form-select" id="c-cat">
-            <option value="IMO">IMO</option>
-            <option value="PUTNAM">Putnam</option>
-            <option value="AIME">AIME</option>
-            <option value="AMC">AMC</option>
-          </select>
+    competition: `
+      <div class="panel-card">
+        <div class="panel-title">🏆 Competition Problems</div>
+        <div class="panel-sub">Practice with olympiad-level problems and complete solutions</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Competition</label>
+            <select class="form-select" id="c-cat">
+              <option value="IMO">IMO</option>
+              <option value="PUTNAM">Putnam</option>
+              <option value="AIME">AIME</option>
+              <option value="AMC">AMC</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Number of Problems</label>
+            <select class="form-select" id="c-count">
+              <option value="5">5 Problems</option>
+              <option value="10" selected>10 Problems</option>
+              <option value="20">20 Problems</option>
+              <option value="30">30 Problems</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Number of Problems</label>
-          <select class="form-select" id="c-count">
-            <option value="5">5 Problems</option>
-            <option value="10" selected>10 Problems</option>
-            <option value="20">20 Problems</option>
-            <option value="30">30 Problems</option>
-          </select>
-        </div>
-      </div>
-      <button class="action-btn" onclick="runCompetition()">Generate Problems</button>
-      <div id="c-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="c-btn" onclick="runCompetition()">Generate Problems</button>
+        <div id="c-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='quiz') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">📝 Quiz Mode</div>
-      <div class="panel-sub">Practice with exam-style questions and complete solutions</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="form-label">Topic</label>
-          <input class="form-input" id="q-topic" placeholder="e.g. Calculus, Real Analysis..." value="Calculus"/>
+    quiz: `
+      <div class="panel-card">
+        <div class="panel-title">📝 Quiz Mode</div>
+        <div class="panel-sub">Practice with exam-style questions and complete solutions</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Topic</label>
+            <input class="form-input" id="q-topic" placeholder="e.g. Calculus, Real Analysis..." value="Calculus"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Questions</label>
+            <select class="form-select" id="q-count">
+              <option value="10">10 Questions</option>
+              <option value="20" selected>20 Questions</option>
+              <option value="30">30 Questions</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Questions</label>
-          <select class="form-select" id="q-count">
-            <option value="10">10 Questions</option>
-            <option value="20" selected>20 Questions</option>
-            <option value="30">30 Questions</option>
-          </select>
-        </div>
-      </div>
-      <button class="action-btn" onclick="runQuiz()">Start Quiz</button>
-      <div id="q-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="q-btn" onclick="runQuiz()">Start Quiz</button>
+        <div id="q-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='verify') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">✅ Answer Verifier</div>
-      <div class="panel-sub">Check if your solution is correct</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:1;min-width:100%">
-          <label class="form-label">Problem</label>
-          <textarea class="form-input" id="v-problem" rows="3" placeholder="Enter the problem statement..." style="resize:vertical"></textarea>
+    verify: `
+      <div class="panel-card">
+        <div class="panel-title">✅ Answer Verifier</div>
+        <div class="panel-sub">Check if your solution is correct</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1;min-width:100%">
+            <label class="form-label">Problem</label>
+            <textarea class="form-input" id="v-problem" rows="3" placeholder="Enter the problem statement..." style="resize:vertical"></textarea>
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="flex:1;min-width:100%">
-          <label class="form-label">Your Solution</label>
-          <textarea class="form-input" id="v-solution" rows="3" placeholder="Enter your solution..." style="resize:vertical"></textarea>
+        <div class="form-row">
+          <div class="form-group" style="flex:1;min-width:100%">
+            <label class="form-label">Your Solution</label>
+            <textarea class="form-input" id="v-solution" rows="3" placeholder="Enter your solution..." style="resize:vertical"></textarea>
+          </div>
         </div>
-      </div>
-      <button class="action-btn" onclick="runVerify()">Verify Solution</button>
-      <div id="v-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="v-btn" onclick="runVerify()">Verify Solution</button>
+        <div id="v-result" class="result-box" style="display:none"></div>
+      </div>`,
 
-  else if(m==='mistakes') chat.innerHTML=`
-    <div class="panel-card">
-      <div class="panel-title">⚠️ Common Mistakes</div>
-      <div class="panel-sub">Learn the most common errors students make</div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="form-label">Topic</label>
-          <input class="form-input" id="mk-topic" placeholder="e.g. Integration, Limits, Linear Algebra..." value="Integration"/>
+    mistakes: `
+      <div class="panel-card">
+        <div class="panel-title">⚠️ Common Mistakes</div>
+        <div class="panel-sub">Learn the most common errors students make</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Topic</label>
+            <input class="form-input" id="mk-topic" placeholder="e.g. Integration, Limits, Linear Algebra..." value="Integration"/>
+          </div>
         </div>
-      </div>
-      <button class="action-btn" onclick="runMistakes()">Show Common Mistakes</button>
-      <div id="mk-result" class="result-box" style="display:none"></div>
-    </div>`;
+        <button class="action-btn" id="mk-btn" onclick="runMistakes()">Show Common Mistakes</button>
+        <div id="mk-result" class="result-box" style="display:none"></div>
+      </div>`,
+  };
 
-  // render math in the new panel
-  setTimeout(()=>renderMath(document.getElementById('chat')),100);
+  if(panels[m]){
+    chat.innerHTML = panels[m];
+    setTimeout(()=>renderMath(chat), 100);
+  }
 }
-
-/* ════ FILL HELPERS (from tag clicks) ════ */
-function fillFormula(val){document.getElementById('f-topic').value=val;runFormula();}
-function fillGraph(val){document.getElementById('g-expr').value=val;runGraph();}
-function fillMathematician(val){document.getElementById('m-name').value=val;runMathematician();}
-function fillTheorem(val){document.getElementById('t-name').value=val;runTheorem();}
-function fillCompetition(val){document.getElementById('c-cat').value=val;runCompetition();}
-function fillQuiz(val){document.getElementById('q-topic').value=val;runQuiz();}
-function fillMistakes(val){document.getElementById('mk-topic').value=val;runMistakes();}
 
 /* ════ API RUNNERS ════ */
 async function runFormula(){
-  const topic=document.getElementById('f-topic').value.trim()||'Calculus';
-  const exam=document.getElementById('f-exam').value;
-  await runPanel('/api/formula',{topic,exam},'f-result',r=>r.answer);
+  const topic = document.getElementById('f-topic').value.trim() || 'Calculus';
+  const exam  = document.getElementById('f-exam').value;
+  await runPanel('f-btn', '/api/formula', {topic,exam}, 'f-result', r=>r.answer, 'Generate Formula Sheet');
 }
 
 async function runGraph(){
-  const expr=document.getElementById('g-expr').value.trim()||'x**2';
-  const btn=document.querySelector('#chat .action-btn');
-  setLoading(btn,true,'Plotting...');
+  const expr = document.getElementById('g-expr').value.trim() || 'x**2';
+  const btn  = document.getElementById('g-btn');
+  setLoading(btn, true, 'Plotting...');
   try{
-    const r=await apiPost('/api/graph',{expression:expr,type:'2d'});
-    const plotbox=document.getElementById('g-plotbox');
+    const r = await apiPost('/api/graph', {expression:expr, type:'2d'});
+    const plotbox = document.getElementById('g-plotbox');
 
-    if(r.sympy&&r.points&&r.points.length>0){
-      // SymPy available — draw real graph with Plotly
-      plotbox.style.display='block';
-      plotbox.style.height='380px';
-      const pts=r.points.filter(p=>p.y!==null&&p.y!==undefined&&isFinite(p.y));
+    if(r.sympy && r.points && r.points.length > 0){
+      plotbox.style.display = 'block';
+      plotbox.style.height  = '380px';
+      const pts = r.points.filter(p => p.y !== null && p.y !== undefined && isFinite(p.y));
       Plotly.newPlot(plotbox,[{
-        x:pts.map(p=>p.x),
-        y:pts.map(p=>p.y),
-        type:'scatter',
-        mode:'lines',
+        x: pts.map(p=>p.x),
+        y: pts.map(p=>p.y),
+        type:'scatter', mode:'lines',
         line:{color:'#00d9ff',width:2.5,shape:'spline'},
         name:`f(x) = ${expr}`,
-        fill:'tozeroy',
-        fillcolor:'rgba(0,217,255,0.05)'
+        fill:'tozeroy', fillcolor:'rgba(0,217,255,0.05)'
       }],{
         paper_bgcolor:'rgba(15,20,55,0.95)',
         plot_bgcolor:'rgba(15,20,55,0.95)',
         font:{color:'#a8b7d1',family:'JetBrains Mono',size:11},
-        xaxis:{
-          gridcolor:'rgba(0,217,255,.12)',
-          zerolinecolor:'rgba(0,217,255,.4)',
-          zerolinewidth:1.5,
-          title:{text:'x',font:{color:'#00d9ff'}},
-          tickfont:{color:'#6b7a94'}
-        },
-        yaxis:{
-          gridcolor:'rgba(0,217,255,.12)',
-          zerolinecolor:'rgba(0,217,255,.4)',
-          zerolinewidth:1.5,
-          title:{text:'f(x)',font:{color:'#00d9ff'}},
-          tickfont:{color:'#6b7a94'}
-        },
+        xaxis:{gridcolor:'rgba(0,217,255,.12)',zerolinecolor:'rgba(0,217,255,.4)',zerolinewidth:1.5,title:{text:'x',font:{color:'#00d9ff'}},tickfont:{color:'#6b7a94'}},
+        yaxis:{gridcolor:'rgba(0,217,255,.12)',zerolinecolor:'rgba(0,217,255,.4)',zerolinewidth:1.5,title:{text:'f(x)',font:{color:'#00d9ff'}},tickfont:{color:'#6b7a94'}},
         margin:{l:55,r:20,t:40,b:50},
         showlegend:true,
         legend:{bgcolor:'rgba(0,0,0,0)',font:{color:'#a8b7d1',size:11}},
         title:{text:`f(x) = ${expr}`,font:{color:'#f8fafc',size:14},x:0.5}
-      },{responsive:true,displayModeBar:true,
-        modeBarButtonsToRemove:['pan2d','select2d','lasso2d','resetScale2d'],
-        displaylogo:false});
-      showResult('g-result',r.analysis||'');
+      },{responsive:true, displayModeBar:true, modeBarButtonsToRemove:['pan2d','select2d','lasso2d','resetScale2d'], displaylogo:false});
+      showResult('g-result', r.analysis || '');
     } else {
-      // No SymPy — show AI analysis only
-      plotbox.style.display='none';
-      showResult('g-result',r.analysis||'Could not plot graph. Analysis:\n\n'+JSON.stringify(r));
+      plotbox.style.display = 'none';
+      showResult('g-result', r.analysis || 'Analysis:\n\n' + JSON.stringify(r));
     }
   }catch(e){
-    showResult('g-result','⚠️ Error: '+e.message,true);
+    showResult('g-result', '⚠️ Error: ' + e.message, true);
   }finally{
-    setLoading(btn,false,'Plot & Analyze');
+    setLoading(btn, false, 'Plot & Analyze');
   }
 }
 
 async function runMathematician(){
-  const name=document.getElementById('m-name').value.trim();
-  const btn=document.querySelector('#chat .action-btn');
-  const resBox=document.getElementById('m-result');
-  setLoading(btn,true,'Exploring...');
-  resBox.style.display='none';
+  const name   = document.getElementById('m-name').value.trim();
+  const btn    = document.getElementById('m-btn');
+  const resBox = document.getElementById('m-result');
+  setLoading(btn, true, 'Exploring...');
+  resBox.style.display = 'none';
   try{
-    const r=await apiPost('/api/mathematician',{name});
-    resBox.style.display='block';
-    resBox.innerHTML=formatMathematician(r);
-    setTimeout(()=>renderMath(resBox),100);
+    const r = await apiPost('/api/mathematician', {name});
+    resBox.style.display = 'block';
+    resBox.innerHTML = formatMathematician(r);
+    setTimeout(()=>renderMath(resBox), 150);
   }catch(e){
-    resBox.style.display='block';
-    resBox.innerHTML='⚠️ Error: '+e.message;
-  }finally{setLoading(btn,false,'Explore');}
+    resBox.style.display = 'block';
+    resBox.innerHTML = `<span style="color:var(--danger)">⚠️ Error: ${escHtml(e.message)}</span>`;
+  }finally{
+    setLoading(btn, false, 'Explore');
+  }
 }
 
 async function runRandomMathematician(){
-  document.getElementById('m-name').value='';
-  const btn=document.querySelectorAll('#chat .action-btn')[0];
-  const resBox=document.getElementById('m-result');
-  setLoading(btn,true,'Loading...');
-  resBox.style.display='none';
+  document.getElementById('m-name').value = '';
+  const btn    = document.getElementById('m-btn');
+  const resBox = document.getElementById('m-result');
+  setLoading(btn, true, 'Loading...');
+  resBox.style.display = 'none';
   try{
-    const r=await apiPost('/api/mathematician',{});
-    if(r.name) document.getElementById('m-name').value=r.name;
-    resBox.style.display='block';
-    resBox.innerHTML=formatMathematician(r);
-    setTimeout(()=>renderMath(resBox),100);
+    const r = await apiPost('/api/mathematician', {});
+    if(r.name) document.getElementById('m-name').value = r.name;
+    resBox.style.display = 'block';
+    resBox.innerHTML = formatMathematician(r);
+    setTimeout(()=>renderMath(resBox), 150);
   }catch(e){
-    resBox.style.display='block';
-    resBox.innerHTML='⚠️ Error: '+e.message;
-  }finally{setLoading(btn,false,'Explore');}
+    resBox.style.display = 'block';
+    resBox.innerHTML = `<span style="color:var(--danger)">⚠️ Error: ${escHtml(e.message)}</span>`;
+  }finally{
+    setLoading(btn, false, 'Explore');
+  }
 }
 
+/* ════ MATHEMATICIAN FORMATTER ════ */
 function formatMathematician(r){
-  if(!r||(!r.name&&!r.biography)) return '⚠️ Could not load mathematician data.';
-  const name=r.name||'Unknown';
-  const period=r.period||'';
-  const country=r.country||'';
-  const fields=Array.isArray(r.fields)?r.fields.join(' · '):(r.fields||'');
-  const bio=r.biography||r.bio||'';
-  const quote=r.famous_quote||'';
-  const contributions=Array.isArray(r.major_contributions)?r.major_contributions:[];
-  const achievements=r.key_achievements||{};
-  const impact=r.impact_today||'';
-  const resources=Array.isArray(r.learning_resources)?r.learning_resources:[];
-  const wiki=r.wikipedia||`https://en.wikipedia.org/wiki/${encodeURIComponent(name)}`;
+  // If we got a raw string (error fallback), show it nicely
+  if(!r || (!r.name && !r.biography)) return '<span style="color:var(--danger)">⚠️ Could not load mathematician data. Please try again.</span>';
 
-  let html=`
+  const name          = r.name || 'Unknown';
+  const period        = r.period || '';
+  const country       = r.country || '';
+  const fields        = Array.isArray(r.fields) ? r.fields.join(' · ') : (r.fields || '');
+  const bio           = r.biography || r.bio || '';
+  const quote         = r.famous_quote || '';
+  const contributions = Array.isArray(r.major_contributions) ? r.major_contributions : [];
+  const achievements  = (r.key_achievements && typeof r.key_achievements === 'object') ? r.key_achievements : {};
+  const impact        = r.impact_today || '';
+  const resources     = Array.isArray(r.learning_resources) ? r.learning_resources : [];
+  const wiki          = r.wikipedia || `https://en.wikipedia.org/wiki/${encodeURIComponent(name)}`;
+
+  let html = `
   <div style="border-bottom:1px solid rgba(0,217,255,.2);padding-bottom:16px;margin-bottom:16px">
     <div style="font-family:var(--font-display);font-size:22px;font-weight:800;background:linear-gradient(135deg,#f8fafc,#00d9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">${escHtml(name)}</div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px">
-      ${period?`<span style="background:rgba(0,217,255,.12);border:1px solid rgba(0,217,255,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--accent-primary)">📅 ${escHtml(period)}</span>`:''}
-      ${country?`<span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:#a78bfa)">🌍 ${escHtml(country)}</span>`:''}
+      ${period  ? `<span style="background:rgba(0,217,255,.12);border:1px solid rgba(0,217,255,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--accent-primary)">📅 ${escHtml(period)}</span>` : ''}
+      ${country ? `<span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:#a78bfa">🌍 ${escHtml(country)}</span>` : ''}
     </div>
-    ${fields?`<div style="font-size:11px;color:var(--accent-tertiary);font-family:var(--font-mono)">🔬 ${escHtml(fields)}</div>`:''}
+    ${fields ? `<div style="font-size:11px;color:var(--accent-tertiary);font-family:var(--font-mono)">🔬 ${escHtml(fields)}</div>` : ''}
   </div>`;
 
   if(bio){
-    html+=`<div style="margin-bottom:16px">
+    html += `<div style="margin-bottom:16px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">📖 BIOGRAPHY</div>
       <div style="color:var(--text-secondary);line-height:1.9;font-size:13px">${escHtml(bio)}</div>
     </div>`;
   }
 
   if(quote){
-    html+=`<div style="background:rgba(212,165,116,.08);border-left:3px solid var(--gold);padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;font-style:italic;color:var(--gold);font-size:13px">
+    html += `<div style="background:rgba(212,165,116,.08);border-left:3px solid var(--gold);padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;font-style:italic;color:var(--gold);font-size:13px">
       "${escHtml(quote)}"
     </div>`;
   }
 
-  if(contributions.length>0){
-    html+=`<div style="margin-bottom:16px">
+  if(contributions.length > 0){
+    html += `<div style="margin-bottom:16px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🏆 MAJOR CONTRIBUTIONS</div>
       ${contributions.map(c=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px"><span style="color:var(--accent-primary);flex-shrink:0">▸</span><span style="color:var(--text-secondary);font-size:13px">${escHtml(c)}</span></div>`).join('')}
     </div>`;
   }
 
-  if(Object.keys(achievements).length>0){
-    html+=`<div style="margin-bottom:16px">
+  if(Object.keys(achievements).length > 0){
+    html += `<div style="margin-bottom:16px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">📐 KEY RESULTS & THEOREMS</div>
       ${Object.entries(achievements).map(([k,v])=>`
         <div style="background:rgba(0,217,255,.06);border:1px solid rgba(0,217,255,.15);border-radius:8px;padding:10px 14px;margin-bottom:8px">
@@ -721,59 +731,59 @@ function formatMathematician(r){
   }
 
   if(impact){
-    html+=`<div style="margin-bottom:16px">
+    html += `<div style="margin-bottom:16px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🌍 IMPACT TODAY</div>
       <div style="color:var(--text-secondary);font-size:13px;line-height:1.8">${escHtml(impact)}</div>
     </div>`;
   }
 
-  if(resources.length>0){
-    html+=`<div style="margin-bottom:16px">
+  if(resources.length > 0){
+    html += `<div style="margin-bottom:16px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">📚 LEARNING RESOURCES</div>
-      ${resources.map(r=>`<div style="color:var(--accent-tertiary);font-size:12px;margin-bottom:4px">→ ${escHtml(r)}</div>`).join('')}
+      ${resources.map(res=>`<div style="color:var(--accent-tertiary);font-size:12px;margin-bottom:4px">→ ${escHtml(res)}</div>`).join('')}
     </div>`;
   }
 
-  html+=`<div style="margin-top:4px">
+  html += `<div style="margin-top:4px">
     <a href="${escHtml(wiki)}" target="_blank" style="display:inline-block;background:rgba(0,217,255,.1);border:1px solid rgba(0,217,255,.3);color:var(--accent-primary);padding:8px 18px;border-radius:8px;text-decoration:none;font-size:12px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(0,217,255,.2)'" onmouseout="this.style.background='rgba(0,217,255,.1)'">🔗 Wikipedia →</a>
   </div>`;
 
   return html;
 }
 
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 async function runProjects(){
-  const topic=document.getElementById('p-topic').value.trim()||'Machine Learning';
-  const btn=document.querySelector('#chat .action-btn');
-  const resBox=document.getElementById('p-result');
-  setLoading(btn,true,'Generating Projects...');
-  resBox.style.display='none';
+  const topic  = document.getElementById('p-topic').value.trim() || 'Machine Learning';
+  const btn    = document.getElementById('p-btn');
+  const resBox = document.getElementById('p-result');
+  setLoading(btn, true, 'Generating Projects...');
+  resBox.style.display = 'none';
   try{
-    const r=await apiPost('/api/projects/generate',{topic});
-    resBox.style.display='block';
-    if(!r.projects||!r.projects.length){
-      resBox.innerHTML='⚠️ Could not generate projects. Please try again.';
+    const r = await apiPost('/api/projects/generate', {topic});
+    resBox.style.display = 'block';
+    if(!r.projects || !r.projects.length){
+      resBox.innerHTML = '⚠️ Could not generate projects. Please try again.';
       return;
     }
-    resBox.innerHTML=r.projects.map((p,i)=>formatProject(p,i)).join('');
-    setTimeout(()=>renderMath(resBox),100);
+    resBox.innerHTML = r.projects.map((p,i)=>formatProject(p,i)).join('');
+    setTimeout(()=>renderMath(resBox), 150);
   }catch(e){
-    resBox.style.display='block';
-    resBox.innerHTML='⚠️ Error: '+e.message;
-  }finally{setLoading(btn,false,'Generate Projects');}
+    resBox.style.display = 'block';
+    resBox.innerHTML = `<span style="color:var(--danger)">⚠️ Error: ${escHtml(e.message)}</span>`;
+  }finally{
+    setLoading(btn, false, 'Generate Projects');
+  }
 }
 
-function formatProject(p,i){
-  const diffColor={'Beginner':'#06f7d6','Intermediate':'#00d9ff','Advanced':'#a78bfa'}[p.difficulty]||'#00d9ff';
-  const concepts=Array.isArray(p.math_concepts)?p.math_concepts:[];
-  const steps=Array.isArray(p.step_by_step)?p.step_by_step:[];
-  const resources=Array.isArray(p.resources)?p.resources:[];
-  const searchQuery=encodeURIComponent((p.title||'')+ ' mathematics project tutorial');
-  const githubQuery=encodeURIComponent(p.title||'');
-  const youtubeUrl=`https://www.youtube.com/results?search_query=${searchQuery}`;
-  const githubUrl=`https://github.com/search?q=${githubQuery}&type=repositories`;
-  const googleUrl=`https://www.google.com/search?q=${searchQuery}`;
+/* ════ PROJECT FORMATTER ════ */
+function formatProject(p, i){
+  const diffColor = {'Beginner':'#06f7d6','Intermediate':'#00d9ff','Advanced':'#a78bfa'}[p.difficulty] || '#00d9ff';
+  const concepts  = Array.isArray(p.math_concepts) ? p.math_concepts : [];
+  const steps     = Array.isArray(p.step_by_step)  ? p.step_by_step  : [];
+  const resources = Array.isArray(p.resources)     ? p.resources     : [];
+  const searchQ   = encodeURIComponent((p.title||'') + ' mathematics project tutorial');
+  const githubQ   = encodeURIComponent(p.title || '');
 
   return `
   <div style="background:rgba(0,217,255,.05);border:1px solid rgba(0,217,255,.18);border-radius:12px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
@@ -789,15 +799,15 @@ function formatProject(p,i){
 
     <div style="color:var(--text-secondary);font-size:13px;line-height:1.8;margin-bottom:14px">${escHtml(p.description||'')}</div>
 
-    ${concepts.length?`
+    ${concepts.length ? `
     <div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">🔢 MATH CONCEPTS</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${concepts.map(c=>`<span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);color:#a78bfa;padding:3px 10px;border-radius:6px;font-size:11px;font-family:var(--font-mono)">${escHtml(c)}</span>`).join('')}
       </div>
-    </div>`:''}
+    </div>` : ''}
 
-    ${steps.length?`
+    ${steps.length ? `
     <div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">📋 STEP-BY-STEP GUIDE</div>
       ${steps.map((s,si)=>`
@@ -805,230 +815,281 @@ function formatProject(p,i){
           <span style="background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary));color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${si+1}</span>
           <span style="color:var(--text-secondary);font-size:12.5px;line-height:1.7">${escHtml(s)}</span>
         </div>`).join('')}
-    </div>`:''}
+    </div>` : ''}
 
-    ${p.code_snippet?`
+    ${p.code_snippet ? `
     <div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">💻 CODE EXAMPLE</div>
       <pre style="background:rgba(0,0,0,.4);border:1px solid rgba(0,217,255,.15);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:11px;color:var(--accent-tertiary);overflow-x:auto;line-height:1.6">${escHtml(p.code_snippet)}</pre>
-    </div>`:''}
+    </div>` : ''}
 
-    ${p.expected_outcome?`<div style="background:rgba(6,247,214,.07);border:1px solid rgba(6,247,214,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--accent-tertiary)">🎯 <strong>Outcome:</strong> ${escHtml(p.expected_outcome)}</div>`:''}
+    ${p.expected_outcome ? `<div style="background:rgba(6,247,214,.07);border:1px solid rgba(6,247,214,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--accent-tertiary)">🎯 <strong>Outcome:</strong> ${escHtml(p.expected_outcome)}</div>` : ''}
+    ${p.career_salary    ? `<div style="background:rgba(212,165,116,.07);border:1px solid rgba(212,165,116,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--gold)">💼 <strong>Career:</strong> ${escHtml(p.career_salary)}</div>` : ''}
 
-    ${p.career_salary?`<div style="background:rgba(212,165,116,.07);border:1px solid rgba(212,165,116,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--gold)">💼 <strong>Career:</strong> ${escHtml(p.career_salary)}</div>`:''}
-
-    ${resources.length?`
+    ${resources.length ? `
     <div style="margin-bottom:16px">
       <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">📚 RESOURCES</div>
       ${resources.map(res=>`<div style="color:var(--accent-primary);font-size:12px;margin-bottom:3px">→ ${escHtml(res)}</div>`).join('')}
-    </div>`:''}
+    </div>` : ''}
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(0,217,255,.1)">
-      <a href="${youtubeUrl}" target="_blank" style="background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);color:#ff6b6b;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(255,0,0,.2)'" onmouseout="this.style.background='rgba(255,0,0,.1)'">▶ YouTube Tutorials</a>
-      <a href="${githubUrl}" target="_blank" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--text-secondary);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">⌨ GitHub Projects</a>
-      <a href="${googleUrl}" target="_blank" style="background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.25);color:var(--accent-primary);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono);transition:all .25s" onmouseover="this.style.background='rgba(0,217,255,.15)'" onmouseout="this.style.background='rgba(0,217,255,.08)'">🔍 Search More</a>
+      <a href="https://www.youtube.com/results?search_query=${searchQ}" target="_blank" style="background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);color:#ff6b6b;padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono)">▶ YouTube Tutorials</a>
+      <a href="https://github.com/search?q=${githubQ}&type=repositories" target="_blank" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--text-secondary);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono)">⌨ GitHub Projects</a>
+      <a href="https://www.google.com/search?q=${searchQ}" target="_blank" style="background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.25);color:var(--accent-primary);padding:7px 14px;border-radius:7px;text-decoration:none;font-size:11px;font-family:var(--font-mono)">🔍 Search More</a>
     </div>
   </div>`;
 }
 
 async function runTheorem(){
-  const theorem=document.getElementById('t-name').value.trim()||'Pythagorean Theorem';
-  await runPanel('/api/theorem/prove',{theorem},'t-result',r=>r.proof||r.theorem);
+  const theorem = document.getElementById('t-name').value.trim() || 'Pythagorean Theorem';
+  await runPanel('t-btn', '/api/theorem/prove', {theorem}, 't-result', r=>r.proof||r.theorem, 'Prove Theorem');
 }
 
 async function runCompetition(){
-  const category=document.getElementById('c-cat').value;
-  const count=parseInt(document.getElementById('c-count').value);
-  await runPanel('/api/competition/problems',{category,count},'c-result',r=>r.problems||r.problems_raw||'No problems generated');
+  const category = document.getElementById('c-cat').value;
+  const count    = parseInt(document.getElementById('c-count').value);
+  await runPanel('c-btn', '/api/competition/problems', {category,count}, 'c-result', r=>r.problems||'No problems generated', 'Generate Problems');
 }
 
 async function runQuiz(){
-  const topic=document.getElementById('q-topic').value.trim()||'Calculus';
-  const count=parseInt(document.getElementById('q-count').value);
-  await runPanel('/api/quiz/generate',{topic,count},'q-result',r=>r.questions||r.questions_raw||'No questions generated');
+  const topic = document.getElementById('q-topic').value.trim() || 'Calculus';
+  const count = parseInt(document.getElementById('q-count').value);
+  await runPanel('q-btn', '/api/quiz/generate', {topic,count}, 'q-result', r=>r.questions||'No questions generated', 'Start Quiz');
 }
 
 async function runVerify(){
-  const problem=document.getElementById('v-problem').value.trim();
-  const solution=document.getElementById('v-solution').value.trim();
-  if(!problem||!solution){toast('Please enter both problem and solution','err');return;}
-  await runPanel('/api/verify-solution',{problem,solution},'v-result',r=>r.verification||'No result');
+  const problem  = document.getElementById('v-problem').value.trim();
+  const solution = document.getElementById('v-solution').value.trim();
+  if(!problem || !solution){ toast('Please enter both problem and solution','err'); return; }
+  await runPanel('v-btn', '/api/verify-solution', {problem,solution}, 'v-result', r=>r.verification||'No result', 'Verify Solution');
 }
 
 async function runMistakes(){
-  const topic=document.getElementById('mk-topic').value.trim()||'Integration';
-  await runPanel('/api/common-mistakes',{topic},'mk-result',r=>r.mistakes||'No results');
+  const topic = document.getElementById('mk-topic').value.trim() || 'Integration';
+  await runPanel('mk-btn', '/api/common-mistakes', {topic}, 'mk-result', r=>r.mistakes||'No results', 'Show Common Mistakes');
 }
 
 /* ════ GENERIC PANEL RUNNER ════ */
-async function runPanel(endpoint,payload,resultId,extract){
-  const btn=document.querySelector('#chat .action-btn');
-  const resBox=document.getElementById(resultId);
-  setLoading(btn,true,'Loading...');
-  resBox.style.display='none';
+async function runPanel(btnId, endpoint, payload, resultId, extract, defaultLabel){
+  const btn    = document.getElementById(btnId);
+  const resBox = document.getElementById(resultId);
+  setLoading(btn, true, 'Loading...');
+  resBox.style.display = 'none';
   try{
-    const r=await apiPost(endpoint,payload);
-    const text=extract(r);
-    showResult(resultId,text);
+    const r    = await apiPost(endpoint, payload);
+    const text = extract(r);
+    showResult(resultId, text);
   }catch(e){
-    showResult(resultId,'Error: '+e.message,true);
+    showResult(resultId, '⚠️ Error: ' + e.message, true);
   }finally{
-    setLoading(btn,false);
+    setLoading(btn, false, defaultLabel || 'Generate');
   }
 }
 
-function showResult(id,text,isErr=false){
-  const box=document.getElementById(id);
-  if(!box)return;
-  box.style.display='block';
-  box.innerHTML=fmt(text);
-  if(isErr)box.style.borderColor='rgba(255,107,107,.3)';
-  setTimeout(()=>renderMath(box),50);
-  box.scrollTop=0;
+function showResult(id, text, isErr=false){
+  const box = document.getElementById(id);
+  if(!box) return;
+  box.style.display = 'block';
+  box.style.borderColor = isErr ? 'rgba(255,107,107,.3)' : 'rgba(0,217,255,.15)';
+  box.innerHTML = fmt(text);
+  setTimeout(()=>{ renderMath(box); box.scrollTop=0; }, 50);
 }
 
-function setLoading(btn,on,label=''){
-  if(!btn)return;
-  btn.disabled=on;
-  if(on)btn.innerHTML=`<span class="loading-spin"></span>${label}`;
-  else btn.textContent=btn.dataset.origLabel||label||'Generate';
-  if(!on&&!btn.dataset.origLabel)btn.dataset.origLabel=btn.textContent;
+function setLoading(btn, on, label=''){
+  if(!btn) return;
+  btn.disabled = on;
+  btn.innerHTML = on
+    ? `<span class="loading-spin"></span>${label}`
+    : label;
 }
 
 /* ════ CHAT (Ask Anupam) ════ */
 async function sendMsg(){
-  if(mode!=='ask'){handlePanelEnter();return;}
-  const inp=document.getElementById('input');
-  const text=inp.value.trim();
-  if((!text&&!imgB64)||busy)return;
-  const welcome=document.getElementById('welcome');
-  if(welcome)welcome.remove();
-  addMsg('user',text||'📸 Image uploaded');
-  inp.value='';inp.style.height='auto';
-  const curImg=imgB64,curType=imgType;
+  if(mode !== 'ask'){ handlePanelEnter(); return; }
+
+  const inp  = document.getElementById('input');
+  const text = inp.value.trim();
+  if((!text && !imgB64) || busy) return;
+
+  // Remove welcome screen
+  const welcome = document.getElementById('welcome');
+  if(welcome) welcome.remove();
+
+  // Show user message
+  addMsg('user', text || '📸 Image uploaded');
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  const curImg  = imgB64;
+  const curType = imgType;
   removeImg();
-  chatHistory.push({role:'user',content:text||'Solve this problem'});
+
+  // Add to history — keep history lean (max 20 items)
+  chatHistory.push({role:'user', content: text || 'Solve this image step by step'});
+  if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+
   showTyping();
+  busy = true;
+
   try{
-    const payload={messages:chatHistory.slice(-30)};
-    if(curImg){payload.image_b64=curImg;payload.image_type=curType;}
-    const r=await apiPost('/api/chat',payload);
+    const payload = { messages: chatHistory };
+    if(curImg){ payload.image_b64 = curImg; payload.image_type = curType; }
+
+    const r = await apiPost('/api/chat', payload);
     hideTyping();
-    chatHistory.push({role:'assistant',content:r.answer});
-    addMsg('bot',r.answer);
+
+    const answer = r.answer || '⚠️ No response received.';
+
+    // Add assistant reply to history
+    chatHistory.push({role:'assistant', content: answer});
+    if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+
+    addMsg('bot', answer);
   }catch(e){
     hideTyping();
-    addMsg('bot','⚠️ Error connecting to backend: '+e.message,true);
+    addMsg('bot', '⚠️ Error connecting to backend: ' + e.message);
   }
 }
 
 function handlePanelEnter(){
-  const val=document.getElementById('input').value.trim();
-  if(!val)return;
-  document.getElementById('input').value='';
-  const map={formula:()=>{document.getElementById('f-topic').value=val;runFormula();},
-             graph:()=>{document.getElementById('g-expr').value=val;runGraph();},
-             mathematician:()=>{document.getElementById('m-name').value=val;runMathematician();},
-             theorem:()=>{document.getElementById('t-name').value=val;runTheorem();},
-             mistakes:()=>{document.getElementById('mk-topic').value=val;runMistakes();}};
-  if(map[mode])map[mode]();
+  const val = document.getElementById('input').value.trim();
+  if(!val) return;
+  document.getElementById('input').value = '';
+  const map = {
+    formula:       ()=>{ document.getElementById('f-topic').value=val;  runFormula(); },
+    graph:         ()=>{ document.getElementById('g-expr').value=val;   runGraph(); },
+    mathematician: ()=>{ document.getElementById('m-name').value=val;   runMathematician(); },
+    theorem:       ()=>{ document.getElementById('t-name').value=val;   runTheorem(); },
+    mistakes:      ()=>{ document.getElementById('mk-topic').value=val; runMistakes(); },
+  };
+  if(map[mode]) map[mode]();
 }
 
-function addMsg(role,text){
-  const chat=document.getElementById('chat');
-  const div=document.createElement('div');
-  div.className=`msg ${role}`;
-  div.innerHTML=`<div class="avatar">${role==='user'?'👤':'∑'}</div><div class="bubble"></div>`;
-  const bubble=div.querySelector('.bubble');
-  bubble.innerHTML=fmt(text);
+function addMsg(role, text){
+  const chat = document.getElementById('chat');
+  const div  = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="avatar">${role==='user'?'👤':'∑'}</div><div class="bubble"></div>`;
+  const bubble = div.querySelector('.bubble');
+  bubble.innerHTML = fmt(text);
   chat.appendChild(div);
-  chat.scrollTop=chat.scrollHeight;
-  requestAnimationFrame(()=>{renderMath(bubble);chat.scrollTop=chat.scrollHeight;});
+  chat.scrollTop = chat.scrollHeight;
+  requestAnimationFrame(()=>{
+    renderMath(bubble);
+    chat.scrollTop = chat.scrollHeight;
+  });
 }
 
 function showTyping(){
-  busy=true;
-  document.getElementById('send-btn').disabled=true;
-  const chat=document.getElementById('chat');
-  const div=document.createElement('div');
-  div.className='msg bot';div.id='typing-ind';
-  div.innerHTML=`<div class="avatar">∑</div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+  document.getElementById('send-btn').disabled = true;
+  const chat = document.getElementById('chat');
+  const div  = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = 'typing-ind';
+  div.innerHTML = `<div class="avatar">∑</div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function hideTyping(){
-  busy=false;
-  document.getElementById('send-btn').disabled=false;
-  const t=document.getElementById('typing-ind');if(t)t.remove();
+  busy = false;
+  document.getElementById('send-btn').disabled = false;
+  const t = document.getElementById('typing-ind');
+  if(t) t.remove();
 }
 
-/* ════ HELPERS ════ */
+/* ════ TEXT FORMATTER — Fixed LaTeX handling ════ */
 function fmt(text){
-  if(!text)return'';
-  const blocks=[];
-  let t=String(text);
-  t=t.replace(/\\\[([\s\S]*?)\\\]/g,m=>{blocks.push(m);return`\x00B${blocks.length-1}\x00`;});
-  t=t.replace(/\\\(([\s\S]*?)\\\)/g,m=>{blocks.push(m);return`\x00B${blocks.length-1}\x00`;});
-  t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  t=t.replace(/\x00B(\d+)\x00/g,(_,i)=>blocks[+i]);
-  t=t.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>');
-  t=t.replace(/\n/g,'<br>');
+  if(!text) return '';
+  let t = String(text);
+
+  // 1. Pull out LaTeX blocks so we don't HTML-escape them
+  const blocks = [];
+  // Display math \[ ... \]
+  t = t.replace(/\\\[([\s\S]*?)\\\]/g, (m) => { blocks.push(m); return `\x00B${blocks.length-1}\x00`; });
+  // Inline math \( ... \)
+  t = t.replace(/\\\(([\s\S]*?)\\\)/g, (m) => { blocks.push(m); return `\x00B${blocks.length-1}\x00`; });
+  // Display math $$ ... $$
+  t = t.replace(/\$\$([\s\S]*?)\$\$/g, (m) => { blocks.push(m); return `\x00B${blocks.length-1}\x00`; });
+
+  // 2. HTML-escape the non-math text
+  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // 3. Restore LaTeX blocks (unescaped)
+  t = t.replace(/\x00B(\d+)\x00/g, (_, i) => blocks[+i]);
+
+  // 4. Code blocks
+  t = t.replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre>$1</pre>');
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 5. Line breaks
+  t = t.replace(/\n/g, '<br>');
+
   return t;
 }
 
-function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
-function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
-function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function handleKey(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMsg(); } }
 
 async function quickChat(msg){
-  if(mode!=='ask'){setMode('ask');setTimeout(()=>{document.getElementById('input').value=msg;sendMsg();},200);return;}
-  document.getElementById('input').value=msg;
+  if(mode !== 'ask'){ setMode('ask'); setTimeout(()=>{ document.getElementById('input').value=msg; sendMsg(); }, 300); return; }
+  document.getElementById('input').value = msg;
   await sendMsg();
 }
 
-async function apiPost(url,data){
-  const r=await fetch(API_BASE+url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  if(!r.ok)throw new Error(`Server error ${r.status}`);
-  return r.json();
+/* ════ API CALL ════ */
+async function apiPost(url, data){
+  const res = await fetch(API_BASE + url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error(`Server error ${res.status}`);
+  return res.json();
 }
 
-function toast(msg,type='ok'){
-  const t=document.createElement('div');
-  t.className=`toast ${type}`;t.textContent=msg;
+/* ════ TOAST ════ */
+function toast(msg, type='ok'){
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2500);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2500);
 }
 
+/* ════ IMAGE UPLOAD ════ */
 function handleImg(e){
-  const file=e.target.files[0];if(!file)return;
-  if(mode!=='ask'){toast('Image upload only available in Ask Anupam mode','info');return;}
-  const r=new FileReader();
-  r.onload=ev=>{
-    const res=ev.target.result;
-    imgB64=res.split(',')[1];imgType=file.type;
-    document.getElementById('prev-img').src=res;
-    document.getElementById('imgpreview').style.display='block';
+  const file = e.target.files[0];
+  if(!file) return;
+  if(mode !== 'ask'){ toast('Image upload only available in Ask Anupam mode','info'); return; }
+  const r = new FileReader();
+  r.onload = ev => {
+    const res = ev.target.result;
+    imgB64  = res.split(',')[1];
+    imgType = file.type;
+    document.getElementById('prev-img').src = res;
+    document.getElementById('imgpreview').style.display = 'block';
     toast('Image ready — press Send','ok');
   };
   r.readAsDataURL(file);
 }
 
 function removeImg(){
-  imgB64=null;imgType=null;
-  document.getElementById('imgpreview').style.display='none';
-  document.getElementById('filein').value='';
+  imgB64 = null; imgType = null;
+  document.getElementById('imgpreview').style.display = 'none';
+  document.getElementById('filein').value = '';
 }
 
+/* ════ THEME ════ */
 function initTheme(){
-  const t=localStorage.getItem('ms_theme')||'dark';
-  document.getElementById('theme-btn').textContent=t==='light'?'☀️ Light':'🌙 Dark';
+  document.getElementById('theme-btn').textContent = '🌙 Dark';
 }
 
 function toggleTheme(){
-  const nowLight=!document.body.classList.contains('light');
-  document.body.classList.toggle('light',nowLight);
-  localStorage.setItem('ms_theme',nowLight?'light':'dark');
-  document.getElementById('theme-btn').textContent=nowLight?'☀️ Light':'🌙 Dark';
+  const nowLight = !document.body.classList.contains('light');
+  document.body.classList.toggle('light', nowLight);
+  document.getElementById('theme-btn').textContent = nowLight ? '☀️ Light' : '🌙 Dark';
 }
 </script>
 </body>
