@@ -23,7 +23,7 @@ import json
 import random
 import sys
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -330,7 +330,7 @@ Confidence: HIGH/MEDIUM/LOW"""
 
 @app.route("/")
 def index():
-    return "MathSphere v8.0 Backend is running!"
+    return send_from_directory("static", "index.html")
 
 @app.route("/api/health", methods=["GET"])
 def health():
