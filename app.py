@@ -21,6 +21,7 @@ import os
 import re
 import json
 import random
+import sys
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -58,9 +59,14 @@ if GEMINI_AVAILABLE:
         print(f"⚠️ Gemini init failed: {e}")
         GEMINI_AVAILABLE = False
 
-# ════ SymPy Setup ════
+# ════ SymPy Setup — FIXED: catches ALL errors, not just ImportError ════
 try:
+    print(f"🔍 Python version: {sys.version}")
+    print(f"🔍 Attempting sympy import...")
+    
     import sympy as sp
+    print(f"🔍 sympy version: {sp.__version__}")
+    
     from sympy import (
         symbols, sympify, diff, integrate, solve, simplify, expand,
         factor, latex as sp_latex, Matrix, eigenvals, eigenvects,
@@ -76,9 +82,13 @@ try:
         convert_xor
     )
     SYMPY_AVAILABLE = True
-    print("✅ SymPy loaded")
-except ImportError:
-    print("⚠️ SymPy not installed")
+    print("✅ SymPy loaded successfully")
+
+except ImportError as e:
+    print(f"⚠️ SymPy ImportError: {e}")
+except Exception as e:
+    # THIS IS THE KEY FIX — was silently missing other errors before
+    print(f"⚠️ SymPy failed with unexpected error: {type(e).__name__}: {e}")
 
 TEACHER_YOUTUBE = "https://youtube.com/@pi_nomenal1729"
 TEACHER_WEBSITE = "https://www.anupamnigam.com"
@@ -329,7 +339,8 @@ def health():
         "groq": GROQ_AVAILABLE,
         "gemini": GEMINI_AVAILABLE,
         "sympy": SYMPY_AVAILABLE,
-        "version": "8.0"
+        "version": "8.0",
+        "python": sys.version
     })
 
 # ════ CHAT ENDPOINT ════
@@ -344,7 +355,6 @@ def chat():
         if not messages:
             return jsonify({"error": "messages required"}), 400
         
-        # Keep 30 messages for context
         clean = [{"role": m["role"], "content": str(m["content"])}
                  for m in messages if m.get("role") in ("user", "assistant")]
         if len(clean) > 30:
@@ -440,7 +450,6 @@ Use PROPER mathematical notation throughout."""
         
         x = Symbol('x')
         
-        # Generate points for 2D
         if graph_type == "2d":
             points = []
             x_min, x_max = -5, 5
@@ -455,7 +464,6 @@ Use PROPER mathematical notation throughout."""
                 except:
                     points.append({"x": round(xv, 4), "y": None})
             
-            # Calculate analysis
             try:
                 df = diff(f, x)
                 df_latex = sp_latex(simplify(df))
@@ -465,7 +473,6 @@ Use PROPER mathematical notation throughout."""
                 df_latex = ""
                 critical = []
             
-            # Get complete analysis
             analysis_prompt = f"""COMPLETE MATHEMATICAL ANALYSIS of f(x) = {expr_str}
 
 Use PROPER LaTeX notation for everything:
@@ -488,7 +495,6 @@ Use PROPER LaTeX notation for everything:
 🔢 DERIVATIVE: \\[f'(x) = {df_latex}\\]
 
 🔹 SECOND DERIVATIVE: \\[f''(x) = ...\\]
-- Inflection points: [if exist]
 
 📊 CONCAVITY:
 - Concave up: \\(x \\in (...)\\)
@@ -497,9 +503,6 @@ Use PROPER LaTeX notation for everything:
 📈 BEHAVIOR:
 - As \\(x \\to \\infty\\): \\(f(x) \\to ...\\)
 - As \\(x \\to -\\infty\\): \\(f(x) \\to ...\\)
-
-🎨 KEY FEATURES:
-[Describe shape, special properties]
 
 Format EVERYTHING in proper mathematical notation."""
             
@@ -583,7 +586,9 @@ Return ONLY valid JSON array:
   "step_by_step": [
     "Step 1: [detailed subtitle] - Full explanation with math",
     "Step 2: ...",
-    ...10 steps
+    "Step 3: ...",
+    "Step 4: ...",
+    "Step 5: ..."
   ],
   "code_snippet": "Complete working Python code",
   "expected_outcome": "What you'll build",
@@ -725,7 +730,6 @@ Generate {count} varied questions with COMPLETE solutions."""
 
 @app.route("/api/verify-solution", methods=["POST"])
 def verify_solution():
-    """Verify mathematical solutions"""
     try:
         data = request.get_json()
         problem = data.get("problem")
@@ -754,7 +758,6 @@ Result:
 
 @app.route("/api/solution-paths", methods=["POST"])
 def solution_paths():
-    """Show multiple ways to solve same problem"""
     try:
         data = request.get_json()
         problem = data.get("problem")
@@ -783,7 +786,6 @@ For EACH method:
 
 @app.route("/api/common-mistakes", methods=["POST"])
 def common_mistakes():
-    """List common mistakes for a topic"""
     try:
         data = request.get_json()
         topic = data.get("topic")
@@ -829,7 +831,7 @@ def exam_info(exam):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ════ ERROR HANDLER ════
+# ════ ERROR HANDLERS ════
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"error": "Endpoint not found"}), 404
@@ -844,9 +846,10 @@ if __name__ == "__main__":
 ════════════════════════════════════════
 🧮 MathSphere v8.0 - Production Backend
 ════════════════════════════════════════
-✅ Groq: {GROQ_AVAILABLE}
+✅ Groq:   {GROQ_AVAILABLE}
 ✅ Gemini: {GEMINI_AVAILABLE}
-✅ SymPy: {SYMPY_AVAILABLE}
+✅ SymPy:  {SYMPY_AVAILABLE}
+🐍 Python: {sys.version}
 ════════════════════════════════════════
 📺 {TEACHER_YOUTUBE}
 ════════════════════════════════════════
