@@ -330,7 +330,7 @@ Confidence: HIGH/MEDIUM/LOW"""
 
 @app.route("/")
 def index():
-    return "MathSphere v8.0 Backend is running!"
+    return app.send_static_file("index.html")
 
 @app.route("/api/health", methods=["GET"])
 def health():
