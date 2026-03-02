@@ -4,24 +4,7 @@
 ║        Complete Flask Application with All Improvements         ║
 ╚════════════════════════════════════════════════════════════════╝
 
-Author: MathSphere Dev Team
-Version: 10.0
-License: MIT
-
-Key Features:
-✓ Rate Limiting (30 req/min per IP)
-✓ Response Caching (3600s TTL)
-✓ Input Validation & Sanitization
-✓ SymPy Integration (Safe execution)
-✓ Groq & Gemini AI APIs
-✓ Error Logging & Monitoring
-✓ CORS Support
-✓ Image Processing (Base64)
-✓ Chunked Content Generation
-✓ Production Ready
-
-Install dependencies:
-pip install -r requirements.txt --break-system-packages
+FIXED: Now serves HTML frontend at root route
 """
 
 import os
@@ -40,7 +23,7 @@ from typing import Any, Dict, Optional, Tuple
 # 1. IMPORT FLASK & EXTENSIONS
 # ════════════════════════════════════════════════════════════════
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -167,7 +150,11 @@ except Exception as e:
 # 8. INITIALIZE FLASK APP
 # ════════════════════════════════════════════════════════════════
 
-app = Flask(__name__)
+# Get the absolute path to the static folder
+base_dir = os.path.abspath(os.path.dirname(__file__))
+static_dir = os.path.join(base_dir, 'static')
+
+app = Flask(__name__, static_folder=static_dir, static_url_path='')
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
 app.config['JSON_SORT_KEYS'] = False
@@ -346,26 +333,42 @@ def ask_simple(prompt: str, temperature: float = 0.2, max_tokens: int = 1000) ->
 
 
 # ════════════════════════════════════════════════════════════════
-# 13. API ENDPOINTS
+# 13. FRONTEND ROUTES
 # ════════════════════════════════════════════════════════════════
 
-# ════ HEALTH CHECK ════
 @app.route("/")
-def home():
-    """Health check endpoint"""
-    return jsonify({
-        "status": "ok",
-        "message": "MathSphere v10.0 running",
-        "version": "10.0",
-        "timestamp": datetime.now().isoformat()
-    }), 200
+def index():
+    """Serve the frontend HTML"""
+    try:
+        return send_from_directory(static_dir, 'index.html')
+    except FileNotFoundError:
+        logger.error("index.html not found in static folder")
+        return jsonify({
+            "error": "Frontend not found",
+            "message": "Place index.html in the 'static' folder",
+            "status": "backend-only"
+        }), 404
 
 
-@app.route("/health")
+@app.route("/<path:filename>")
+def serve_static(filename):
+    """Serve static assets (CSS, JS, images)"""
+    try:
+        return send_from_directory(static_dir, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
+
+
+# ════════════════════════════════════════════════════════════════
+# 14. HEALTH CHECK ROUTES
+# ════════════════════════════════════════════════════════════════
+
+@app.route("/api/health")
 def health():
     """Detailed health check"""
     return jsonify({
         "status": "healthy",
+        "message": "MathSphere v10.0 running",
         "services": {
             "groq": GROQ_AVAILABLE,
             "gemini": GEMINI_AVAILABLE,
@@ -420,7 +423,7 @@ def chat():
         logger.info(f"Chat: {message[:50]}...")
         
         return jsonify({
-            "response": response,
+            "answer": response,
             "mode": mode,
             "timestamp": datetime.now().isoformat()
         }), 200
@@ -559,15 +562,15 @@ Exam: {exam}"""
         return jsonify({"error": str(e)}), 500
 
 
-# ════ COMPETITION PROBLEMS ENDPOINT (CHUNKED) ════
+# ════ COMPETITION PROBLEMS ENDPOINT ════
 @app.route("/api/competition/problems", methods=["POST"])
 @limiter.limit("10 per minute")
 def competition_problems():
-    """Generate competition problems in chunks"""
+    """Generate competition problems"""
     try:
         data = request.get_json()
         category = sanitize_input(data.get("category", "IMO"), "topic")
-        count = min(int(data.get("count", 10)), 30)  # Max 30
+        count = min(int(data.get("count", 10)), 30)
         
         all_problems = []
         chunk_size = 5
@@ -625,11 +628,11 @@ NOW GENERATE {current_chunk_size} PROBLEMS WITH ALL FORMULAS IN LATEX:"""
         return jsonify({"error": str(e)}), 500
 
 
-# ════ QUIZ ENDPOINT (CHUNKED) ════
+# ════ QUIZ ENDPOINT ════
 @app.route("/api/quiz/generate", methods=["POST"])
 @limiter.limit("10 per minute")
 def quiz_generate():
-    """Generate quiz questions in chunks"""
+    """Generate quiz questions"""
     try:
         data = request.get_json()
         topic = sanitize_input(data.get("topic", "Calculus"), "topic")
@@ -692,67 +695,6 @@ GENERATE {current_chunk_size} QUESTIONS WITH ALL MATH IN LATEX:"""
         return jsonify({"error": str(e)}), 500
 
 
-# ════ PYQ ENDPOINT ════
-@app.route("/api/pyq/load", methods=["POST"])
-@limiter.limit("10 per minute")
-def load_pyqs():
-    """Load Previous Year Questions"""
-    try:
-        data = request.get_json()
-        exam = sanitize_input(data.get("exam", "jam"), "topic")
-        count = min(int(data.get("count", 10)), 50)
-        
-        exam_names = {
-            "jam": "IIT JAM",
-            "gate": "GATE",
-            "csir": "CSIR NET"
-        }
-        
-        exam_name = exam_names.get(exam, exam)
-        
-        prompt = f"""Get {count} REAL Previous Year Questions from {exam_name} mathematics exam.
-
-FORMAT FOR EACH QUESTION:
-**Question N: [Year]**
-\\[Question statement in LaTeX\\]
-
-(A) Option 1
-(B) Option 2
-(C) Option 3
-(D) Option 4
-
-**Correct Answer:** [Letter]
-**Topic:** [Subject area]
-**Difficulty:** [Easy/Medium/Hard]
-
----
-
-RULES:
-- Use REAL PYQs from actual examinations
-- Format EVERY mathematical expression in LaTeX
-- Include year of exam
-- All options clearly labeled
-- Correct answer indicated
-
-NOW GENERATE {count} REAL PYQS:"""
-
-        response = ask_simple(prompt, temperature=0.1, max_tokens=5000)
-        
-        if not response:
-            response = f"Unable to load PYQs for {exam_name}"
-        
-        return jsonify({
-            "exam": exam,
-            "count": count,
-            "questions": response,
-            "success": True
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"PYQ error: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
 # ════ RESEARCH ENDPOINT ════
 @app.route("/api/research", methods=["POST"])
 @limiter.limit("15 per minute")
@@ -760,54 +702,21 @@ def research_hub():
     """Research Hub - Literature, topics, methods, career"""
     try:
         data = request.get_json()
-        research_type = sanitize_input(data.get("type", "literature"), "topic")
+        research_type = sanitize_input(data.get("type", "topic"), "topic")
         query = sanitize_input(data.get("query", ""), "text")
         
         if not query:
             return jsonify({"error": "Query cannot be empty"}), 400
         
-        prompts = {
-            "literature": f"""Find recent research papers and articles on "{query}". Include:
-            - 3-4 relevant papers/articles
-            - Brief summary of each
-            - Where to find them
-            - Key findings
-            Use proper citations.""",
-            
-            "topic": f"""Explain "{query}" comprehensively:
-            1. Definition & basic concepts
-            2. Prerequisites needed
-            3. How it connects to other topics
-            4. Applications & examples
-            5. Advanced topics to explore next
-            Make it suitable for advanced mathematics student. Use LaTeX for formulas.""",
-            
-            "methods": f"""Show different methods to solve "{query}":
-            1. Method 1 with detailed steps (use LaTeX)
-            2. Method 2 with detailed steps (use LaTeX)
-            3. Method 3 with detailed steps (use LaTeX)
-            4. Comparison - when to use each
-            5. Common mistakes to avoid""",
-            
-            "career": f"""Career paths using "{query}":
-            1. Academic careers (professor, researcher)
-            2. Industry careers (finance, tech, etc.)
-            3. Required skills & knowledge
-            4. Typical salary range
-            5. Study plan to prepare
-            Focus on mathematics-related careers.""",
-            
-            "resources": f"""Best resources to learn "{query}":
-            1. Online courses (Coursera, edX, etc.)
-            2. Books & textbooks
-            3. YouTube channels & videos
-            4. Practice platforms
-            5. Communities & forums
-            Include links and difficulty levels."""
-        }
+        prompt = f"""Provide {research_type} information for "{query}":
         
-        prompt = prompts.get(research_type, prompts["topic"])
+        For topic: Explain comprehensively with prerequisites, applications, and connections
+        For literature: Find papers and articles with summaries and citations
+        For methods: Show different approaches with step-by-step solutions
+        For career: Discuss career paths, salaries, skills needed
         
+        Use LaTeX for mathematical content. Be detailed and helpful."""
+
         response = ask_simple(prompt, temperature=0.2, max_tokens=2000)
         
         if not response:
@@ -884,8 +793,128 @@ def exam_info():
         return jsonify({"error": str(e)}), 500
 
 
+# ════ MATHEMATICIAN ENDPOINT ════
+@app.route("/api/mathematician", methods=["POST"])
+@limiter.limit("15 per minute")
+def mathematician():
+    """Get mathematician information"""
+    try:
+        data = request.get_json()
+        name = sanitize_input(data.get("name", ""), "text")
+        
+        if name:
+            prompt = f"""Provide detailed information about the mathematician: {name}
+
+            Include:
+            1. Full name and period (birth-death)
+            2. Country/region
+            3. Main fields of mathematics
+            4. Biography (2-3 sentences)
+            5. Major contributions (3-4 bullet points)
+            6. Famous quote (if available)
+            7. Impact on mathematics today
+            8. Learning resources (books, papers)
+            
+            Format as structured data."""
+        else:
+            prompt = """Suggest a random famous mathematician and provide the same information as above."""
+        
+        response = ask_simple(prompt, temperature=0.2, max_tokens=2000)
+        
+        if not response:
+            response = "Unable to fetch mathematician information."
+        
+        logger.info(f"Mathematician: {name or 'random'}")
+        
+        return jsonify({
+            "name": name,
+            "response": response
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Mathematician error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ════ THEOREM ENDPOINT ════
+@app.route("/api/theorem/prove", methods=["POST"])
+@limiter.limit("15 per minute")
+def theorem_prove():
+    """Prove a theorem"""
+    try:
+        data = request.get_json()
+        theorem = sanitize_input(data.get("theorem", "Pythagorean Theorem"), "text")
+        
+        prompt = f"""Provide a complete, rigorous proof of: {theorem}
+
+        Include:
+        1. Theorem statement (with LaTeX)
+        2. Assumptions and prerequisites
+        3. Proof (step-by-step with LaTeX)
+        4. Key lemmas used
+        5. Applications
+        6. Historical context
+        
+        Make it suitable for undergraduate mathematics students."""
+        
+        response = ask_simple(prompt, temperature=0.1, max_tokens=2500)
+        
+        if not response:
+            response = f"Unable to generate proof for {theorem}"
+        
+        logger.info(f"Theorem: {theorem}")
+        
+        return jsonify({
+            "theorem": theorem,
+            "proof": response
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Theorem error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ════ PROJECTS ENDPOINT ════
+@app.route("/api/projects/generate", methods=["POST"])
+@limiter.limit("10 per minute")
+def generate_projects():
+    """Generate math projects"""
+    try:
+        data = request.get_json()
+        topic = sanitize_input(data.get("topic", "Machine Learning"), "text")
+        
+        prompt = f"""Generate 5 detailed mathematics projects for: {topic}
+
+        For EACH project provide:
+        1. Title
+        2. Difficulty level (Beginner/Intermediate/Advanced)
+        3. Description (2-3 sentences)
+        4. Mathematical concepts needed
+        5. Step-by-step approach (5-6 steps)
+        6. Python code snippet (if applicable)
+        7. Resources and references
+        
+        Make projects practical and educational with heavy mathematics focus."""
+        
+        response = ask_simple(prompt, temperature=0.2, max_tokens=3000)
+        
+        if not response:
+            response = f"Unable to generate projects for {topic}"
+        
+        logger.info(f"Projects: {topic}")
+        
+        return jsonify({
+            "topic": topic,
+            "projects": response
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Projects error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # ════════════════════════════════════════════════════════════════
-# 14. ERROR HANDLERS
+# 15. ERROR HANDLERS
 # ════════════════════════════════════════════════════════════════
 
 @app.errorhandler(429)
@@ -917,7 +946,7 @@ def internal_error(e):
 
 
 # ════════════════════════════════════════════════════════════════
-# 15. STARTUP INFO
+# 16. STARTUP INFO
 # ════════════════════════════════════════════════════════════════
 
 def print_startup_info():
@@ -932,6 +961,7 @@ def print_startup_info():
     print(f"✅ Rate Limit:     ENABLED (30 req/min)")
     print(f"✅ Caching:        ENABLED (3600s TTL)")
     print(f"✅ Validation:     ENABLED")
+    print(f"✅ Frontend:       SERVING from static/index.html")
     print(f"✅ Logging:        ENABLED (mathsphere.log)")
     print(f"🐍 Python:         {sys.version.split()[0]}")
     print(f"🌐 Environment:    {FLASK_ENV}")
@@ -941,7 +971,7 @@ def print_startup_info():
 
 
 # ════════════════════════════════════════════════════════════════
-# 16. MAIN
+# 17. MAIN
 # ════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
