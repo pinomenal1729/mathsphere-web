@@ -6,6 +6,7 @@ Compatible with: flask==3.0.3, groq==0.9.0, google-genai==0.8.0,
 
 import os, sys, io, json, logging, re
 from datetime import datetime
+import base64
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -193,6 +194,20 @@ def sanitize(text: str, max_len: int = 5000) -> str:
             logger.warning(f"Blocked input: {text[:60]}")
             return ""
     return text
+def parse_int_field(value, default: int, min_value: int, max_value: int, field_name: str = "value") -> int:
+    """Parse and clamp integer request fields with clear 400-style messages."""
+    if value is None or value == "":
+        parsed = default
+    else:
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{field_name} must be an integer")
+
+    if parsed < min_value or parsed > max_value:
+        raise ValueError(f"{field_name} must be between {min_value} and {max_value}")
+    return parsed
+
 
 # ════════════════════════════════════════════════════════════════
 # STATIC FILES
@@ -251,12 +266,22 @@ def chat():
 
         # Image handling (google-genai==0.8.0)
         img_b64  = data.get("image_b64")
-        img_type = data.get("image_type","image/jpeg")
+        img_type = data.get("image_type", "image/jpeg")
 
-        if img_b64 and GEMINI_AVAILABLE and gemini_client and genai_types:
+        if img_b64:
             try:
-                import base64
-                raw_bytes   = base64.b64decode(img_b64)
+                allowed_mimes = {"image/jpeg", "image/png", "image/webp"}
+                if img_type not in allowed_mimes:
+                    return jsonify({"error": "Unsupported image type. Use JPEG, PNG, or WEBP."}), 400
+
+                raw_bytes = base64.b64decode(img_b64, validate=True)
+                if not raw_bytes:
+                    return jsonify({"error": "Invalid image payload."}), 400
+                if len(raw_bytes) > 10 * 1024 * 1024:
+                    return jsonify({"error": "Image too large. Max size is 10MB."}), 400
+
+                if not (GEMINI_AVAILABLE and gemini_client and genai_types):
+                    return jsonify({"error": "Image solving currently unavailable. Configure GEMINI_API_KEY."}), 503
                 prompt_text = clean[-1]["content"] if clean else "Solve this mathematics problem."
                 resp = gemini_client.models.generate_content(
                     model="gemini-2.0-flash",
@@ -267,14 +292,16 @@ def chat():
                     ]
                 )
                 return jsonify({"answer": resp.text or ""}), 200
+            except (ValueError, base64.binascii.Error):
+                return jsonify({"error": "Invalid image payload."}), 400
             except Exception as e:
                 logger.warning(f"Image processing failed: {e} — using text only")
 
         return jsonify({"answer": ask_ai(clean)}), 200
 
     except Exception as e:
-        logger.error(f"Chat error: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.exception(f"Chat error: {e}")
+        return jsonify({"error": "Internal server error."}), 500
 
 # ════════════════════════════════════════════════════════════════
 # GRAPH  /api/graph
@@ -326,8 +353,8 @@ def graph_plotter():
                         "analysis":analysis, "success":True}), 200
 
     except Exception as e:
-        logger.error(f"Graph error: {e}")
-        return jsonify({"error":str(e), "success":False}), 500
+        logger.exception(f"Graph error: {e}")
+        return jsonify({"error":"Internal server error.", "success":False}), 500
 
 # ════════════════════════════════════════════════════════════════
 # FORMULA SHEET  /api/formula   → { answer }
@@ -374,7 +401,7 @@ def competition_problems():
     try:
         data     = request.get_json(force=True, silent=True) or {}
         category = sanitize(data.get("category","IMO"), 50)
-        count    = min(int(data.get("count",10)), 30)
+        count    = parse_int_field(data.get("count", 10), default=10, min_value=1, max_value=30, field_name="count")
 
         prompt = f"""Generate {count} {category}-style competition problems with full pedagogical solutions.
 
@@ -399,9 +426,11 @@ Generate all {count} for {category}."""
 
         problems = ask_simple(prompt, temperature=0.3, max_tokens=4000)
         return jsonify({"problems": problems or "Could not generate."}), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
-        logger.error(f"Competition error: {e}")
-        return jsonify({"error":str(e)}), 500
+        logger.exception(f"Competition error: {e}")
+        return jsonify({"error":"Internal server error."}), 500
 
 # ════════════════════════════════════════════════════════════════
 # QUIZ  /api/quiz/generate   → { questions }
@@ -413,7 +442,7 @@ def quiz_generate():
     try:
         data  = request.get_json(force=True, silent=True) or {}
         topic = sanitize(data.get("topic","Calculus"), 100)
-        count = min(int(data.get("count",10)), 30)
+        count = parse_int_field(data.get("count", 10), default=10, min_value=1, max_value=30, field_name="count")
 
         prompt = f"""Generate {count} exam-style MCQs on **{topic}**.
 
@@ -436,9 +465,11 @@ Generate all {count} for {topic}."""
 
         questions = ask_simple(prompt, temperature=0.2, max_tokens=4000)
         return jsonify({"questions": questions or "Could not generate quiz."}), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
-        logger.error(f"Quiz error: {e}")
-        return jsonify({"error":str(e)}), 500
+        logger.exception(f"Quiz error: {e}")
+        return jsonify({"error":"Internal server error."}), 500
 
 # ════════════════════════════════════════════════════════════════
 # RESEARCH  /api/research   → { response }
@@ -542,7 +573,7 @@ def pyq_load():
     try:
         data  = request.get_json(force=True, silent=True) or {}
         exam  = sanitize(data.get("exam","jam"), 20).lower().strip()
-        count = min(int(data.get("count",10)), 50)
+        count = parse_int_field(data.get("count", 10), default=10, min_value=1, max_value=50, field_name="count")
 
         exam_names = {
             "jam":  "IIT JAM Mathematics",
@@ -576,9 +607,11 @@ Generate all {count} questions for {exam_name}."""
             return jsonify({"success":False, "error":"Could not generate PYQs."}), 500
 
         return jsonify({"success":True, "questions":raw, "exam":exam, "count":count}), 200
+    except ValueError as ve:
+        return jsonify({"success":False, "error": str(ve)}), 400
     except Exception as e:
-        logger.error(f"PYQ error: {e}")
-        return jsonify({"success":False, "error":str(e)}), 500
+        logger.exception(f"PYQ error: {e}")
+        return jsonify({"success":False, "error":"Internal server error."}), 500
 
 # ════════════════════════════════════════════════════════════════
 # MATHEMATICIAN  /api/mathematician   → JSON object

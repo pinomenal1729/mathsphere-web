@@ -597,7 +597,7 @@ function setMode(m) {
   setTimeout(() => { mt.textContent = (MODES[m]||MODES.ask).title; mt.style.opacity = '1'; }, 150);
 
   const ph = (MODES[m]||MODES.ask).ph;
-  if (ph) document.getElementById('input').placeholder = ph;
+  document.getElementById('input').placeholder = ph || '';
 
   document.getElementById('sidebar').classList.remove('open');
   renderTagsBar();
@@ -687,7 +687,7 @@ const PANELS = {
         <div class="form-group" style="flex:2"><label class="form-label">Function f(x) =</label>
           <input class="form-input" id="g-expr" placeholder="e.g. x**2, sin(x), exp(x)" value="x**2"/></div>
         <div class="form-group"><label class="form-label">Type</label>
-          <select class="form-select" id="g-type"><option value="2d">2D</option><option value="3d">3D</option></select></div>
+          <select class="form-select" id="g-type"><option value="2d">2D</option></select></div>
       </div>
       <button class="action-btn" id="g-btn" onclick="runGraph()">Plot & Analyse</button>
       <div id="g-plotbox" class="graph-box" style="display:none"></div>
@@ -1265,6 +1265,10 @@ function handlePanelEnter() {
   const run = {
     formula:       () => { document.getElementById('f-topic').value = val; runFormula(); },
     graph:         () => { document.getElementById('g-expr').value  = val; runGraph();   },
+    comp:          () => { document.getElementById('c-cat').value   = val; runComp();    },
+    quiz:          () => { document.getElementById('q-topic').value = val; runQuiz();    },
+    exams:         () => { document.getElementById('exam-sel').value= val; showExamDetails(); },
+    pyqs:          () => { document.getElementById('pyq-exam').value= val; loadPYQs();   },
     mathematician: () => { document.getElementById('m-name').value  = val; runMathematician(); },
     theorem:       () => { document.getElementById('t-name').value  = val; runTheorem();  },
     projects:      () => { document.getElementById('p-topic').value = val; runProjects(); },
@@ -1309,7 +1313,11 @@ function hideTyping() {
 function handleImg(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (mode !== 'ask') { toast('Image upload only in Ask Anupam', 'info'); return; }
+  if (mode !== 'ask') {
+    e.target.value = '';
+    toast('Image upload only in Ask Anupam', 'info');
+    return;
+  }
   if (file.size > 10 * 1024 * 1024) { toast('Image too large (max 10MB)', 'err'); return; }
   const reader = new FileReader();
   reader.onload = ev => {
@@ -1332,4 +1340,3 @@ function removeImg() {
 </script>
 </body>
 </html>
-
