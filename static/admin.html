@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MathSphere — PYQ Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0e27;--card:rgba(0,217,255,.06);--border:rgba(0,217,255,.2);
+  --acc:#00d9ff;--acc2:#7c3aed;--tx:#f8fafc;--txs:#a8b7d1;--txt:#6b7a94;
+  --ok:#22c55e;--warn:#eab308;--err:#ef4444;
+  --font:'Poppins',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(135deg,var(--bg),#1a1f4b);color:var(--tx);
+  font-family:var(--font);font-size:14px;min-height:100vh;padding:24px;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 20% 80%,rgba(0,217,255,.08),transparent 50%),
+             radial-gradient(circle at 80% 20%,rgba(124,58,237,.06),transparent 50%);}
+.wrap{max-width:1100px;margin:0 auto;position:relative;z-index:1;}
+.header{display:flex;align-items:center;gap:16px;margin-bottom:28px;padding-bottom:16px;
+  border-bottom:1px solid var(--border);}
+.logo{width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 0 24px rgba(0,217,255,.3);}
+h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--tx),var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sub{font-size:11px;color:var(--txt);font-family:var(--mono);}
+.back-btn{margin-left:auto;background:rgba(0,217,255,.08);border:1px solid var(--border);
+  color:var(--txs);padding:7px 14px;border-radius:7px;font-family:var(--mono);font-size:11px;
+  cursor:pointer;text-decoration:none;transition:all .2s;}
+.back-btn:hover{background:rgba(0,217,255,.16);color:var(--acc);}
+
+/* STATS BAR */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.stat-num{font-size:28px;font-weight:700;font-family:var(--mono);color:var(--acc);}
+.stat-lbl{font-size:10px;color:var(--txt);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.tab{padding:8px 18px;border-radius:7px;border:1px solid var(--border);background:transparent;
+  color:var(--txs);cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;transition:all .2s;}
+.tab:hover{background:rgba(0,217,255,.08);color:var(--acc);}
+.tab.active{background:linear-gradient(135deg,rgba(0,217,255,.15),rgba(124,58,237,.1));
+  border-color:var(--acc);color:var(--acc);}
+.tab-content{display:none;}.tab-content.active{display:block;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:600;color:var(--tx);margin-bottom:4px;}
+.card-sub{font-size:11px;color:var(--txt);font-family:var(--mono);margin-bottom:16px;}
+
+/* FORM */
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px;}
+label{font-size:10px;color:var(--txt);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+input,select,textarea{background:rgba(20,25,79,.8);border:1px solid rgba(0,217,255,.18);
+  color:var(--tx);border-radius:7px;padding:8px 11px;font-family:var(--font);font-size:13px;
+  outline:none;transition:all .2s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 10px rgba(0,217,255,.1);}
+select option{background:#0f1437;color:var(--tx);}
+textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6;}
+.hint{font-size:10px;color:var(--txt);font-family:var(--mono);margin-top:3px;}
+
+/* BUTTONS */
+.btn{padding:9px 22px;border-radius:8px;border:none;font-family:var(--font);font-size:13px;
+  font-weight:600;cursor:pointer;transition:all .25s;}
+.btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:white;
+  box-shadow:0 3px 14px rgba(0,217,255,.28);}
+.btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 22px rgba(0,217,255,.42);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-sec{background:rgba(0,217,255,.07);border:1px solid var(--border);color:var(--txs);}
+.btn-sec:hover{background:rgba(0,217,255,.14);color:var(--acc);}
+.btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--err);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+
+/* RESULT */
+.result-box{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;
+  padding:14px;margin-top:12px;font-family:var(--mono);font-size:12px;line-height:1.7;
+  display:none;max-height:300px;overflow-y:auto;}
+.result-box.show{display:block;}
+.result-box.ok{border-color:rgba(34,197,94,.3);color:var(--ok);}
+.result-box.err{border-color:rgba(239,68,68,.3);color:var(--err);}
+
+/* QUESTION TABLE */
+.q-table{width:100%;border-collapse:collapse;font-size:12px;}
+.q-table th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);
+  color:var(--txt);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;}
+.q-table td{padding:8px 10px;border-bottom:1px solid rgba(0,217,255,.06);vertical-align:top;}
+.q-table tr:hover td{background:rgba(0,217,255,.04);}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);}
+.badge-easy{background:rgba(34,197,94,.12);color:#22c55e;}
+.badge-moderate{background:rgba(234,179,8,.12);color:#eab308;}
+.badge-difficult{background:rgba(239,68,68,.12);color:#ef4444;}
+.badge-exam{background:rgba(0,217,255,.12);color:var(--acc);}
+.q-preview{max-width:380px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txs);}
+
+/* JSON TEMPLATE */
+.template-box{background:rgba(0,0,0,.4);border:1px solid rgba(0,217,255,.15);border-radius:8px;
+  padding:14px;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--txs);
+  overflow-x:auto;white-space:pre;}
+
+/* SPINNER */
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:currentColor;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;top:16px;right:16px;padding:10px 15px;border-radius:8px;
+  font-size:12px;z-index:9999;font-family:var(--mono);
+  animation:ti .3s ease;backdrop-filter:blur(10px);border:1px solid;}
+@keyframes ti{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+.toast-ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--ok);}
+.toast-err{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--err);}
+.toast-info{background:rgba(0,217,255,.1);border-color:rgba(0,217,255,.3);color:var(--acc);}
+
+/* PROGRESS */
+.progress-wrap{display:none;margin-top:12px;}
+.progress-wrap.show{display:block;}
+.progress-bar{height:6px;background:rgba(0,217,255,.1);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));
+  border-radius:3px;transition:width .4s ease;width:0%;}
+.progress-text{font-size:11px;color:var(--txs);font-family:var(--mono);margin-top:6px;}
+
+@media(max-width:600px){
+  body{padding:12px;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">∑</div>
+    <div>
+      <h1>MathSphere PYQ Admin</h1>
+      <div class="sub">Import · Manage · Search question papers</div>
+    </div>
+    <a href="/" class="back-btn">← Back to App</a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="stat-num" id="s-total">–</div><div class="stat-lbl">Total Questions</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-jam">–</div><div class="stat-lbl">IIT JAM</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-gate">–</div><div class="stat-lbl">GATE</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-csir">–</div><div class="stat-lbl">CSIR NET</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-papers">–</div><div class="stat-lbl">Papers Imported</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('import-text')">📄 Paste Paper Text</button>
+    <button class="tab" onclick="showTab('import-json')">📦 Import JSON</button>
+    <button class="tab" onclick="showTab('browse')">🔍 Browse Questions</button>
+    <button class="tab" onclick="showTab('search')">🔎 Search</button>
+    <button class="tab" onclick="showTab('format')">📋 JSON Format Guide</button>
+  </div>
+
+  <!-- TAB: PASTE TEXT -->
+  <div class="tab-content active" id="tab-import-text">
+    <div class="card">
+      <div class="card-title">📄 Import from Paper Text</div>
+      <div class="card-sub">Paste the raw text of any question paper — AI will extract all MCQs automatically</div>
+      <div class="form-row">
+        <div class="fg"><label>Exam</label>
+          <select id="it-exam"><option value="jam">IIT JAM</option><option value="gate">GATE</option><option value="csir">CSIR NET</option></select></div>
+        <div class="fg"><label>Year</label>
+          <input type="number" id="it-year" placeholder="2023" min="2000" max="2030"/></div>
+        <div class="fg"><label>Paper / Session</label>
+          <input id="it-paper" placeholder="e.g. Session 1, Paper A"/></div>
+      </div>
+      <div class="fg" style="margin-bottom:12px"><label>Raw Question Paper Text</label>
+        <textarea id="it-text" rows="12" placeholder="Paste the full text of your question paper here...
+
+Example format:
+Q1. Let f: R → R be defined by f(x) = x². Which of the following is true?
+(A) f is not continuous
+(B) f is continuous but not differentiable
+(C) f is differentiable everywhere
+(D) f has no local minimum
+
+Answer: C
+
+Q2. The rank of matrix..."></textarea>
+        <div class="hint">Supports any text format. AI will extract questions, options, and answers automatically.</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="it-btn" onclick="importText()">🤖 Extract & Import</button>
+        <button class="btn btn-sec" onclick="document.getElementById('it-text').value=''">Clear</button>
+      </div>
+      <div class="progress-wrap" id="it-progress">
+        <div class="progress-bar"><div class="progress-fill" id="it-pbar"></div></div>
+        <div class="progress-text" id="it-ptext">Processing…</div>
+      </div>
+      <div class="result-box" id="it-result"></div>
+    </div>
+
+    <!-- Quick add manual question -->
+    <div class="card">
+      <div class="card-title">✏️ Add Single Question Manually</div>
+      <div class="card-sub">Add one question directly with full control</div>
+      <div class="form-row">
+        <div class="fg"><label>Exam</label>
+          <select id="sq-exam"><option value="jam">JAM</option><option value="gate">GATE</option><option value="csir">CSIR</option></select></div>
+        <div class="fg"><label>Year</label><input type="number" id="sq-year" placeholder="2023"/></div>
+        <div class="fg"><label>Topic</label><input id="sq-topic" placeholder="Real Analysis"/></div>
+        <div class="fg"><label>Difficulty</label>
+          <select id="sq-diff"><option value="easy">Easy</option><option value="moderate" selected>Moderate</option><option value="difficult">Difficult</option></select></div>
+      </div>
+      <div class="fg" style="margin-bottom:10px"><label>Question (LaTeX supported)</label>
+        <textarea id="sq-q" rows="3" placeholder="e.g. Let \( f(x) = x^2 \). Find \( f'(x) \)."></textarea></div>
+      <div class="form-row">
+        <div class="fg"><label>Option A</label><input id="sq-a" placeholder="A) ..."/></div>
+        <div class="fg"><label>Option B</label><input id="sq-b" placeholder="B) ..."/></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Option C</label><input id="sq-c" placeholder="C) ..."/></div>
+        <div class="fg"><label>Option D</label><input id="sq-d" placeholder="D) ..."/></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Correct Answer</label>
+          <select id="sq-ans"><option value="">Select…</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+        <div class="fg"><label>Explanation</label><input id="sq-exp" placeholder="Brief explanation…"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="sq-btn" onclick="addSingle()">➕ Add Question</button>
+      </div>
+      <div class="result-box" id="sq-result"></div>
+    </div>
+  </div>
+
+  <!-- TAB: JSON IMPORT -->
+  <div class="tab-content" id="tab-import-json">
+    <div class="card">
+      <div class="card-title">📦 Bulk JSON Import</div>
+      <div class="card-sub">Paste a JSON array of questions. See the Format Guide tab for the schema.</div>
+      <div class="fg" style="margin-bottom:12px"><label>JSON Array</label>
+        <textarea id="ij-json" rows="16" placeholder='[
+  {
+    "exam": "jam",
+    "year": 2023,
+    "topic": "Real Analysis",
+    "difficulty": "moderate",
+    "question": "Let \\( f: \\mathbb{R} \\to \\mathbb{R} \\) ...",
+    "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+    "answer": "B) ...",
+    "explanation": "Because..."
+  }
+]'></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="ij-btn" onclick="importJSON()">📥 Import JSON</button>
+        <button class="btn btn-sec" onclick="loadSampleJSON()">Load Sample</button>
+      </div>
+      <div class="result-box" id="ij-result"></div>
+    </div>
+  </div>
+
+  <!-- TAB: BROWSE -->
+  <div class="tab-content" id="tab-browse">
+    <div class="card">
+      <div class="card-title">🔍 Browse Questions</div>
+      <div class="form-row">
+        <div class="fg"><label>Exam</label>
+          <select id="br-exam" onchange="browseQuestions()">
+            <option value="jam">IIT JAM</option><option value="gate">GATE</option><option value="csir">CSIR NET</option>
+          </select></div>
+        <div class="fg"><label>Difficulty</label>
+          <select id="br-diff" onchange="browseQuestions()">
+            <option value="">All</option><option value="easy">Easy</option>
+            <option value="moderate">Moderate</option><option value="difficult">Difficult</option>
+          </select></div>
+        <div class="fg" style="justify-content:flex-end;padding-top:20px">
+          <button class="btn btn-sec" onclick="browseQuestions()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div id="br-table-wrap" style="overflow-x:auto">
+        <table class="q-table">
+          <thead><tr>
+            <th>ID</th><th>Exam</th><th>Year</th><th>Topic</th><th>Difficulty</th>
+            <th>Question</th><th>Answer</th><th>Action</th>
+          </tr></thead>
+          <tbody id="br-tbody"><tr><td colspan="8" style="text-align:center;color:var(--txt);padding:20px">Click Refresh to load questions</td></tr></tbody>
+        </table>
+      </div>
+      <div id="br-pagination" style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <button class="btn btn-sec" id="br-prev" onclick="changePage(-1)" disabled>← Prev</button>
+        <span id="br-page-info" style="font-family:var(--mono);font-size:12px;color:var(--txs)">Page 1</span>
+        <button class="btn btn-sec" id="br-next" onclick="changePage(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: SEARCH -->
+  <div class="tab-content" id="tab-search">
+    <div class="card">
+      <div class="card-title">🔎 Search Questions</div>
+      <div class="form-row">
+        <div class="fg" style="flex:3"><label>Search Term</label>
+          <input id="sr-query" placeholder="e.g. Cauchy, eigenvalue, convergence…" onkeydown="if(event.key==='Enter')searchQuestions()"/></div>
+        <div class="fg"><label>Exam (optional)</label>
+          <select id="sr-exam"><option value="">All</option>
+            <option value="jam">JAM</option><option value="gate">GATE</option><option value="csir">CSIR</option>
+          </select></div>
+        <div class="fg" style="justify-content:flex-end;padding-top:20px">
+          <button class="btn btn-primary" onclick="searchQuestions()">Search</button>
+        </div>
+      </div>
+      <div id="sr-results"></div>
+    </div>
+  </div>
+
+  <!-- TAB: FORMAT GUIDE -->
+  <div class="tab-content" id="tab-format">
+    <div class="card">
+      <div class="card-title">📋 JSON Format Guide</div>
+      <div class="card-sub">Use this schema when preparing bulk imports</div>
+      <div class="template-box">[
+  {
+    "exam":        "jam",          <span style="color:#6b7a94">// REQUIRED: "jam" | "gate" | "csir"</span>
+    "year":        2023,           <span style="color:#6b7a94">// Optional: integer year</span>
+    "paper":       "Session 1",    <span style="color:#6b7a94">// Optional: paper identifier</span>
+    "topic":       "Real Analysis",<span style="color:#6b7a94">// Optional: mathematical topic</span>
+    "subtopic":    "Continuity",   <span style="color:#6b7a94">// Optional: subtopic</span>
+    "difficulty":  "moderate",     <span style="color:#6b7a94">// Optional: "easy"|"moderate"|"difficult"</span>
+    "source":      "Official IIT JAM 2023",
+    "question":    "Let \\( f: \\mathbb{R} \\to \\mathbb{R} \\) ...",
+    "options": [                   <span style="color:#6b7a94">// Array of 4 options</span>
+      "A) option text",
+      "B) option text",
+      "C) option text",
+      "D) option text"
+    ],
+    "answer":      "B) option text",
+    "explanation": "Step-by-step explanation...",
+    "marks":       2.0,            <span style="color:#6b7a94">// Optional: marks for this question</span>
+    "negative":    0.67,           <span style="color:#6b7a94">// Optional: negative marking</span>
+    "q_type":      "mcq",          <span style="color:#6b7a94">// "mcq"|"msq"|"nat"|"subjective"</span>
+    "tags":        ["integration", "Riemann"]
+  }
+]</div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-sec" onclick="downloadTemplate()">⬇️ Download Template JSON</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Tips for Pasting Paper Text</div>
+      <div style="line-height:2;color:var(--txs);font-size:13px">
+        <p>✅ <strong>Works best when:</strong> Questions are numbered (Q1, Q.1, 1.), options are labeled A/B/C/D</p>
+        <p>✅ <strong>LaTeX:</strong> If your paper has LaTeX, keep it — AI will preserve it</p>
+        <p>✅ <strong>Large papers:</strong> Paste the full paper — long texts are split automatically</p>
+        <p>⚠️ <strong>PDF text:</strong> Copy-paste from PDF works; scanned PDFs may need OCR first</p>
+        <p>⚠️ <strong>Review:</strong> AI extraction is ~90% accurate — always browse and verify after import</p>
+        <p>⚠️ <strong>Duplicates:</strong> Currently no duplicate detection — avoid importing the same paper twice</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .wrap -->
+
+<script>
+let currentPage = 0;
+
+// ── TABS ──────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'browse') browseQuestions();
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch('/api/admin/stats');
+    const d = await r.json();
+    if (!d.success) return;
+    const s = d.stats;
+    document.getElementById('s-total').textContent   = s.total_questions.toLocaleString();
+    document.getElementById('s-jam').textContent     = (s.by_exam.jam || 0).toLocaleString();
+    document.getElementById('s-gate').textContent    = (s.by_exam.gate || 0).toLocaleString();
+    document.getElementById('s-csir').textContent    = (s.by_exam.csir || 0).toLocaleString();
+    document.getElementById('s-papers').textContent  = s.total_papers.toLocaleString();
+  } catch(e) {
+    console.warn('Stats load failed:', e);
+  }
+}
+
+// ── IMPORT TEXT ───────────────────────────────────────────────
+async function importText() {
+  const text  = document.getElementById('it-text').value.trim();
+  const exam  = document.getElementById('it-exam').value;
+  const year  = document.getElementById('it-year').value;
+  const paper = document.getElementById('it-paper').value.trim();
+
+  if (text.length < 50) { toast('Please paste question paper text', 'err'); return; }
+
+  setBtn('it-btn', true, 'Extracting…');
+  showProgress('it-progress', 'it-pbar', 'it-ptext', 0, 'Sending to AI for extraction…');
+
+  try {
+    // Animate progress
+    let prog = 10;
+    const progInterval = setInterval(() => {
+      prog = Math.min(prog + 5, 85);
+      showProgress('it-progress', 'it-pbar', 'it-ptext', prog, `Processing… (${prog}%)`);
+    }, 1200);
+
+    const r = await fetch('/api/admin/import/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, exam, year: year ? parseInt(year) : null, paper })
+    });
+    clearInterval(progInterval);
+    showProgress('it-progress', 'it-pbar', 'it-ptext', 100, 'Done!');
+
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Import failed');
+
+    showResult('it-result', `✅ ${data.message}\n\nExtracted: ${data.extracted} questions\nInserted:  ${data.inserted} questions`, 'ok');
+    toast(`✅ Imported ${data.inserted} questions!`, 'ok');
+    document.getElementById('it-text').value = '';
+    loadStats();
+  } catch(e) {
+    showResult('it-result', `❌ Error: ${e.message}`, 'err');
+    toast(e.message, 'err');
+  } finally {
+    setBtn('it-btn', false, '🤖 Extract & Import');
+    setTimeout(() => document.getElementById('it-progress').classList.remove('show'), 2000);
+  }
+}
+
+// ── ADD SINGLE ────────────────────────────────────────────────
+async function addSingle() {
+  const q = {
+    exam:        document.getElementById('sq-exam').value,
+    year:        parseInt(document.getElementById('sq-year').value) || null,
+    topic:       document.getElementById('sq-topic').value.trim(),
+    difficulty:  document.getElementById('sq-diff').value,
+    question:    document.getElementById('sq-q').value.trim(),
+    options: [
+      document.getElementById('sq-a').value.trim(),
+      document.getElementById('sq-b').value.trim(),
+      document.getElementById('sq-c').value.trim(),
+      document.getElementById('sq-d').value.trim(),
+    ],
+    answer: document.getElementById('sq-ans').value,
+    explanation: document.getElementById('sq-exp').value.trim(),
+  };
+
+  if (!q.question) { toast('Question text required', 'err'); return; }
+
+  setBtn('sq-btn', true, 'Adding…');
+  try {
+    const r = await fetch('/api/admin/import/json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questions: [q] })
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error);
+    showResult('sq-result', `✅ Question added successfully (ID: ${data.inserted})`, 'ok');
+    toast('Question added!', 'ok');
+    loadStats();
+  } catch(e) {
+    showResult('sq-result', `❌ ${e.message}`, 'err');
+  } finally {
+    setBtn('sq-btn', false, '➕ Add Question');
+  }
+}
+
+// ── JSON IMPORT ───────────────────────────────────────────────
+async function importJSON() {
+  const raw = document.getElementById('ij-json').value.trim();
+  if (!raw) { toast('Paste JSON first', 'err'); return; }
+
+  let questions;
+  try {
+    const parsed = JSON.parse(raw);
+    questions = Array.isArray(parsed) ? parsed : parsed.questions || [];
+  } catch(e) {
+    toast('Invalid JSON — check syntax', 'err');
+    showResult('ij-result', `❌ JSON parse error: ${e.message}`, 'err');
+    return;
+  }
+
+  setBtn('ij-btn', true, 'Importing…');
+  try {
+    const r = await fetch('/api/admin/import/json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questions })
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error);
+    showResult('ij-result', `✅ Imported ${data.inserted} / ${data.received} questions`, 'ok');
+    toast(`✅ ${data.inserted} questions imported!`, 'ok');
+    loadStats();
+  } catch(e) {
+    showResult('ij-result', `❌ ${e.message}`, 'err');
+  } finally {
+    setBtn('ij-btn', false, '📥 Import JSON');
+  }
+}
+
+// ── BROWSE ────────────────────────────────────────────────────
+async function browseQuestions() {
+  const exam = document.getElementById('br-exam').value;
+  const diff = document.getElementById('br-diff').value;
+
+  try {
+    const r = await fetch(`/api/admin/questions?exam=${exam}&difficulty=${diff}&page=${currentPage}&limit=20`);
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error);
+
+    const tbody = document.getElementById('br-tbody');
+    if (!data.questions.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--txt);padding:20px">No questions found for this filter</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.questions.map(q => `
+      <tr>
+        <td style="font-family:var(--mono);color:var(--txt)">${q.id}</td>
+        <td><span class="badge badge-exam">${(q.exam||'').toUpperCase()}</span></td>
+        <td style="font-family:var(--mono)">${q.year || '–'}</td>
+        <td style="color:var(--txs)">${q.topic || '–'}</td>
+        <td><span class="badge badge-${q.difficulty||'moderate'}">${q.difficulty||'–'}</span></td>
+        <td class="q-preview">${escHtml(q.question || '').slice(0, 80)}…</td>
+        <td style="color:var(--ok);font-family:var(--mono)">${escHtml(q.answer || '–').slice(0,20)}</td>
+        <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteQ(${q.id})">🗑</button></td>
+      </tr>`).join('');
+
+    document.getElementById('br-page-info').textContent = `Page ${currentPage + 1}`;
+    document.getElementById('br-prev').disabled = currentPage === 0;
+    document.getElementById('br-next').disabled = data.questions.length < 20;
+  } catch(e) {
+    toast(e.message, 'err');
+  }
+}
+
+function changePage(delta) {
+  currentPage = Math.max(0, currentPage + delta);
+  browseQuestions();
+}
+
+async function deleteQ(id) {
+  if (!confirm(`Delete question #${id}?`)) return;
+  try {
+    await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' });
+    toast(`Question ${id} deleted`, 'ok');
+    browseQuestions();
+    loadStats();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ── SEARCH ────────────────────────────────────────────────────
+async function searchQuestions() {
+  const query = document.getElementById('sr-query').value.trim();
+  const exam  = document.getElementById('sr-exam').value;
+  if (!query) { toast('Enter search term', 'err'); return; }
+
+  try {
+    const r = await fetch('/api/pyq/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, exam: exam || undefined })
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error);
+
+    const out = document.getElementById('sr-results');
+    if (!data.results.length) {
+      out.innerHTML = '<p style="color:var(--txt);padding:12px">No results found.</p>'; return;
+    }
+    out.innerHTML = data.results.map(q => `
+      <div style="background:rgba(0,217,255,.04);border:1px solid rgba(0,217,255,.12);
+        border-radius:8px;padding:14px;margin:8px 0;">
+        <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+          <span class="badge badge-exam">${(q.exam||'').toUpperCase()}</span>
+          <span class="badge badge-${q.difficulty||'moderate'}">${q.difficulty||'–'}</span>
+          ${q.year ? `<span class="badge" style="background:rgba(255,255,255,.06);color:var(--txs)">📅 ${q.year}</span>` : ''}
+          <span class="badge" style="background:rgba(255,255,255,.06);color:var(--txs)">${q.topic||'–'}</span>
+        </div>
+        <div style="font-size:13px;color:var(--tx);line-height:1.8">${escHtml(q.question||'').slice(0,200)}</div>
+        <div style="font-size:12px;color:var(--ok);margin-top:6px">✅ ${escHtml(q.answer||'–')}</div>
+      </div>`).join('');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ── UTILITIES ─────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setBtn(id, loading, label) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading ? `<span class="spinner"></span>${label}` : label;
+}
+
+function showResult(id, text, type = 'ok') {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.className = `result-box show ${type}`;
+  box.textContent = text;
+}
+
+function showProgress(wrapId, barId, textId, pct, label) {
+  document.getElementById(wrapId).classList.add('show');
+  document.getElementById(barId).style.width = pct + '%';
+  document.getElementById(textId).textContent = label;
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='.3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+function loadSampleJSON() {
+  const sample = JSON.stringify([
+    {
+      "exam": "jam", "year": 2023, "topic": "Real Analysis",
+      "difficulty": "moderate",
+      "source": "IIT JAM 2023",
+      "question": "Let \\( f: [0,1] \\to \\mathbb{R} \\) be continuous. If \\( \\int_0^1 f(x)\\,dx = 0 \\), which is necessarily true?",
+      "options": [
+        "A) f(x) = 0 for all x",
+        "B) f has at least one zero in (0,1)",
+        "C) f(x) ≥ 0 for all x",
+        "D) f(1/2) = 0"
+      ],
+      "answer": "B) f has at least one zero in (0,1)",
+      "explanation": "Since the integral is 0 and f is continuous, by IVT if f were always positive or always negative the integral couldn't be 0. Hence f must change sign and has a zero."
+    }
+  ], null, 2);
+  document.getElementById('ij-json').value = sample;
+}
+
+function downloadTemplate() {
+  const template = JSON.stringify([
+    {
+      "exam": "jam",
+      "year": 2024,
+      "paper": "Session 1",
+      "topic": "Your Topic",
+      "subtopic": "",
+      "difficulty": "moderate",
+      "source": "Official IIT JAM 2024",
+      "question": "Your question text here. Use \\( \\LaTeX \\) for math.",
+      "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"],
+      "answer": "B) Second option",
+      "explanation": "Step-by-step explanation of why B is correct.",
+      "marks": 2.0,
+      "negative": 0.67,
+      "q_type": "mcq",
+      "tags": ["topic-tag", "subtopic-tag"]
+    }
+  ], null, 2);
+
+  const blob = new Blob([template], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mathsphere_pyq_template.json';
+  a.click();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+</body>
+</html>
