@@ -1,7 +1,7 @@
 services:
   - type: web
     name: mathsphere
-    env: python
+    runtime: python311
     region: singapore
     plan: free
     buildCommand: pip install -r requirements.txt
