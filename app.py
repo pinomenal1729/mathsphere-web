@@ -520,16 +520,13 @@ def chat():
                 # Use Gemini vision API
                 prompt_text = clean[-1]["content"] if clean else "Solve this mathematics problem step by step"
                 
-                image_part = genai.types.Part.from_data(
-                    data=raw_bytes,
-                    mime_type=img_type
-                )
-                
                 model = gemini_client.GenerativeModel('gemini-2.0-flash')
                 response = model.generate_content([
                     MATH_SYSTEM + "\n\n" + prompt_text,
-                    image_part
+                    {"mime_type": img_type, "data": raw_bytes}
                 ])
+                
+                
                 
                 answer = clean_ai_response(response.text or "").strip()
                 if not answer:
