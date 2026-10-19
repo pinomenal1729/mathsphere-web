@@ -681,7 +681,7 @@ async function api(path, payload) {
     }
     if (!response.ok || data.success === false)
       throw new Error(
-        response.status === 429
+        response.status === 429 && !data.code?.startsWith("ai_")
           ? "A little breather: please wait a moment before trying again."
           : data.error || "Something went wrong. Give it another try.",
       );

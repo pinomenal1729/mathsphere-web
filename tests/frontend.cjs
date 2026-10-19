@@ -138,6 +138,22 @@ test("MathSphere learning workspace", { timeout: 60000 }, async (t) => {
         await page.locator('#tool-form [type="submit"]').isEnabled(),
         true,
       );
+      await page.route("**/api/formula", (route) =>
+        route.fulfill({
+          status: 429,
+          json: {
+            error:
+              "Gemini has reached its usage quota. Check provider billing.",
+            code: "ai_quota_exceeded",
+          },
+        }),
+      );
+      await page.locator('#tool-form [type="submit"]').click();
+      await page.getByText(/Gemini has reached its usage quota/).waitFor();
+      assert.match(
+        await page.locator(".error-panel").textContent(),
+        /Check provider billing/,
+      );
     },
   );
 

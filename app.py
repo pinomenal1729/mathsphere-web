@@ -38,8 +38,10 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-GROQ_API_KEY   = os.getenv('GROQ_API_KEY', '')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+GROQ_API_KEY   = os.getenv('GROQ_API_KEY', '').strip()
+GEMINI_API_KEY = (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY', '')).strip()
+GROQ_MODEL     = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile').strip()
+GEMINI_MODEL   = os.getenv('GEMINI_MODEL', 'gemini-flash-latest').strip()
 SECRET_KEY     = os.getenv('SECRET_KEY', 'mathsphere-secret-2024')
 FLASK_ENV      = os.getenv('FLASK_ENV', 'production')
 DEBUG_MODE     = FLASK_ENV == 'development'
@@ -71,32 +73,43 @@ cache = Cache(app)
 
 GROQ_AVAILABLE = False
 groq_client = None
+AI_STATUS = {
+    'groq': {'configured': bool(GROQ_API_KEY), 'client_ready': False, 'last_error_code': None},
+    'gemini': {'configured': bool(GEMINI_API_KEY), 'client_ready': False, 'last_error_code': None},
+}
 
 try:
     from groq import Groq
     if GROQ_API_KEY:
-        groq_client = Groq(api_key=GROQ_API_KEY)
+        groq_client = Groq(api_key=GROQ_API_KEY, timeout=45.0, max_retries=0)
         GROQ_AVAILABLE = True
-        logger.info("[✓] Groq API connected")
+        AI_STATUS['groq']['client_ready'] = True
+        logger.info("[✓] Groq client initialized")
     else:
         logger.warning("[!] GROQ_API_KEY not set - using Gemini instead")
 except Exception as e:
-    logger.warning(f"[!] Groq: {e}")
+    AI_STATUS['groq']['last_error_code'] = 'initialization_failed'
+    logger.warning("[!] Groq initialization failed (%s)", type(e).__name__)
 
 GEMINI_AVAILABLE = False
 gemini_client = None
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types as genai_types
     if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_client = genai
+        gemini_client = genai.Client(
+            api_key=GEMINI_API_KEY,
+            http_options=genai_types.HttpOptions(timeout=45000, retry_options=genai_types.HttpRetryOptions(attempts=1)),
+        )
         GEMINI_AVAILABLE = True
-        logger.info("[✓] Gemini API connected")
+        AI_STATUS['gemini']['client_ready'] = True
+        logger.info("[✓] Gemini client initialized")
     else:
         logger.warning("[!] GEMINI_API_KEY not set")
 except Exception as e:
-    logger.warning(f"[!] Gemini: {e}")
+    AI_STATUS['gemini']['last_error_code'] = 'initialization_failed'
+    logger.warning("[!] Gemini initialization failed (%s)", type(e).__name__)
 
 SYMPY_AVAILABLE = False
 
@@ -194,6 +207,57 @@ RULES:
 # HELPER FUNCTIONS
 # ════════════════════════════════════════════════════════════════
 
+class AIServiceError(Exception):
+    def __init__(self, message, code, status=503, provider=None, failures=None):
+        super().__init__(message)
+        self.code = code
+        self.status = status
+        self.provider = provider
+        self.failures = failures or []
+
+
+def provider_failure(provider, error):
+    """Map SDK errors to safe, actionable responses without leaking credentials."""
+    status = getattr(error, 'status_code', None) or getattr(error, 'code', None)
+    try:
+        status = int(status)
+    except (ValueError, TypeError):
+        status = None
+    label = 'Groq' if provider == 'groq' else 'Gemini'
+    detail = str(error).lower()
+    if status in (401, 403) or any(marker in detail for marker in ('api_key_invalid', 'api key not valid', 'invalid api key')):
+        code = 'ai_authentication_failed'
+        message = f'{label} rejected its API credentials or project permissions. Check the key in your Render service environment and redeploy.'
+        response_status = 502
+    elif status == 429:
+        code = 'ai_quota_exceeded'
+        message = f'{label} has reached its rate or usage quota. Check the provider quota/billing, or wait before trying again.'
+        response_status = 429
+    elif status == 404 or 'model_decommissioned' in detail:
+        code = 'ai_model_unavailable'
+        message = f'{label} could not use the configured model. Set {provider.upper()}_MODEL to an available model in Render, then redeploy.'
+        response_status = 502
+    elif status in (400, 422):
+        code = 'ai_request_rejected'
+        message = f'{label} could not process this request. Try a shorter question or a different image.'
+        response_status = 502
+    else:
+        code = 'ai_provider_unavailable'
+        message = f'{label} is temporarily unavailable or could not be reached. Please try again shortly.'
+        response_status = 503
+    AI_STATUS[provider]['last_error_code'] = code
+    logger.warning('%s request failed: %s (HTTP %s)', label, code, status or 'unknown')
+    return AIServiceError(message, code, response_status, provider)
+
+
+@app.errorhandler(AIServiceError)
+def ai_service_error(error):
+    return jsonify({
+        'error': str(error),
+        'code': error.code,
+        'providers': error.failures or ([{'provider': error.provider, 'code': error.code}] if error.provider else []),
+    }), error.status
+
 def clean_ai_response(text: str) -> str:
     """Remove code blocks and extra formatting"""
     if not text:
@@ -207,40 +271,57 @@ def ask_ai(messages: list, temperature: float = 0.2, max_tokens: int = 3000) -> 
     """Call Groq or Gemini API"""
     if not messages:
         return ""
+    failures = []
 
     if GROQ_AVAILABLE and groq_client:
         try:
             resp = groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=GROQ_MODEL,
                 messages=[{"role": "system", "content": MATH_SYSTEM}] + messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 top_p=0.9
             )
-            return clean_ai_response(resp.choices[0].message.content or "")
+            answer = clean_ai_response(resp.choices[0].message.content or "")
+            if not answer:
+                raise ValueError('Empty provider response')
+            AI_STATUS['groq']['last_error_code'] = None
+            return answer
         except Exception as e:
-            logger.warning(f"Groq error: {e}")
+            failures.append(provider_failure('groq', e))
 
     if GEMINI_AVAILABLE and gemini_client:
         try:
-            convo = MATH_SYSTEM + "\n\n"
-            for m in messages:
-                role = "User" if m["role"] == "user" else "Assistant"
-                convo += f"{role}: {m['content']}\n\n"
-            convo += "Assistant:"
-            
-            response = gemini_client.GenerativeModel('gemini-2.0-flash').generate_content(
-                convo,
-                generation_config=genai.types.GenerationConfig(
+            contents = [genai_types.Content(
+                role='user' if m['role'] == 'user' else 'model',
+                parts=[genai_types.Part.from_text(text=m['content'])],
+            ) for m in messages]
+            response = gemini_client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=contents,
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=MATH_SYSTEM,
                     temperature=temperature,
                     max_output_tokens=max_tokens
                 )
             )
-            return clean_ai_response(response.text or "")
+            answer = clean_ai_response(response.text or "")
+            if not answer:
+                raise ValueError('Empty provider response')
+            AI_STATUS['gemini']['last_error_code'] = None
+            return answer
         except Exception as e:
-            logger.error(f"Gemini error: {e}")
+            failures.append(provider_failure('gemini', e))
 
-    return "⚠️ No AI service available. Set GROQ_API_KEY or GEMINI_API_KEY."
+    if failures:
+        failure = failures[-1]
+        raise AIServiceError(
+            ' '.join(str(item) for item in failures), failure.code, failure.status,
+            failures=[{'provider': item.provider, 'code': item.code} for item in failures],
+        )
+    if any(item['configured'] for item in AI_STATUS.values()):
+        raise AIServiceError('AI keys were detected, but the clients could not initialize. Redeploy with the updated requirements.txt and check Render startup logs.', 'ai_initialization_failed')
+    raise AIServiceError('No AI API key is configured on this backend. Set GROQ_API_KEY or GEMINI_API_KEY in Render → your web service → Environment, then save and redeploy.', 'ai_not_configured')
 
 
 def ask_simple(prompt: str, temperature: float = 0.2, max_tokens: int = 3000) -> str:
@@ -443,6 +524,10 @@ def health():
             "sympy": SYMPY_AVAILABLE,
             "numpy": NUMPY_AVAILABLE,
         },
+        "ai": {
+            "providers": AI_STATUS,
+            "models": {"groq": GROQ_MODEL, "gemini": GEMINI_MODEL},
+        },
         "database": {
             "total_questions": stats["total_questions"],
         }
@@ -520,31 +605,31 @@ def chat():
                 # Use Gemini vision API
                 prompt_text = clean[-1]["content"] if clean else "Solve this mathematics problem step by step"
                 
-                model = gemini_client.GenerativeModel('gemini-2.0-flash')
-                response = model.generate_content([
-                    MATH_SYSTEM + "\n\n" + prompt_text,
-                    {"mime_type": img_type, "data": raw_bytes}
-                ])
+                response = gemini_client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=[prompt_text, genai_types.Part.from_bytes(data=raw_bytes, mime_type=img_type)],
+                    config=genai_types.GenerateContentConfig(system_instruction=MATH_SYSTEM),
+                )
                 
                 
                 
                 answer = clean_ai_response(response.text or "").strip()
                 if not answer:
                     return jsonify({"error": "Could not analyze image"}), 422
+                AI_STATUS['gemini']['last_error_code'] = None
                 
                 logger.info(f"[✓] Image analyzed successfully")
                 return jsonify({"answer": answer}), 200
 
             except Exception as img_err:
-                logger.exception(f"Image processing error: {img_err}")
-                return jsonify({
-                    "error": f"Image analysis failed: {str(img_err)[:100]}"
-                }), 502
+                raise provider_failure('gemini', img_err) from None
 
         # Text-only chat (no image)
         answer = ask_ai(clean)
         return jsonify({"answer": answer}), 200
 
+    except AIServiceError:
+        raise
     except Exception as e:
         logger.exception(f"Chat error: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -633,13 +718,19 @@ def graph_plotter():
                 f"Analyze f(x) = {expr_str}. Cover: 1) Domain 2) Range 3) Intercepts "
                 f"4) Symmetry 5) Asymptotes 6) Critical points. Be concise. Use LaTeX."
             )
-            analysis = ask_simple(analysis_prompt, temperature=0.1, max_tokens=1500)
+            analysis_error = None
+            try:
+                analysis = ask_simple(analysis_prompt, temperature=0.1, max_tokens=1500)
+            except AIServiceError as error:
+                analysis = ''
+                analysis_error = str(error)
 
             return jsonify({
                 "success": True,
                 "points": points,
                 "expression": expr_str,
                 "analysis": analysis,
+                "analysis_error": analysis_error,
                 "x_range": [x_min, x_max],
                 "point_count": success_count,
             }), 200
@@ -745,6 +836,8 @@ def formula():
         answer = ask_simple(f"Formula sheet for {topic} at {exam} level. Use LaTeX.",
                            temperature=0.05, max_tokens=2000)
         return jsonify({"answer": answer or "Could not generate"}), 200
+    except AIServiceError:
+        raise
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -764,6 +857,8 @@ def quiz_generate():
         return jsonify({"questions": questions}), 200
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
+    except AIServiceError:
+        raise
     except Exception as e:
         return jsonify({"error": "Internal error"}), 500
 
@@ -779,6 +874,8 @@ def theorem_prove():
             temperature=0.1, max_tokens=2500
         )
         return jsonify({"proof": proof}), 200
+    except AIServiceError:
+        raise
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -845,6 +942,8 @@ def mathematician():
             "biography": bio,
             "wikipedia": f"https://en.wikipedia.org/wiki/{name.replace(' ', '_')}"
         }), 200
+    except AIServiceError:
+        raise
     except Exception as e:
         logger.exception(f"Mathematician error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -867,6 +966,8 @@ def generate_projects():
             "topic": topic.title(),
             "projects": raw,
         }), 200
+    except AIServiceError:
+        raise
     except Exception as e:
         logger.exception(f"Projects error: {e}")
         return jsonify({"error": str(e)}), 500

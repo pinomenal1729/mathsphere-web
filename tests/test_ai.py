@@ -1,0 +1,224 @@
+"""Exercise real provider SDKs through mock HTTP transports; no live keys/calls."""
+import base64
+import importlib.util
+import json
+import logging
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+
+import httpx
+from google import genai
+from google.genai import types
+from groq import Groq
+
+
+class AIIntegrationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.workspace = tempfile.TemporaryDirectory(prefix='mathsphere-ai-')
+        cls.root = Path(cls.workspace.name)
+        source = Path(__file__).resolve().parents[1] / 'app.py'
+        (cls.root / 'app.py').symlink_to(source)
+        spec = importlib.util.spec_from_file_location('mathsphere_ai_test', cls.root / 'app.py')
+        cls.backend = importlib.util.module_from_spec(spec)
+        cwd = Path.cwd()
+        try:
+            os.chdir(cls.root)
+            with patch.dict(os.environ, {'GROQ_API_KEY': '', 'GEMINI_API_KEY': '', 'GOOGLE_API_KEY': ''}):
+                spec.loader.exec_module(cls.backend)
+        finally:
+            os.chdir(cwd)
+        cls.backend.app.config['TESTING'] = True
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.workspace.cleanup()
+
+    def setUp(self):
+        self.app = self.backend
+        self.patches = [
+            patch.object(self.app, 'GROQ_AVAILABLE', False),
+            patch.object(self.app, 'GEMINI_AVAILABLE', False),
+            patch.object(self.app, 'groq_client', None),
+            patch.object(self.app, 'gemini_client', None),
+            patch.object(self.app, 'AI_STATUS', {
+                name: {'configured': False, 'client_ready': False, 'last_error_code': None}
+                for name in ('groq', 'gemini')
+            }),
+        ]
+        for item in self.patches:
+            item.start()
+            self.addCleanup(item.stop)
+        self.client = self.app.app.test_client()
+        self.provider_requests = []
+
+    def groq(self, status=200):
+        def respond(request):
+            self.provider_requests.append(('groq', json.loads(request.content)))
+            if status == 200:
+                return httpx.Response(200, json={
+                    'id': 'test-completion', 'object': 'chat.completion', 'created': 0,
+                    'model': self.app.GROQ_MODEL,
+                    'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': 'The answer is 4.'}, 'finish_reason': 'stop'}],
+                })
+            return httpx.Response(status, json={'error': {
+                'message': 'private-provider-detail', 'type': 'request_error',
+            }})
+        # This placeholder is used only by an in-memory transport, never a server.
+        client = Groq(api_key='unit-test-placeholder', max_retries=0,
+                      http_client=httpx.Client(transport=httpx.MockTransport(respond)))
+        self.addCleanup(client.close)
+        self.app.groq_client = client
+        self.app.GROQ_AVAILABLE = True
+        self.app.AI_STATUS['groq'].update(configured=True, client_ready=True)
+
+    def gemini(self, status=200):
+        def respond(request):
+            self.provider_requests.append(('gemini', json.loads(request.content)))
+            if status == 200:
+                return httpx.Response(200, json={'candidates': [{
+                    'content': {'role': 'model', 'parts': [{'text': 'The answer is 4.'}]},
+                    'finishReason': 'STOP',
+                }]})
+            return httpx.Response(status, json={'error': {
+                'code': status, 'message': 'private-provider-detail', 'status': 'FAILED_PRECONDITION',
+            }})
+        client = genai.Client(api_key='unit-test-placeholder', http_options=types.HttpOptions(
+            httpx_client=httpx.Client(transport=httpx.MockTransport(respond)),
+            retry_options=types.HttpRetryOptions(attempts=1),
+        ))
+        self.addCleanup(client.close)
+        self.app.gemini_client = client
+        self.app.GEMINI_AVAILABLE = True
+        self.app.AI_STATUS['gemini'].update(configured=True, client_ready=True)
+
+    def chat(self, **payload):
+        return self.client.post('/api/chat', json={'message': 'What is 2 + 2?', **payload})
+
+    def test_groq_sdk_success(self):
+        self.groq()
+        response = self.chat()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['answer'], 'The answer is 4.')
+        self.assertEqual(self.provider_requests[0][1]['model'], self.app.GROQ_MODEL)
+
+    def test_gemini_sdk_success(self):
+        self.gemini()
+        response = self.chat()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['answer'], 'The answer is 4.')
+        body = self.provider_requests[0][1]
+        self.assertIn('systemInstruction', body)
+        self.assertEqual(body['contents'][0]['role'], 'user')
+
+    def test_groq_failure_falls_back_to_gemini(self):
+        self.groq(429)
+        self.gemini()
+        response = self.chat(messages=[
+            {'role': 'user', 'content': 'Explain addition'},
+            {'role': 'assistant', 'content': 'We combine quantities.'},
+            {'role': 'user', 'content': 'And 2 + 2?'},
+        ])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([name for name, _ in self.provider_requests], ['groq', 'gemini'])
+        self.assertEqual(self.provider_requests[-1][1]['contents'][1]['role'], 'model')
+
+    def test_missing_keys_are_distinct_from_provider_failures(self):
+        response = self.chat()
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json['code'], 'ai_not_configured')
+
+    def test_initialization_failure_is_not_reported_as_missing_key(self):
+        self.app.AI_STATUS['groq']['configured'] = True
+        response = self.chat()
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json['code'], 'ai_initialization_failed')
+
+    def test_authentication_failure_is_safe_and_actionable(self):
+        self.groq(401)
+        with self.assertLogs(level='WARNING') as captured:
+            response = self.chat()
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json['code'], 'ai_authentication_failed')
+        self.assertNotIn('private-provider-detail', response.get_data(as_text=True))
+        self.assertNotIn('private-provider-detail', '\n'.join(captured.output))
+        self.assertNotIn('unit-test-placeholder', response.get_data(as_text=True))
+
+    def test_quota_failure_remains_a_quota_error(self):
+        self.gemini(429)
+        response = self.chat()
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json['code'], 'ai_quota_exceeded')
+        self.assertIn('quota', response.json['error'])
+
+    def test_missing_model_has_a_model_error(self):
+        self.gemini(404)
+        response = self.chat()
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json['code'], 'ai_model_unavailable')
+        self.assertIn('GEMINI_MODEL', response.json['error'])
+
+    def test_both_failed_providers_are_identified(self):
+        self.groq(401)
+        self.gemini(429)
+        response = self.chat()
+        self.assertEqual(len(response.json['providers']), 2)
+        self.assertEqual({item['provider'] for item in response.json['providers']}, {'groq', 'gemini'})
+        self.assertNotIn('No AI service available', response.get_data(as_text=True))
+
+    def test_image_uses_modern_gemini_parts(self):
+        self.gemini()
+        encoded = base64.b64encode(b'test-image-bytes').decode()
+        response = self.chat(image_b64=encoded, image_type='image/png')
+        self.assertEqual(response.status_code, 200)
+        parts = self.provider_requests[-1][1]['contents'][0]['parts']
+        image = next(part['inlineData'] for part in parts if 'inlineData' in part)
+        self.assertEqual(image.get('mimeType', image.get('mime_type')), 'image/png')
+        self.assertEqual(base64.b64decode(image['data']), b'test-image-bytes')
+
+    def test_image_failure_preserves_provider_error(self):
+        self.gemini(429)
+        response = self.chat(image_b64='aGVsbG8=', image_type='image/png')
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json['code'], 'ai_quota_exceeded')
+
+    def test_other_ai_tools_preserve_structured_failures(self):
+        self.gemini(404)
+        for route, payload in [
+            ('/api/formula', {'topic': 'Calculus'}),
+            ('/api/quiz/generate', {'topic': 'Calculus', 'count': 1}),
+            ('/api/theorem/prove', {'theorem': 'Pythagorean theorem'}),
+            ('/api/mathematician', {'name': 'Noether'}),
+            ('/api/projects/generate', {'topic': 'Calculus'}),
+        ]:
+            with self.subTest(route=route):
+                response = self.client.post(route, json=payload)
+                self.assertEqual(response.status_code, 502)
+                self.assertEqual(response.json['code'], 'ai_model_unavailable')
+
+    def test_graph_points_survive_ai_outage(self):
+        self.gemini(429)
+        response = self.client.post('/api/graph', json={
+            'expression': 'x^2', 'x_min': -2, 'x_max': 2, 'points': 100,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['point_count'], 101)
+        self.assertEqual(response.json['analysis'], '')
+        self.assertIn('quota', response.json['analysis_error'])
+        for point in response.json['points']:
+            self.assertAlmostEqual(point['y'], point['x'] ** 2, places=5)
+
+    def test_health_exposes_configuration_not_secrets(self):
+        self.groq()
+        self.gemini()
+        response = self.client.get('/api/health')
+        self.assertTrue(response.json['ai']['providers']['gemini']['client_ready'])
+        self.assertEqual(response.json['ai']['models']['gemini'], 'gemini-flash-latest')
+        self.assertNotIn('unit-test-placeholder', response.get_data(as_text=True))
+
+
+if __name__ == '__main__':
+    unittest.main()
