@@ -44,7 +44,31 @@ test("MathSphere learning workspace", { timeout: 60000 }, async (t) => {
   await page.route("**/api/chat", (route) => {
     chatPayload = route.request().postDataJSON();
     return route.fulfill({
-      json: { answer: "## Key insight\n\\(2 + 2 = 4\\)" },
+      json: {
+        answer: "## Key insight\n\\(2 + 2 = 4\\)",
+        verification: chatPayload.image_b64
+          ? { status: "not_checked", calculations: [] }
+          : {
+              status: "computed",
+              calculations: [
+                {
+                  operation: "evaluate",
+                  status: "computed",
+                  input_latex: "2+2",
+                  latex: "4",
+                  result: "4",
+                  assumptions: "Exact arithmetic.",
+                },
+              ],
+            },
+        references: [
+          {
+            id: "NUM-EXACT",
+            title: "Exact values and numerical error",
+            topic: "numerical methods",
+          },
+        ],
+      },
     });
   });
   await page.route("**/api/pyq/load", (route) =>
@@ -110,6 +134,62 @@ test("MathSphere learning workspace", { timeout: 60000 }, async (t) => {
       );
       assert.equal(stored[0].messages.length, 2);
       assert.ok(stored[0].messages.every((message) => !message.image));
+    },
+  );
+
+  await t.test(
+    "symbolic results and explanation style persist without overstating verification",
+    async () => {
+      await page.locator("#new-chat").click();
+      await page.locator("#explanation-style").selectOption("exam");
+      await page.locator("#chat-input").fill("Calculate 2 + 2");
+      await page.locator("#chat-send").click();
+      await page.locator(".math-evidence").waitFor();
+      assert.equal(chatPayload.explanation_style, "exam");
+      await page.locator(".math-evidence summary").click();
+      assert.match(
+        await page.locator(".evidence-notice").first().textContent(),
+        /not the interpretation/,
+      );
+      await page.locator(".evidence-answer .katex").waitFor();
+      assert.equal(
+        await page.locator(".evidence-answer").evaluate((el) =>
+          [...el.childNodes]
+            .filter((n) => n.nodeType === 3)
+            .map((n) => n.textContent)
+            .join("")
+            .trim(),
+        ),
+        "",
+      );
+      const stored = await page.evaluate(() =>
+        JSON.parse(localStorage.getItem("mathsphere.chats")),
+      );
+      assert.equal(stored[0].messages[1].verification.status, "computed");
+      await page.reload();
+      assert.equal(
+        await page.locator("#explanation-style").inputValue(),
+        "exam",
+      );
+      await page
+        .getByRole("link", { name: "Saved Library", exact: true })
+        .click();
+      const card = page
+        .locator(".saved-card")
+        .filter({ hasText: "Calculate 2 + 2" });
+      await card
+        .getByRole("button", { name: "Continue the conversation" })
+        .click();
+      await page.locator(".math-evidence").waitFor();
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator(".math-evidence summary").click();
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth,
+        ),
+        false,
+      );
+      await page.setViewportSize({ width: 1440, height: 1000 });
     },
   );
 

@@ -2431,3 +2431,138 @@ kbd,
 #graph-viewport text {
   fill: #776a83;
 }
+.tutor-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  color: #776a83;
+  font-size: 10px;
+}
+.tutor-options > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.tutor-options .icon {
+  width: 15px;
+  height: 15px;
+}
+.tutor-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.tutor-options select {
+  border: 1px solid #e5dced;
+  background: #fff;
+  color: #68537d;
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 10px;
+}
+.math-evidence,
+.math-references {
+  border: 1px solid #e7dfef;
+  border-radius: 8px;
+  padding: 11px 13px;
+  margin-top: 15px;
+  background: #fcfaff;
+  font-size: 11px;
+}
+.math-evidence summary,
+.math-references summary {
+  cursor: pointer;
+  color: #69517e;
+  font-weight: 650;
+}
+.math-evidence summary .icon {
+  width: 14px;
+  height: 14px;
+  color: #43806b;
+  margin-right: 5px;
+}
+.math-evidence summary span,
+.math-references summary span {
+  float: right;
+  color: #776a83;
+  font-size: 9px;
+  font-weight: 400;
+}
+.evidence-notice,
+.evidence-unchecked {
+  color: #776a83;
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 10px 0 0;
+}
+.calculation-result {
+  padding: 14px 0;
+  border-bottom: 1px solid #e9e2f0;
+}
+.calculation-result:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.calculation-result > strong {
+  font-size: 10px;
+  text-transform: capitalize;
+  color: #766087;
+}
+.calculation-result p {
+  color: #776a83;
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 6px 0 0;
+}
+.evidence-expression {
+  color: #776a83;
+}
+.evidence-answer {
+  color: #4c7968;
+}
+.reference-note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-top: 1px solid #e9e2f0;
+  padding-top: 11px;
+  margin-top: 11px;
+}
+.reference-note strong {
+  color: #6d567f;
+  font-size: 11px;
+}
+.reference-note small {
+  color: #776a83;
+  font-size: 9px;
+}
+.reference-note a {
+  color: #7150c5;
+  font-size: 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media (max-width: 650px) {
+  .tutor-options {
+    justify-content: flex-end;
+  }
+  .tutor-options > span {
+    display: none;
+  }
+  .math-evidence,
+  .math-references {
+    padding: 10px;
+  }
+  .math-evidence summary span,
+  .math-references summary span {
+    float: none;
+    display: block;
+    padding-left: 18px;
+  }
+}
+.message.user .message-label {
+  color: #6d5e7f;
+}

@@ -1008,9 +1008,50 @@ function chatView() {
   );
 }
 function messageHTML(m) {
-  return `<article class="message ${m.role === "user" ? "user" : "assistant"}"><span class="message-avatar">${m.role === "user" ? escapeHTML(preferences.name?.charAt(0).toUpperCase() || "Y") : "∑"}</span><div class="message-content"><span class="message-label">${m.role === "user" ? "YOU" : "MATHSPHERE"}</span><div class="rich-text">${richText(m.content)}</div>${m.image ? '<img src="' + escapeHTML(m.image) + '" alt="Your uploaded mathematics problem">' : ""}</div></article>`;
+  return `<article class="message ${m.role === "user" ? "user" : "assistant"}"><span class="message-avatar">${m.role === "user" ? escapeHTML(preferences.name?.charAt(0).toUpperCase() || "Y") : "∑"}</span><div class="message-content"><span class="message-label">${m.role === "user" ? "YOU" : "MATHSPHERE"}</span><div class="rich-text">${richText(m.content)}</div>${m.role === "assistant" ? mathEvidenceHTML(m) : ""}${m.image ? '<img src="' + escapeHTML(m.image) + '" alt="Your uploaded mathematics problem">' : ""}</div></article>`;
+}
+function mathEvidenceHTML(message) {
+  const calculations = Array.isArray(message.verification?.calculations)
+    ? message.verification.calculations
+        .filter((c) => c?.status === "computed")
+        .slice(0, 3)
+    : [];
+  const references = Array.isArray(message.references)
+    ? message.references.slice(0, 3)
+    : [];
+  let html = "";
+  if (calculations.length) {
+    html += `<details class="math-evidence"><summary>${icon("check")} Symbolic calculations <span>${calculations.length} completed</span></summary><p class="evidence-notice">These check the displayed calculations, not the interpretation of your question or every claim in the explanation.</p>${calculations.map((c) => `<div class="calculation-result"><strong>${escapeHTML(c.operation || "Calculation")}</strong><div class="evidence-expression">\\[${escapeHTML(c.input_latex || "")}\\]</div><div class="evidence-answer">\\[${escapeHTML(c.latex || c.result || "")}${c.constant_of_integration ? "+ C" : ""}\\]</div><p>${escapeHTML(c.check || "")}</p><p>${escapeHTML(c.assumptions || "")}</p>${c.input_domain ? "<p><strong>Original domain:</strong> " + escapeHTML(c.input_domain) + "</p>" : ""}${c.conditions ? "<p>" + escapeHTML(c.conditions) + "</p>" : ""}${Array.isArray(c.restrictions) ? "<p>" + c.restrictions.map(escapeHTML).join("; ") + "</p>" : ""}</div>`).join("")}</details>`;
+  } else if (message.verification) {
+    html +=
+      '<p class="evidence-unchecked">No completed symbolic check for this explanation.</p>';
+  }
+  if (references.length) {
+    html += `<details class="math-references"><summary>Reference notes <span>${references.length} relevant</span></summary><p class="evidence-notice">Locally authored notes supplied to the tutor. Further-reading links are background resources.</p>${references
+      .map((r) => {
+        let link = "";
+        try {
+          const url = new URL(r.further_reading?.url);
+          if (url.protocol === "https:" && !url.username && !url.password)
+            link = `<a href="${escapeHTML(url.href)}" target="_blank" rel="noopener noreferrer">Further reading: ${escapeHTML(r.further_reading.title)}</a>`;
+        } catch {}
+        return `<div class="reference-note"><strong>${escapeHTML(r.title || "")}</strong><small>${escapeHTML(r.id || "")} · ${escapeHTML(r.topic || "")}</small>${link}</div>`;
+      })
+      .join("")}</details>`;
+  }
+  return html;
 }
 function setupChat() {
+  const toolbar = document.createElement("div");
+  toolbar.className = "tutor-options";
+  toolbar.innerHTML = `<span>${icon("book")} Understand the idea. Check the mathematics.</span><label for="explanation-style">Explain it <select id="explanation-style"><option value="step_by_step">Step by step</option><option value="concise">Concisely</option><option value="exam">For an exam</option></select></label>`;
+  $(".conversation-shell").prepend(toolbar);
+  $("#explanation-style").value =
+    preferences.explanation_style || "step_by_step";
+  $("#explanation-style").addEventListener("change", (e) => {
+    preferences.explanation_style = e.target.value;
+    persist("preferences", preferences);
+  });
   const input = $("#chat-input");
   if (preset.value) input.value = preset.value;
   input.addEventListener("keydown", (e) => {
@@ -1063,10 +1104,13 @@ async function attachImage(file) {
 function storeChat(conversation) {
   const safe = {
     ...conversation,
-    messages: conversation.messages.map(({ role, content }) => ({
-      role,
-      content,
-    })),
+    messages: conversation.messages.map(
+      ({ role, content, verification, references }) => ({
+        role,
+        content,
+        ...(role === "assistant" ? { verification, references } : {}),
+      }),
+    ),
   };
   chats = [safe, ...chats.filter((c) => c.id !== conversation.id)].slice(0, 40);
   persist("chats", chats);
@@ -1108,21 +1152,30 @@ async function sendChat() {
   chatBusy = true;
   $("#chat-send").disabled = true;
   try {
-    const payload = { messages: [...context, { role: "user", content: text }] };
+    const payload = {
+      messages: [...context, { role: "user", content: text }],
+      explanation_style: $("#explanation-style")?.value || "step_by_step",
+    };
     if (image) {
       payload.image_b64 = image.data.split(",")[1];
       payload.image_type = image.type;
     }
     const data = await api("chat", payload);
     const answer = requireAIText(data.answer);
-    conversation.messages.push({ role: "assistant", content: answer });
+    const assistantMessage = {
+      role: "assistant",
+      content: answer,
+      verification: data.verification,
+      references: data.references,
+    };
+    conversation.messages.push(assistantMessage);
     storeChat(conversation);
     recordActivity("ask", conversation.title);
     if (route === "ask" && activeChat?.id === conversation.id) {
       $("#chat-thinking")?.remove();
       $("#messages").insertAdjacentHTML(
         "beforeend",
-        messageHTML({ role: "assistant", content: answer }),
+        messageHTML(assistantMessage),
       );
       renderMath($("#messages"));
       $(".message:last-child").scrollIntoView({
@@ -1441,6 +1494,7 @@ document.addEventListener("submit", (e) => {
 $("#settings-form").addEventListener("submit", (e) => {
   e.preventDefault();
   preferences = {
+    ...preferences,
     name: e.target.elements.name.value.trim(),
     exam: $("#learner-exam").value,
   };

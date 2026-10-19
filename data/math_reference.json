@@ -1,0 +1,399 @@
+{
+  "description": "Locally authored mathematical reference notes. Further-reading links are background resources, not claims of quoted or imported training data.",
+  "notes": [
+    {
+      "id": "CALC-POWER",
+      "title": "Power and chain rules",
+      "keywords": [
+        "derivative",
+        "differentiate",
+        "chain",
+        "power",
+        "polynomial"
+      ],
+      "content": "For real powers x^p, d(x^p)/dx=p*x^(p-1) wherever the real expression is differentiable. For composites use (f(g(x)))'=f'(g(x))*g'(x). Retain domain restrictions; division by a variable requires excluding zero.",
+      "topic": "calculus",
+      "further_reading": {
+        "title": "OpenStax Calculus, Volume 1",
+        "url": "https://openstax.org/details/books/calculus-volume-1"
+      }
+    },
+    {
+      "id": "CALC-PRODUCT",
+      "title": "Product and quotient rules",
+      "keywords": ["derivative", "product", "quotient", "rational"],
+      "content": "(uv)'=u'v+uv'. If v != 0, (u/v)'=(u'v-uv')/v^2. The derivative of a product is generally not the product of derivatives.",
+      "topic": "calculus",
+      "further_reading": {
+        "title": "OpenStax Calculus, Volume 1",
+        "url": "https://openstax.org/details/books/calculus-volume-1"
+      }
+    },
+    {
+      "id": "CALC-INTEGRAL",
+      "title": "Antiderivatives and constants",
+      "keywords": ["integral", "integrate", "antiderivative", "substitution"],
+      "content": "An indefinite integral denotes a family F(x)+C on an interval where F'=f. Verify by differentiating. The real integral of 1/x is log|x|+C on intervals excluding zero, not an unrestricted log(x). Substitution requires the differential factor.",
+      "topic": "calculus",
+      "further_reading": {
+        "title": "OpenStax Calculus, Volume 1",
+        "url": "https://openstax.org/details/books/calculus-volume-1"
+      }
+    },
+    {
+      "id": "CALC-FTC",
+      "title": "Fundamental theorem of calculus",
+      "keywords": [
+        "definite",
+        "integral",
+        "fundamental",
+        "theorem",
+        "continuous"
+      ],
+      "content": "If f is continuous on [a,b], F(x)=integral from a to x of f(t)dt is differentiable on (a,b) and F'=f. If G is an antiderivative, the definite integral is G(b)-G(a). Improper integrals require separate convergence checks.",
+      "topic": "calculus",
+      "further_reading": {
+        "title": "OpenStax Calculus, Volume 1",
+        "url": "https://openstax.org/details/books/calculus-volume-1"
+      }
+    },
+    {
+      "id": "CALC-MVT",
+      "title": "Mean value theorem",
+      "keywords": [
+        "mean",
+        "value",
+        "rolle",
+        "theorem",
+        "derivative",
+        "continuous",
+        "differentiable"
+      ],
+      "content": "If f is continuous on [a,b] and differentiable on (a,b), a<b, some c in (a,b) satisfies f'(c)=(f(b)-f(a))/(b-a). Rolle's theorem adds f(a)=f(b). Continuity or differentiability cannot be silently omitted.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "CALC-LIMIT",
+      "title": "Limits and one-sided behavior",
+      "keywords": ["limit", "continuity", "discontinuity", "infinity"],
+      "content": "A finite two-sided limit exists exactly when both one-sided limits exist and agree. The value at the point need not equal the limit. Infinity and undefined expressions are not interchangeable; 0/0 and infinity/infinity are indeterminate forms, not answers.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "CALC-LHOPITAL",
+      "title": "Conditions for L’Hôpital’s rule",
+      "keywords": ["limit", "lhopital", "indeterminate", "ratio"],
+      "content": "For a 0/0 or infinity/infinity quotient, the derivative quotient limit can determine the original under the theorem's differentiability and nonvanishing denominator-derivative hypotheses. Do not apply the rule to a quotient that is not indeterminate. Other forms require a justified transformation.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "CALC-TAYLOR",
+      "title": "Taylor approximation and remainder",
+      "keywords": ["taylor", "series", "approximation", "error", "expansion"],
+      "content": "A finite Taylor polynomial needs a remainder bound to justify numerical accuracy. If |f^(n+1)| <= M on the relevant interval, the Lagrange remainder is bounded by M*|x-a|^(n+1)/(n+1)!. A smooth function need not equal its Taylor series.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "ALG-ROOTS",
+      "title": "Equation solving and extraneous roots",
+      "keywords": [
+        "solve",
+        "roots",
+        "quadratic",
+        "equation",
+        "rational",
+        "square"
+      ],
+      "content": "For ax^2+bx+c=0 with a != 0, roots are (-b +/- sqrt(b^2-4ac))/(2a). Over the reals the discriminant must be nonnegative. Squaring, cancelling factors, or multiplying by a denominator can alter the solution set; substitute candidates into the original equation and respect excluded points.",
+      "topic": "algebra"
+    },
+    {
+      "id": "ALG-ABS",
+      "title": "Absolute values and real domains",
+      "keywords": [
+        "sqrt",
+        "square",
+        "absolute",
+        "simplify",
+        "branch",
+        "domain"
+      ],
+      "content": "For real x, sqrt(x^2)=|x|, not x without x>=0. Over complex numbers, principal roots and logarithms introduce branch restrictions. Cancelling a factor does not restore points excluded by the original denominator.",
+      "topic": "algebra"
+    },
+    {
+      "id": "LIN-RANK",
+      "title": "Rank, nullity, and solving systems",
+      "keywords": [
+        "matrix",
+        "rank",
+        "nullity",
+        "linear",
+        "system",
+        "kernel",
+        "dimension"
+      ],
+      "content": "For A with n columns, rank(A)+nullity(A)=n. Ax=b is consistent iff rank(A)=rank([A|b]). A unique solution requires consistency and nullity zero. Parameter-dependent ranks may change at exceptional values.",
+      "topic": "linear algebra",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.06 Linear Algebra",
+        "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+      }
+    },
+    {
+      "id": "LIN-INVERSE",
+      "title": "Invertibility and determinants",
+      "keywords": [
+        "matrix",
+        "determinant",
+        "inverse",
+        "invertible",
+        "singular"
+      ],
+      "content": "A square matrix is invertible iff its determinant is nonzero, equivalently its rank equals its size. A proposed inverse B must satisfy AB=BA=I. For a 2 by 2 matrix [[a,b],[c,d]], det=ad-bc, and the inverse is [[d,-b],[-c,a]]/(ad-bc) when the determinant is nonzero.",
+      "topic": "linear algebra",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.06 Linear Algebra",
+        "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+      }
+    },
+    {
+      "id": "LIN-EIGEN",
+      "title": "Eigenvalues and diagonalization",
+      "keywords": [
+        "matrix",
+        "eigenvalue",
+        "eigenvector",
+        "diagonalizable",
+        "multiplicity"
+      ],
+      "content": "An eigenpair satisfies Av=lambda*v with v != 0. Eigenvalues solve det(A-lambda*I)=0. Algebraic multiplicity need not equal geometric multiplicity. A matrix is diagonalizable over the chosen field iff it has a basis of eigenvectors; distinct eigenvalues are sufficient, not necessary.",
+      "topic": "linear algebra",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.06 Linear Algebra",
+        "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+      }
+    },
+    {
+      "id": "LIN-SYMMETRIC",
+      "title": "Spectral theorem",
+      "keywords": [
+        "symmetric",
+        "hermitian",
+        "eigenvalue",
+        "orthogonal",
+        "spectral"
+      ],
+      "content": "A real symmetric matrix has real eigenvalues and an orthonormal eigenbasis over the reals. A complex Hermitian matrix has the analogous unitary diagonalization. General real matrices need not have real eigenvalues or orthogonal eigenvectors.",
+      "topic": "linear algebra",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.06 Linear Algebra",
+        "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+      }
+    },
+    {
+      "id": "LIN-CAUCHY",
+      "title": "Cauchy–Schwarz inequality",
+      "keywords": [
+        "cauchy",
+        "schwarz",
+        "inequality",
+        "inner",
+        "product",
+        "norm",
+        "vectors"
+      ],
+      "content": "In an inner-product space, |<u,v>| <= ||u||*||v||. Equality holds iff u and v are linearly dependent, including the zero-vector cases. For complex spaces, use conjugate symmetry and a Hermitian inner product.",
+      "topic": "linear algebra",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.06 Linear Algebra",
+        "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/"
+      }
+    },
+    {
+      "id": "SER-GEOMETRIC",
+      "title": "Geometric series",
+      "keywords": ["sum", "infinite", "series", "geometric", "convergence"],
+      "content": "The infinite sum from n=0 of r^n is 1/(1-r) precisely when |r|<1. From n=1 it is r/(1-r). For |r|>=1 the usual infinite series diverges. The finite sum is (1-r^(N+1))/(1-r) for r != 1; at r=1 it is N+1.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "SER-TESTS",
+      "title": "Convergence tests",
+      "keywords": [
+        "series",
+        "ratio",
+        "root",
+        "convergence",
+        "absolute",
+        "conditional",
+        "p",
+        "series"
+      ],
+      "content": "The p-series sum 1/n^p converges iff p>1. A ratio/root test value below one implies absolute convergence and above one implies divergence; equality to one is inconclusive. Terms tending to zero are necessary but not sufficient. Conditional convergence is not absolute convergence.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "ANA-COMPACT",
+      "title": "Compactness and extrema",
+      "keywords": [
+        "compact",
+        "bounded",
+        "closed",
+        "extrema",
+        "continuous",
+        "heine",
+        "borel"
+      ],
+      "content": "In finite-dimensional Euclidean space, a set is compact iff it is closed and bounded. A continuous real function on a nonempty compact set attains its maximum and minimum. Closed and bounded does not characterize compactness in arbitrary metric or normed spaces.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "ANA-CONTINUITY",
+      "title": "Continuity and differentiability",
+      "keywords": [
+        "continuous",
+        "differentiable",
+        "uniform",
+        "continuity",
+        "converse"
+      ],
+      "content": "Differentiability at a point implies continuity there; the converse fails, for example |x| at zero. Continuity on a compact metric domain implies uniform continuity. Pointwise continuity on an unbounded or noncompact set need not be uniform.",
+      "topic": "analysis",
+      "further_reading": {
+        "title": "MIT OpenCourseWare 18.100A Real Analysis",
+        "url": "https://ocw.mit.edu/courses/18-100a-real-analysis-fall-2020/"
+      }
+    },
+    {
+      "id": "PROB-BAYES",
+      "title": "Conditional probability and Bayes",
+      "keywords": ["probability", "bayes", "conditional", "independence"],
+      "content": "P(A|B)=P(A intersection B)/P(B) requires P(B)>0. When P(A)>0 and P(B)>0, Bayes gives P(A|B)=P(B|A)P(A)/P(B). Independence must be justified, not assumed. Disjoint nonzero-probability events are not independent.",
+      "topic": "probability",
+      "further_reading": {
+        "title": "OpenStax Introductory Statistics",
+        "url": "https://openstax.org/details/books/introductory-statistics-2e"
+      }
+    },
+    {
+      "id": "PROB-VARIANCE",
+      "title": "Expectation and variance",
+      "keywords": [
+        "probability",
+        "expectation",
+        "variance",
+        "covariance",
+        "independent"
+      ],
+      "content": "Expectation is linear whenever the relevant expectations exist; independence is not required. Var(X+Y)=Var(X)+Var(Y)+2Cov(X,Y), assuming finite second moments. Independence implies zero covariance, but zero covariance alone generally does not imply independence.",
+      "topic": "probability",
+      "further_reading": {
+        "title": "OpenStax Introductory Statistics",
+        "url": "https://openstax.org/details/books/introductory-statistics-2e"
+      }
+    },
+    {
+      "id": "ODE-FIRST",
+      "title": "First-order differential equations",
+      "keywords": [
+        "ode",
+        "differential",
+        "equation",
+        "separable",
+        "integrating",
+        "factor"
+      ],
+      "content": "For y'+p(x)y=q(x), an integrating factor is exp(integral p(x)dx), on an interval where the coefficients satisfy the needed regularity. Check initial conditions and the interval of validity. Dividing by a factor involving y in a separable equation may lose equilibrium solutions.",
+      "topic": "differential equations"
+    },
+    {
+      "id": "ALG-GROUP",
+      "title": "Groups and Lagrange’s theorem",
+      "keywords": [
+        "group",
+        "subgroup",
+        "lagrange",
+        "order",
+        "algebra",
+        "finite"
+      ],
+      "content": "For a finite group G and subgroup H, |H| divides |G|. Consequently, the order of an element divides |G|. The converse claim that a subgroup exists for every divisor is false for general finite groups.",
+      "topic": "abstract algebra"
+    },
+    {
+      "id": "COMPLEX-ANALYTIC",
+      "title": "Complex differentiability",
+      "keywords": ["complex", "holomorphic", "analytic", "cauchy", "riemann"],
+      "content": "Cauchy–Riemann equations at a point alone do not guarantee complex differentiability there. Continuous first partial derivatives in a neighborhood together with the equations provide a sufficient condition. Holomorphic functions on an open set are analytic there.",
+      "topic": "complex analysis"
+    },
+    {
+      "id": "COMPLEX-RESIDUE",
+      "title": "Residue theorem",
+      "keywords": ["complex", "contour", "integral", "residue", "poles"],
+      "content": "For a positively oriented simple closed contour and a function meromorphic inside and on it, with no poles on the contour, the integral equals 2*pi*i times the sum of enclosed residues. Account for winding numbers for more general contours; contour poles need separate treatment.",
+      "topic": "complex analysis"
+    },
+    {
+      "id": "OPT-CRITICAL",
+      "title": "Critical points and optimization",
+      "keywords": [
+        "maximum",
+        "minimum",
+        "optimize",
+        "hessian",
+        "stationary",
+        "critical"
+      ],
+      "content": "At an interior differentiable local extremum the gradient is zero. A zero gradient alone does not guarantee an extremum. In one dimension a positive second derivative gives a strict local minimum and a negative one a strict local maximum; a zero second derivative is inconclusive. Check endpoints and constraints separately.",
+      "topic": "calculus",
+      "further_reading": {
+        "title": "OpenStax Calculus, Volume 1",
+        "url": "https://openstax.org/details/books/calculus-volume-1"
+      }
+    },
+    {
+      "id": "NUM-EXACT",
+      "title": "Exact values and numerical error",
+      "keywords": [
+        "round",
+        "decimal",
+        "approximate",
+        "exact",
+        "numeric",
+        "precision"
+      ],
+      "content": "Keep exact fractions, radicals, and symbolic constants during derivations. Round only the final numerical value and state the precision. Numerical agreement at sample points is evidence, not a proof of a general identity. Distinguish truncation error from floating-point roundoff.",
+      "topic": "numerical methods"
+    }
+  ]
+}

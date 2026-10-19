@@ -60,7 +60,7 @@ class AIIntegrationTests(unittest.TestCase):
         self.model_requests = []
         self.gemini_models = []
 
-    def groq(self, status=200, models=(), discovery_status=200):
+    def groq(self, status=200, models=(), discovery_status=200, content='The answer is 4.'):
         def respond(request):
             if request.method == 'GET':
                 self.model_requests.append('groq')
@@ -74,7 +74,7 @@ class AIIntegrationTests(unittest.TestCase):
                 return httpx.Response(200, json={
                     'id': 'test-completion', 'object': 'chat.completion', 'created': 0,
                     'model': self.app.GROQ_MODEL,
-                    'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': 'The answer is 4.'}, 'finish_reason': 'stop'}],
+                    'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': content(request) if callable(content) else content}, 'finish_reason': 'stop'}],
                 })
             return httpx.Response(current_status, json={'error': {
                 'message': 'private-provider-detail', 'type': 'request_error',
@@ -87,7 +87,7 @@ class AIIntegrationTests(unittest.TestCase):
         self.app.GROQ_AVAILABLE = True
         self.app.AI_STATUS['groq'].update(configured=True, client_ready=True)
 
-    def gemini(self, status=200, models=(), empty=False):
+    def gemini(self, status=200, models=(), empty=False, content='The answer is 4.'):
         def respond(request):
             if request.method == 'GET':
                 self.model_requests.append('gemini')
@@ -100,7 +100,7 @@ class AIIntegrationTests(unittest.TestCase):
             current_status = status(request) if callable(status) else status
             if current_status == 200:
                 return httpx.Response(200, json={'candidates': [{
-                    'content': {'role': 'model', 'parts': [] if empty else [{'text': 'The answer is 4.'}]},
+                    'content': {'role': 'model', 'parts': [] if empty else [{'text': content(request) if callable(content) else content}]},
                     'finishReason': 'STOP',
                 }]})
             return httpx.Response(current_status, json={'error': {
@@ -116,7 +116,7 @@ class AIIntegrationTests(unittest.TestCase):
         self.app.AI_STATUS['gemini'].update(configured=True, client_ready=True)
 
     def chat(self, **payload):
-        return self.client.post('/api/chat', json={'message': 'What is 2 + 2?', **payload})
+        return self.client.post('/api/chat', json={'message': 'Explain addition briefly.', **payload})
 
     def test_groq_sdk_success(self):
         self.groq()
@@ -140,7 +140,7 @@ class AIIntegrationTests(unittest.TestCase):
         response = self.chat(messages=[
             {'role': 'user', 'content': 'Explain addition'},
             {'role': 'assistant', 'content': 'We combine quantities.'},
-            {'role': 'user', 'content': 'And 2 + 2?'},
+            {'role': 'user', 'content': 'How does that work?'},
         ])
         self.assertEqual(response.status_code, 200)
         self.assertEqual([name for name, _ in self.provider_requests], ['groq', 'gemini'])
@@ -309,6 +309,67 @@ class AIIntegrationTests(unittest.TestCase):
         failure = self.app.provider_failure('gemini', error)
         self.assertEqual(failure.code, 'ai_timeout')
         self.assertNotIn('private-provider-detail', str(failure))
+
+    def test_chat_computes_before_generating_a_grounded_explanation(self):
+        def response(request):
+            system = json.loads(request.content)['messages'][0]['content']
+            if 'calculator requests, not an answer' in system:
+                return json.dumps({'calculations': [{'operation': 'differentiate', 'expression': 'x^3', 'variable': 'x'}]})
+            return '## Answer\n\\(3x^2\\) by the power rule.'
+        self.groq(content=response)
+        result = self.chat(message='Differentiate x^3').json
+        self.assertEqual(result['verification']['status'], 'computed')
+        self.assertEqual(result['verification']['calculations'][0]['result'], '3*x**2')
+        final_context = self.provider_requests[-1][1]['messages'][0]['content']
+        self.assertIn('3*x**2', final_context)
+        self.assertIn('CALC-POWER', final_context)
+        self.assertEqual(len(self.provider_requests), 2)
+
+    def test_conceptual_question_gets_references_without_fake_verification(self):
+        self.groq()
+        result = self.chat(message='Explain the mean value theorem').json
+        self.assertEqual(result['verification']['status'], 'not_checked')
+        self.assertIn('CALC-MVT', [item['id'] for item in result['references']])
+        self.assertEqual(len(self.provider_requests), 1)
+
+    def test_ambiguous_question_requests_clarification(self):
+        self.groq(content=json.dumps({'calculations': [], 'clarification': 'What is the upper integration bound?'}))
+        result = self.chat(message='Calculate the integral from 0 to the missing endpoint').json
+        self.assertIn('upper integration bound', result['answer'])
+        self.assertEqual(result['verification']['status'], 'not_checked')
+        self.assertEqual(len(self.provider_requests), 1)
+
+    def test_invalid_planner_output_does_not_claim_a_check(self):
+        self.groq()
+        result = self.chat(message='Calculate 2 + 2').json
+        self.assertEqual(result['verification']['status'], 'not_checked')
+        self.assertEqual(result['verification']['calculations'], [])
+
+    def test_malicious_planned_expression_is_not_executed(self):
+        self.groq(content=json.dumps({'calculations': [{'operation': 'evaluate', 'expression': "__import__('os').getcwd()"}]}))
+        result = self.chat(message='Calculate 2 + 2').json
+        self.assertEqual(result['verification']['status'], 'not_checked')
+        self.assertEqual(result['verification']['calculations'][0]['status'], 'unavailable')
+
+    def test_gemini_planning_uses_json_and_exact_integral_context(self):
+        def response(request):
+            body = json.loads(request.content)
+            system = body['systemInstruction']['parts'][0]['text']
+            if 'calculator requests, not an answer' in system:
+                self.assertEqual(body['generationConfig']['responseMimeType'], 'application/json')
+                return json.dumps({'calculations':[{'operation':'integrate','expression':'x^2','lower':'0','upper':'1'}]})
+            self.assertIn('1/3', system)
+            return 'The exact integral is 1/3.'
+        self.gemini(content=response)
+        result = self.chat(message='Integrate x^2 from 0 to 1').json
+        self.assertEqual(result['verification']['calculations'][0]['result'], '1/3')
+
+    def test_request_budget_prevents_more_network_calls(self):
+        self.groq()
+        with self.assertRaises(self.app.AIServiceError) as error:
+            self.app.ask_ai([{'role':'user','content':'Hello'}], deadline=0)
+        self.assertEqual(error.exception.code, 'ai_timeout')
+        self.assertEqual(self.provider_requests, [])
 
 
 if __name__ == '__main__':

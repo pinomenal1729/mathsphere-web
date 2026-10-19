@@ -66,3 +66,7 @@ The Pages regression suite starts its own local static server and checks both ar
 ```sh
 NODE_PATH=/tmp/mathsphere-tests/node_modules BROWSER_EXECUTABLE=/usr/bin/chromium node tests/pages.cjs
 ```
+
+## Mathematical tutoring
+
+Chat now supports step-by-step, concise, and exam-ready explanations. Independent calculation results and retrieved reference notes are displayed separately from model-written explanations and persist with saved conversations. See [Mathematical rigor and explainability](mathematical-accuracy.md) for the calculation scope, evaluation coverage, and limitations.

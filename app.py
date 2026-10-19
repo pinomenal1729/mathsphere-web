@@ -8,6 +8,7 @@ MathSphere v12.2 — FIXED IMAGE UPLOAD + NO ADMIN
 """
 
 import os, sys, io, json, logging, re, base64, random, sqlite3
+import time
 from datetime import datetime
 from functools import wraps
 from itertools import islice
@@ -18,6 +19,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
 from dotenv import load_dotenv
+from math_tutor import PLANNER_SYSTEM, needs_calculation, prepare_context, grounded_system
 
 # ════════════════════════════════════════════════════════════════
 # SYSTEM SETUP
@@ -179,31 +181,18 @@ MATHEMATICIANS_DB = {
 # SYSTEM PROMPT
 # ════════════════════════════════════════════════════════════════
 
-MATH_SYSTEM = """You are Anupam — a world-class mathematics tutor for IIT JAM, GATE, and CSIR NET.
+MATH_SYSTEM = r"""You are Anupam, MathSphere's careful mathematics tutor for IIT JAM, GATE, CSIR NET, and foundational mathematics.
+Prioritize mathematical correctness, clear explanations, and intellectual honesty over confident wording.
 
-ALWAYS provide structured responses:
+For a problem, present: Key idea; a concise, checkable step-by-step solution; an exact final answer; and a short check with relevant domain restrictions. Explain why important steps work in simple language without sacrificing notation or rigor. Respect a requested quiz, formula sheet, proof, or other output format instead of forcing this layout on everything.
 
-## 🎯 Key Insight
-[Core idea to solve this problem]
+Before solving, identify the given information, requested quantity, variables, units, and real/complex domain. If information is missing or ambiguous, ask one focused clarification question. Do not invent missing data. For an image, transcribe the relevant mathematical expression and ask about unreadable symbols rather than guessing.
 
-## 📚 Solution
-[Step-by-step working with full details]
+Keep exact fractions, radicals, and symbolic constants until the final numerical approximation. State its precision. Track excluded denominators, logarithm/root domains, branches, endpoints, equality cases, and convergence conditions. Add +C for indefinite integrals. Check roots in the original equation; squaring and cancellation can introduce or lose solutions. State hypotheses before applying a theorem. Distinguish a counterexample, numerical evidence, and a proof.
 
-## ✅ Answer
-[Final answer clearly stated]
+Use independently computed calculator results when supplied, but never claim a tool check when none was completed. If uncertain, explain the unresolved point. Never invent citations, exam provenance, a proof, a verification result, or a percentage confidence score. No method guarantees every answer is correct.
 
-## 📝 Explanation
-[Why this works, common mistakes]
-
-## 🧪 Verification
-[Check the answer]
-
-RULES:
-- Use LaTeX: \\\\( inline \\\\) and \\\\[ display \\\\]
-- Always show work, never just answers
-- Be precise and thorough
-- For images: analyze and solve what's shown
-- Format all math expressions properly"""
+Use LaTeX delimiters \( ... \) inline and \[ ... \] for display equations. Give helpful mathematical derivations, not private deliberation or an internal monologue. Be encouraging and direct; keep explanations as simple as the mathematics allows."""
 
 # ════════════════════════════════════════════════════════════════
 # HELPER FUNCTIONS
@@ -269,11 +258,11 @@ def provider_failure(provider, error):
     return AIServiceError(message, code, response_status, provider, upstream_status=status)
 
 
-def replacement_model(provider, failed_model):
+def replacement_model(provider, failed_model, deadline=None):
     """Choose a different compatible model from the provider's actual inventory."""
     try:
         if provider == 'groq':
-            models = groq_client.models.list(timeout=5.0).data
+            models = groq_client.models.list(timeout=request_timeout(deadline, 5.0)).data
             available = {
                 model.id for model in islice(models, 100)
                 if getattr(model, 'active', True) is not False
@@ -284,7 +273,7 @@ def replacement_model(provider, failed_model):
             preferred = ('openai/gpt-oss-20b', 'openai/gpt-oss-120b')
         else:
             models = gemini_client.models.list(config=genai_types.ListModelsConfig(
-                page_size=100, http_options=genai_types.HttpOptions(timeout=5000),
+                page_size=100, http_options=genai_types.HttpOptions(timeout=int(request_timeout(deadline, 5.0) * 1000)),
             ))
             available = set()
             for model in islice(models, 100):
@@ -309,18 +298,20 @@ def replacement_model(provider, failed_model):
         return None
 
 
-def generate_with_recovery(provider, generate):
+def generate_with_recovery(provider, generate, deadline=None):
     """At most two generation attempts; never retry auth or quota failures."""
     model = ACTIVE_AI_MODELS[provider]
     try:
         answer = generate(model)
         if not answer:
             raise EmptyAIResponse()
+    except AIServiceError:
+        raise
     except Exception as error:
         failure = provider_failure(provider, error)
         if failure.code != 'ai_model_unavailable' and failure.upstream_status != 503:
             raise failure from None
-        alternate = replacement_model(provider, model)
+        alternate = replacement_model(provider, model, deadline)
         if not alternate:
             raise failure from None
         logger.info('%s trying available replacement model: %s', provider, alternate)
@@ -328,6 +319,8 @@ def generate_with_recovery(provider, generate):
             answer = generate(alternate)
             if not answer:
                 raise EmptyAIResponse()
+        except AIServiceError:
+            raise
         except Exception as alternate_error:
             raise provider_failure(provider, alternate_error) from None
         ACTIVE_AI_MODELS[provider] = alternate
@@ -352,24 +345,35 @@ def clean_ai_response(text: str) -> str:
     return text.strip()
 
 
-def ask_ai(messages: list, temperature: float = 0.2, max_tokens: int = 3000) -> str:
+def request_timeout(deadline=None, maximum=20.0):
+    remaining = maximum if deadline is None else min(maximum, deadline - time.monotonic())
+    if remaining < 1:
+        raise AIServiceError('This problem exceeded the available response time. Try a shorter question or one part at a time.', 'ai_timeout')
+    return remaining
+
+
+def ask_ai(messages: list, temperature: float = 0.2, max_tokens: int = 3000,
+           system_prompt=None, json_mode=False, deadline=None) -> str:
     """Call Groq or Gemini API"""
     if not messages:
         return ""
     failures = []
+    system_prompt = system_prompt or MATH_SYSTEM
 
     if GROQ_AVAILABLE and groq_client:
         try:
             def generate_groq(model):
                 resp = groq_client.chat.completions.create(
                     model=model,
-                    messages=[{"role": "system", "content": MATH_SYSTEM}] + messages,
+                    messages=[{"role": "system", "content": system_prompt}] + messages,
                     temperature=temperature,
                     max_completion_tokens=max_tokens,
                     top_p=0.9,
+                    timeout=request_timeout(deadline),
+                    **({'response_format': {'type': 'json_object'}} if json_mode else {}),
                 )
                 return clean_ai_response(resp.choices[0].message.content or '')
-            return generate_with_recovery('groq', generate_groq)
+            return generate_with_recovery('groq', generate_groq, deadline)
         except AIServiceError as error:
             failures.append(error)
 
@@ -384,13 +388,15 @@ def ask_ai(messages: list, temperature: float = 0.2, max_tokens: int = 3000) -> 
                     model=model,
                     contents=contents,
                     config=genai_types.GenerateContentConfig(
-                        system_instruction=MATH_SYSTEM,
+                        system_instruction=system_prompt,
                         temperature=temperature,
                         max_output_tokens=max_tokens,
+                        http_options=genai_types.HttpOptions(timeout=int(request_timeout(deadline) * 1000)),
+                        **({'response_mime_type': 'application/json'} if json_mode else {}),
                     ),
                 )
                 return clean_ai_response(response.text or '')
-            return generate_with_recovery('gemini', generate_gemini)
+            return generate_with_recovery('gemini', generate_gemini, deadline)
         except AIServiceError as error:
             failures.append(error)
 
@@ -643,6 +649,10 @@ def chat():
 
         if not clean:
             return jsonify({"error": "Empty message"}), 400
+        while clean and clean[0]['role'] == 'assistant':
+            clean.pop(0)
+        if not clean or clean[-1]['role'] != 'user':
+            return jsonify({'error': 'A user question is required.'}), 400
 
         # Get image data
         img_b64  = data.get("image_b64")
@@ -686,18 +696,22 @@ def chat():
             try:
                 # Use Gemini vision API
                 prompt_text = clean[-1]["content"] if clean else "Solve this mathematics problem step by step"
+                image_notes, image_verification, _ = prepare_context(prompt_text)
+                image_system = grounded_system(MATH_SYSTEM, image_notes, image_verification, data.get('explanation_style'))
                 
                 def generate_image(model):
                     response = gemini_client.models.generate_content(
                         model=model,
                         contents=[prompt_text, genai_types.Part.from_bytes(data=raw_bytes, mime_type=img_type)],
-                        config=genai_types.GenerateContentConfig(system_instruction=MATH_SYSTEM),
+                        config=genai_types.GenerateContentConfig(system_instruction=image_system),
                     )
                     return clean_ai_response(response.text or '').strip()
                 answer = generate_with_recovery('gemini', generate_image)
                 
                 logger.info(f"[✓] Image analyzed successfully")
-                return jsonify({"answer": answer}), 200
+                return jsonify({"answer": answer, 'verification': image_verification,
+                                'references': [{key: note[key] for key in ('id', 'title', 'topic', 'further_reading') if key in note}
+                                               for note in image_notes]}), 200
 
             except AIServiceError:
                 raise
@@ -705,8 +719,24 @@ def chat():
                 raise provider_failure('gemini', img_err) from None
 
         # Text-only chat (no image)
-        answer = ask_ai(clean)
-        return jsonify({"answer": answer}), 200
+        deadline = time.monotonic() + 90
+        question = next((m['content'] for m in reversed(clean) if m['role'] == 'user'), '')
+        plan = None
+        if needs_calculation(question):
+            planner_history = clean[-6:]
+            if planner_history[0]['role'] == 'assistant':
+                planner_history = planner_history[1:]
+            plan = ask_ai(planner_history, temperature=0, max_tokens=1000,
+                          system_prompt=PLANNER_SYSTEM, json_mode=True, deadline=deadline)
+        notes, verification, clarification = prepare_context(question, plan)
+        if clarification:
+            answer = '## One detail before we solve it\n\n' + clarification
+        else:
+            system_prompt = grounded_system(MATH_SYSTEM, notes, verification, data.get('explanation_style'))
+            answer = ask_ai(clean, temperature=0.1, max_tokens=4500,
+                            system_prompt=system_prompt, deadline=deadline)
+        references = [{key: note[key] for key in ('id', 'title', 'topic', 'further_reading') if key in note} for note in notes]
+        return jsonify({"answer": answer, "verification": verification, "references": references}), 200
 
     except AIServiceError:
         raise
