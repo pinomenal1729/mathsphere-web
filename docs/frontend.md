@@ -53,9 +53,11 @@ For an existing **Deploy from a branch** setup, select the branch containing thi
 
 GitHub Pages serves the interface but cannot run Flask, SQLite API queries, or AI requests. For the complete application, deploy the Flask service using the existing Render configuration, or another Python host, and configure its server-side provider keys there.
 
-For an Actions deployment, set repository **Settings → Secrets and variables → Actions → Variables → MATHSPHERE_API_URL** to the public HTTPS origin of that running Flask service. Use the backend origin without `/api`; the frontend appends each API path. The build validates and writes that public URL to `static/config.js`. This value is public configuration, not a secret. Never put an AI provider key in it.
+The GitHub Pages site is configured to use **https://mathsphere-web.onrender.com** as its backend. Local development and Flask-hosted pages continue to use their same-origin `/api` endpoints.
 
-For branch-based Pages publishing, set `apiBaseUrl` in `static/config.js` to that same HTTPS backend origin before pushing. Leave it empty when Flask serves the interface and API from the same origin. The existing Flask API already enables cross-origin access for `/api/*`.
+For an Actions deployment, the workflow defaults to that Render URL. To use a different backend, set repository **Settings → Secrets and variables → Actions → Variables → MATHSPHERE_API_URL** to its public HTTPS origin. Use the backend origin without `/api`; the frontend appends each API path. The build validates and writes that public URL to `static/config.js`. This value is public configuration, not a secret. Never put an AI provider key in it.
+
+For branch-based Pages publishing, `static/config.js` selects the Render URL on `*.github.io` and uses same-origin API requests elsewhere. To change backends or use a custom frontend domain, update that file as well. The existing Flask API already enables cross-origin access for `/api/*`.
 
 Without a running backend, the dashboard, daily challenge, saved library, and local preferences still work. Server-powered tools display an availability message; a static deployment does not simulate working APIs.
 

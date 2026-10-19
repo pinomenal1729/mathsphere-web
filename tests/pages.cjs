@@ -155,6 +155,59 @@ test("GitHub Pages deployment layouts", { timeout: 60000 }, async (t) => {
       assert.ok(requests.includes("https://backend.example.test/api/pyq/load"));
     },
   );
+
+  await t.test(
+    "the published Pages origin routes health and tools to Render",
+    async () => {
+      // Serve the real frontend files at the production origin in this isolated
+      // browser. Only API responses are fixtures; no live backend is claimed.
+      await page.unroute("**/config.js");
+      const staticRoot = path.resolve(__dirname, "../static");
+      await page.route(
+        "https://pinomenal1729.github.io/mathsphere-web/**",
+        (route) => {
+          const relativePath = new URL(route.request().url()).pathname.slice(
+            "/mathsphere-web/".length,
+          );
+          const file = path.resolve(staticRoot, relativePath || "index.html");
+          if (!file.startsWith(staticRoot + path.sep))
+            return route.fulfill({ status: 404 });
+          return route.fulfill({ path: file });
+        },
+      );
+      const requests = [];
+      await page.route(
+        "https://mathsphere-web.onrender.com/api/**",
+        (route) => {
+          const headers = {
+            "access-control-allow-origin": "*",
+            "access-control-allow-methods": "GET, POST, OPTIONS",
+            "access-control-allow-headers": "Content-Type",
+          };
+          if (route.request().method() === "OPTIONS")
+            return route.fulfill({ status: 204, headers });
+          requests.push(route.request().url());
+          const json = route.request().url().endsWith("/health")
+            ? { services: { groq: true, gemini: true } }
+            : { success: true, count: 0, questions: [] };
+          return route.fulfill({ headers, json });
+        },
+      );
+      await page.goto("https://pinomenal1729.github.io/mathsphere-web/#pyqs", {
+        waitUntil: "networkidle",
+      });
+      await page.locator('#tool-form [type="submit"]').click();
+      await page
+        .getByRole("heading", { name: "A little quiet here, for now." })
+        .waitFor();
+      assert.ok(
+        requests.includes("https://mathsphere-web.onrender.com/api/health"),
+      );
+      assert.ok(
+        requests.includes("https://mathsphere-web.onrender.com/api/pyq/load"),
+      );
+    },
+  );
   assert.deepEqual(errors, []);
   assert.deepEqual(failedAssets, []);
 });

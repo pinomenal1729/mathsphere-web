@@ -29,7 +29,7 @@ jobs:
 
       - name: Write the public backend configuration
         env:
-          MATHSPHERE_API_URL: ${{ vars.MATHSPHERE_API_URL }}
+          MATHSPHERE_API_URL: ${{ vars.MATHSPHERE_API_URL || 'https://mathsphere-web.onrender.com' }}
         run: |
           python3 - <<'PY'
           import json
