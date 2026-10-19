@@ -44,6 +44,9 @@ class AIIntegrationTests(unittest.TestCase):
             patch.object(self.app, 'GEMINI_AVAILABLE', False),
             patch.object(self.app, 'groq_client', None),
             patch.object(self.app, 'gemini_client', None),
+            patch.object(self.app, 'ACTIVE_AI_MODELS', {
+                'groq': self.app.GROQ_MODEL, 'gemini': self.app.GEMINI_MODEL,
+            }),
             patch.object(self.app, 'AI_STATUS', {
                 name: {'configured': False, 'client_ready': False, 'last_error_code': None}
                 for name in ('groq', 'gemini')
@@ -54,17 +57,26 @@ class AIIntegrationTests(unittest.TestCase):
             self.addCleanup(item.stop)
         self.client = self.app.app.test_client()
         self.provider_requests = []
+        self.model_requests = []
+        self.gemini_models = []
 
-    def groq(self, status=200):
+    def groq(self, status=200, models=(), discovery_status=200):
         def respond(request):
+            if request.method == 'GET':
+                self.model_requests.append('groq')
+                return httpx.Response(discovery_status, json={'data': [
+                    {'id': name, 'object': 'model', 'created': 0, 'owned_by': 'test'}
+                    for name in models
+                ]})
             self.provider_requests.append(('groq', json.loads(request.content)))
-            if status == 200:
+            current_status = status(request) if callable(status) else status
+            if current_status == 200:
                 return httpx.Response(200, json={
                     'id': 'test-completion', 'object': 'chat.completion', 'created': 0,
                     'model': self.app.GROQ_MODEL,
                     'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': 'The answer is 4.'}, 'finish_reason': 'stop'}],
                 })
-            return httpx.Response(status, json={'error': {
+            return httpx.Response(current_status, json={'error': {
                 'message': 'private-provider-detail', 'type': 'request_error',
             }})
         # This placeholder is used only by an in-memory transport, never a server.
@@ -75,16 +87,24 @@ class AIIntegrationTests(unittest.TestCase):
         self.app.GROQ_AVAILABLE = True
         self.app.AI_STATUS['groq'].update(configured=True, client_ready=True)
 
-    def gemini(self, status=200):
+    def gemini(self, status=200, models=(), empty=False):
         def respond(request):
+            if request.method == 'GET':
+                self.model_requests.append('gemini')
+                return httpx.Response(200, json={'models': [
+                    {'name': 'models/' + name, 'supportedGenerationMethods': ['generateContent']}
+                    for name in models
+                ]})
             self.provider_requests.append(('gemini', json.loads(request.content)))
-            if status == 200:
+            self.gemini_models.append(request.url.path.split('/models/')[-1].split(':')[0])
+            current_status = status(request) if callable(status) else status
+            if current_status == 200:
                 return httpx.Response(200, json={'candidates': [{
-                    'content': {'role': 'model', 'parts': [{'text': 'The answer is 4.'}]},
+                    'content': {'role': 'model', 'parts': [] if empty else [{'text': 'The answer is 4.'}]},
                     'finishReason': 'STOP',
                 }]})
-            return httpx.Response(status, json={'error': {
-                'code': status, 'message': 'private-provider-detail', 'status': 'FAILED_PRECONDITION',
+            return httpx.Response(current_status, json={'error': {
+                'code': current_status, 'message': 'private-provider-detail', 'status': 'FAILED_PRECONDITION',
             }})
         client = genai.Client(api_key='unit-test-placeholder', http_options=types.HttpOptions(
             httpx_client=httpx.Client(transport=httpx.MockTransport(respond)),
@@ -218,6 +238,77 @@ class AIIntegrationTests(unittest.TestCase):
         self.assertTrue(response.json['ai']['providers']['gemini']['client_ready'])
         self.assertEqual(response.json['ai']['models']['gemini'], 'gemini-flash-latest')
         self.assertNotIn('unit-test-placeholder', response.get_data(as_text=True))
+
+    def test_retired_groq_model_recovers_and_caches_success(self):
+        self.app.ACTIVE_AI_MODELS['groq'] = 'retired-model'
+        self.groq(
+            lambda request: 404 if json.loads(request.content)['model'] == 'retired-model' else 200,
+            models=['whisper-large-v3', 'openai/gpt-oss-20b'],
+        )
+        self.assertEqual(self.chat().status_code, 200)
+        self.assertEqual([body['model'] for _, body in self.provider_requests], ['retired-model', 'openai/gpt-oss-20b'])
+        self.assertEqual(self.model_requests, ['groq'])
+        self.assertEqual(self.chat().status_code, 200)
+        self.assertEqual(self.model_requests, ['groq'])
+        health = self.client.get('/api/health').json
+        self.assertEqual(health['ai']['active_models']['groq'], 'openai/gpt-oss-20b')
+
+    def test_discovery_never_guesses_unlisted_models(self):
+        self.groq(404, models=['whisper-large-v3', 'meta-llama/llama-guard-4'])
+        response = self.chat()
+        self.assertEqual(response.json['code'], 'ai_model_unavailable')
+        self.assertEqual(len(self.provider_requests), 1)
+
+    def test_model_discovery_failure_keeps_original_error(self):
+        self.groq(404, discovery_status=503)
+        response = self.chat()
+        self.assertEqual(response.json['code'], 'ai_model_unavailable')
+        self.assertEqual(len(self.provider_requests), 1)
+
+    def test_authentication_and_quota_failures_do_not_probe_models(self):
+        self.groq(401, models=['openai/gpt-oss-20b'])
+        self.gemini(429, models=['gemini-3.8-flash'])
+        response = self.chat()
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(self.model_requests, [])
+
+    def test_overloaded_gemini_model_uses_listed_alternative(self):
+        self.gemini(
+            lambda request: 503 if self.app.GEMINI_MODEL in request.url.path else 200,
+            models=[self.app.GEMINI_MODEL, 'gemini-3.8-flash', 'gemini-3.8-flash-tts'],
+        )
+        response = self.chat()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.gemini_models, [self.app.GEMINI_MODEL, 'gemini-3.8-flash'])
+        self.assertEqual(self.model_requests, ['gemini'])
+
+    def test_gemini_generation_attempts_are_bounded(self):
+        self.gemini(503, models=['gemini-3.8-flash', 'gemini-2.5-flash'])
+        response = self.chat()
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(len(self.provider_requests), 2)
+        self.assertEqual(self.model_requests, ['gemini'])
+        self.assertIn('HTTP 503', response.json['error'])
+
+    def test_no_alternative_keeps_service_outage_explicit(self):
+        self.gemini(503)
+        response = self.chat()
+        self.assertEqual(response.json['code'], 'ai_provider_unavailable')
+        self.assertIn('HTTP 503', response.json['error'])
+        self.assertEqual(len(self.provider_requests), 1)
+
+    def test_empty_response_is_not_a_network_outage(self):
+        self.gemini(empty=True)
+        response = self.chat()
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json['code'], 'ai_empty_response')
+        self.assertEqual(self.model_requests, [])
+
+    def test_timeout_is_identified_without_leaking_provider_details(self):
+        error = httpx.ReadTimeout('private-provider-detail')
+        failure = self.app.provider_failure('gemini', error)
+        self.assertEqual(failure.code, 'ai_timeout')
+        self.assertNotIn('private-provider-detail', str(failure))
 
 
 if __name__ == '__main__':

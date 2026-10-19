@@ -10,6 +10,7 @@ MathSphere v12.2 — FIXED IMAGE UPLOAD + NO ADMIN
 import os, sys, io, json, logging, re, base64, random, sqlite3
 from datetime import datetime
 from functools import wraps
+from itertools import islice
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -40,8 +41,9 @@ load_dotenv()
 
 GROQ_API_KEY   = os.getenv('GROQ_API_KEY', '').strip()
 GEMINI_API_KEY = (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY', '')).strip()
-GROQ_MODEL     = os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile').strip()
+GROQ_MODEL     = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b').strip()
 GEMINI_MODEL   = os.getenv('GEMINI_MODEL', 'gemini-flash-latest').strip()
+ACTIVE_AI_MODELS = {'groq': GROQ_MODEL, 'gemini': GEMINI_MODEL}
 SECRET_KEY     = os.getenv('SECRET_KEY', 'mathsphere-secret-2024')
 FLASK_ENV      = os.getenv('FLASK_ENV', 'production')
 DEBUG_MODE     = FLASK_ENV == 'development'
@@ -81,7 +83,7 @@ AI_STATUS = {
 try:
     from groq import Groq
     if GROQ_API_KEY:
-        groq_client = Groq(api_key=GROQ_API_KEY, timeout=45.0, max_retries=0)
+        groq_client = Groq(api_key=GROQ_API_KEY, timeout=20.0, max_retries=0)
         GROQ_AVAILABLE = True
         AI_STATUS['groq']['client_ready'] = True
         logger.info("[✓] Groq client initialized")
@@ -100,7 +102,7 @@ try:
     if GEMINI_API_KEY:
         gemini_client = genai.Client(
             api_key=GEMINI_API_KEY,
-            http_options=genai_types.HttpOptions(timeout=45000, retry_options=genai_types.HttpRetryOptions(attempts=1)),
+            http_options=genai_types.HttpOptions(timeout=20000, retry_options=genai_types.HttpRetryOptions(attempts=1)),
         )
         GEMINI_AVAILABLE = True
         AI_STATUS['gemini']['client_ready'] = True
@@ -208,12 +210,17 @@ RULES:
 # ════════════════════════════════════════════════════════════════
 
 class AIServiceError(Exception):
-    def __init__(self, message, code, status=503, provider=None, failures=None):
+    def __init__(self, message, code, status=503, provider=None, failures=None, upstream_status=None):
         super().__init__(message)
         self.code = code
         self.status = status
         self.provider = provider
         self.failures = failures or []
+        self.upstream_status = upstream_status
+
+
+class EmptyAIResponse(Exception):
+    pass
 
 
 def provider_failure(provider, error):
@@ -225,7 +232,15 @@ def provider_failure(provider, error):
         status = None
     label = 'Groq' if provider == 'groq' else 'Gemini'
     detail = str(error).lower()
-    if status in (401, 403) or any(marker in detail for marker in ('api_key_invalid', 'api key not valid', 'invalid api key')):
+    if isinstance(error, EmptyAIResponse):
+        code = 'ai_empty_response'
+        message = f'{label} returned no usable answer. Try a shorter question or a different model.'
+        response_status = 502
+    elif 'timeout' in type(error).__name__.lower():
+        code = 'ai_timeout'
+        message = f'{label} did not respond in time. Please try again shortly.'
+        response_status = 503
+    elif status in (401, 403) or any(marker in detail for marker in ('api_key_invalid', 'api key not valid', 'invalid api key')):
         code = 'ai_authentication_failed'
         message = f'{label} rejected its API credentials or project permissions. Check the key in your Render service environment and redeploy.'
         response_status = 502
@@ -241,13 +256,83 @@ def provider_failure(provider, error):
         code = 'ai_request_rejected'
         message = f'{label} could not process this request. Try a shorter question or a different image.'
         response_status = 502
+    elif status in (500, 502, 503, 504):
+        code = 'ai_provider_unavailable'
+        message = f'{label} returned HTTP {status}: the provider is temporarily unavailable or overloaded. Please try again shortly.'
+        response_status = 503
     else:
         code = 'ai_provider_unavailable'
         message = f'{label} is temporarily unavailable or could not be reached. Please try again shortly.'
         response_status = 503
     AI_STATUS[provider]['last_error_code'] = code
-    logger.warning('%s request failed: %s (HTTP %s)', label, code, status or 'unknown')
-    return AIServiceError(message, code, response_status, provider)
+    logger.warning('%s request failed: %s (HTTP %s, %s)', label, code, status or 'unknown', type(error).__name__)
+    return AIServiceError(message, code, response_status, provider, upstream_status=status)
+
+
+def replacement_model(provider, failed_model):
+    """Choose a different compatible model from the provider's actual inventory."""
+    try:
+        if provider == 'groq':
+            models = groq_client.models.list(timeout=5.0).data
+            available = {
+                model.id for model in islice(models, 100)
+                if getattr(model, 'active', True) is not False
+                and model.id != failed_model
+                and model.id.startswith(('openai/gpt-oss-', 'llama-', 'meta-llama/', 'qwen/'))
+                and not any(term in model.id.lower() for term in ('guard', 'whisper', 'tts', 'audio'))
+            }
+            preferred = ('openai/gpt-oss-20b', 'openai/gpt-oss-120b')
+        else:
+            models = gemini_client.models.list(config=genai_types.ListModelsConfig(
+                page_size=100, http_options=genai_types.HttpOptions(timeout=5000),
+            ))
+            available = set()
+            for model in islice(models, 100):
+                name = (model.name or '').removeprefix('models/')
+                if (name != failed_model.removeprefix('models/')
+                        and name.startswith('gemini-')
+                        and 'generateContent' in (model.supported_actions or [])
+                        and not any(term in name.lower() for term in ('tts', 'audio', 'image', 'embedding', 'live'))):
+                    available.add(name)
+            preferred = ('gemini-flash-latest', 'gemini-3.8-flash')
+        for name in preferred:
+            if name in available:
+                return name
+        # Prefer stable, general-purpose Flash models when no preferred alias is listed.
+        ranked = sorted(available, key=lambda name: (
+            'preview' not in name, 'flash' in name,
+            tuple(int(part) for part in re.findall(r'\d+', name)), name,
+        ), reverse=True)
+        return ranked[0] if ranked else None
+    except Exception as error:
+        logger.warning('%s model discovery failed (%s)', provider, type(error).__name__)
+        return None
+
+
+def generate_with_recovery(provider, generate):
+    """At most two generation attempts; never retry auth or quota failures."""
+    model = ACTIVE_AI_MODELS[provider]
+    try:
+        answer = generate(model)
+        if not answer:
+            raise EmptyAIResponse()
+    except Exception as error:
+        failure = provider_failure(provider, error)
+        if failure.code != 'ai_model_unavailable' and failure.upstream_status != 503:
+            raise failure from None
+        alternate = replacement_model(provider, model)
+        if not alternate:
+            raise failure from None
+        logger.info('%s trying available replacement model: %s', provider, alternate)
+        try:
+            answer = generate(alternate)
+            if not answer:
+                raise EmptyAIResponse()
+        except Exception as alternate_error:
+            raise provider_failure(provider, alternate_error) from None
+        ACTIVE_AI_MODELS[provider] = alternate
+    AI_STATUS[provider]['last_error_code'] = None
+    return answer
 
 
 @app.errorhandler(AIServiceError)
@@ -275,20 +360,18 @@ def ask_ai(messages: list, temperature: float = 0.2, max_tokens: int = 3000) -> 
 
     if GROQ_AVAILABLE and groq_client:
         try:
-            resp = groq_client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[{"role": "system", "content": MATH_SYSTEM}] + messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                top_p=0.9
-            )
-            answer = clean_ai_response(resp.choices[0].message.content or "")
-            if not answer:
-                raise ValueError('Empty provider response')
-            AI_STATUS['groq']['last_error_code'] = None
-            return answer
-        except Exception as e:
-            failures.append(provider_failure('groq', e))
+            def generate_groq(model):
+                resp = groq_client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "system", "content": MATH_SYSTEM}] + messages,
+                    temperature=temperature,
+                    max_completion_tokens=max_tokens,
+                    top_p=0.9,
+                )
+                return clean_ai_response(resp.choices[0].message.content or '')
+            return generate_with_recovery('groq', generate_groq)
+        except AIServiceError as error:
+            failures.append(error)
 
     if GEMINI_AVAILABLE and gemini_client:
         try:
@@ -296,22 +379,20 @@ def ask_ai(messages: list, temperature: float = 0.2, max_tokens: int = 3000) -> 
                 role='user' if m['role'] == 'user' else 'model',
                 parts=[genai_types.Part.from_text(text=m['content'])],
             ) for m in messages]
-            response = gemini_client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=contents,
-                config=genai_types.GenerateContentConfig(
-                    system_instruction=MATH_SYSTEM,
-                    temperature=temperature,
-                    max_output_tokens=max_tokens
+            def generate_gemini(model):
+                response = gemini_client.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=genai_types.GenerateContentConfig(
+                        system_instruction=MATH_SYSTEM,
+                        temperature=temperature,
+                        max_output_tokens=max_tokens,
+                    ),
                 )
-            )
-            answer = clean_ai_response(response.text or "")
-            if not answer:
-                raise ValueError('Empty provider response')
-            AI_STATUS['gemini']['last_error_code'] = None
-            return answer
-        except Exception as e:
-            failures.append(provider_failure('gemini', e))
+                return clean_ai_response(response.text or '')
+            return generate_with_recovery('gemini', generate_gemini)
+        except AIServiceError as error:
+            failures.append(error)
 
     if failures:
         failure = failures[-1]
@@ -527,6 +608,7 @@ def health():
         "ai": {
             "providers": AI_STATUS,
             "models": {"groq": GROQ_MODEL, "gemini": GEMINI_MODEL},
+            "active_models": dict(ACTIVE_AI_MODELS),
         },
         "database": {
             "total_questions": stats["total_questions"],
@@ -605,22 +687,20 @@ def chat():
                 # Use Gemini vision API
                 prompt_text = clean[-1]["content"] if clean else "Solve this mathematics problem step by step"
                 
-                response = gemini_client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=[prompt_text, genai_types.Part.from_bytes(data=raw_bytes, mime_type=img_type)],
-                    config=genai_types.GenerateContentConfig(system_instruction=MATH_SYSTEM),
-                )
-                
-                
-                
-                answer = clean_ai_response(response.text or "").strip()
-                if not answer:
-                    return jsonify({"error": "Could not analyze image"}), 422
-                AI_STATUS['gemini']['last_error_code'] = None
+                def generate_image(model):
+                    response = gemini_client.models.generate_content(
+                        model=model,
+                        contents=[prompt_text, genai_types.Part.from_bytes(data=raw_bytes, mime_type=img_type)],
+                        config=genai_types.GenerateContentConfig(system_instruction=MATH_SYSTEM),
+                    )
+                    return clean_ai_response(response.text or '').strip()
+                answer = generate_with_recovery('gemini', generate_image)
                 
                 logger.info(f"[✓] Image analyzed successfully")
                 return jsonify({"answer": answer}), 200
 
+            except AIServiceError:
+                raise
             except Exception as img_err:
                 raise provider_failure('gemini', img_err) from None
 
