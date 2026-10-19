@@ -40,3 +40,27 @@ NODE_PATH=/tmp/mathsphere-tests/node_modules BROWSER_EXECUTABLE=/usr/bin/chromiu
 ```
 
 Set `MATHSPHERE_URL` if the server is not on port 5000, or set `BROWSER_EXECUTABLE` to your local Chromium executable.
+
+## Publishing to GitHub Pages
+
+A project site such as `https://pinomenal1729.github.io/mathsphere-web/` needs a published `index.html` and assets that respect the `/mathsphere-web/` prefix. The frontend now uses relative asset URLs, including CSS font URLs.
+
+The `Publish MathSphere frontend` workflow uploads `static/` as the Pages website root. In repository **Settings → Pages**, choose **GitHub Actions** as the source. The workflow runs for frontend changes on `main` and `feat/mathsphere-frontend`, and can also be started manually from Actions. If the `github-pages` environment has deployment branch restrictions, allow the branch being deployed.
+
+For an existing **Deploy from a branch** setup, select the branch containing this frontend and the **/(root)** folder. The root `index.html` redirects to `static/`; `.nojekyll` keeps this a plain static site. Do not select `/docs`, which contains documentation rather than the website.
+
+### Connect the Python backend
+
+GitHub Pages serves the interface but cannot run Flask, SQLite API queries, or AI requests. For the complete application, deploy the Flask service using the existing Render configuration, or another Python host, and configure its server-side provider keys there.
+
+For an Actions deployment, set repository **Settings → Secrets and variables → Actions → Variables → MATHSPHERE_API_URL** to the public HTTPS origin of that running Flask service. Use the backend origin without `/api`; the frontend appends each API path. The build validates and writes that public URL to `static/config.js`. This value is public configuration, not a secret. Never put an AI provider key in it.
+
+For branch-based Pages publishing, set `apiBaseUrl` in `static/config.js` to that same HTTPS backend origin before pushing. Leave it empty when Flask serves the interface and API from the same origin. The existing Flask API already enables cross-origin access for `/api/*`.
+
+Without a running backend, the dashboard, daily challenge, saved library, and local preferences still work. Server-powered tools display an availability message; a static deployment does not simulate working APIs.
+
+The Pages regression suite starts its own local static server and checks both artifact and branch-based publishing, asset loading under a repository prefix, and external backend routing:
+
+```sh
+NODE_PATH=/tmp/mathsphere-tests/node_modules BROWSER_EXECUTABLE=/usr/bin/chromium node tests/pages.cjs
+```

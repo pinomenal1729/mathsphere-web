@@ -1,0 +1,63 @@
+name: Publish MathSphere frontend
+
+on:
+  push:
+    branches: [main, feat/mathsphere-frontend]
+    paths:
+      - static/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the frontend
+        uses: actions/checkout@v4
+
+      - name: Write the public backend configuration
+        env:
+          MATHSPHERE_API_URL: ${{ vars.MATHSPHERE_API_URL }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          backend = os.environ.get("MATHSPHERE_API_URL", "").strip().rstrip("/")
+          if backend:
+              parsed = urlsplit(backend)
+              if (parsed.scheme != "https" or not parsed.hostname
+                      or parsed.username or parsed.password or parsed.query or parsed.fragment):
+                  raise SystemExit("MATHSPHERE_API_URL must be a public HTTPS backend URL without credentials, query, or fragment")
+          config = json.dumps({"apiBaseUrl": backend})
+          Path("static/config.js").write_text(
+              "window.MATHSPHERE_CONFIG = Object.freeze(" + config + ");\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the frontend as the website root
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: static
+
+      - name: Publish the website
+        id: deployment
+        uses: actions/deploy-pages@v4

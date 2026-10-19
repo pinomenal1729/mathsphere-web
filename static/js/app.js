@@ -158,12 +158,22 @@ if (!Array.isArray(saved)) saved = [];
 if (!Array.isArray(activity)) activity = [];
 let route = "dashboard",
   health = null,
+  healthStatus = "checking",
   activeChat = null,
   chatBusy = false,
   attachment = null,
   graphData = null,
   topicFilter = "All topics";
 let preset = {};
+const apiBaseUrl = String(window.MATHSPHERE_CONFIG?.apiBaseUrl || "").replace(
+  /\/+$/,
+  "",
+);
+const apiUrl = (path) => `${apiBaseUrl}/api/${path}`;
+
+function offlineNotice() {
+  return `<div class="ai-notice">${icon("info")}<span>Your learning services are currently unavailable. Your saved library and daily challenge are still here to explore.</span></div>`;
+}
 function persist(key, value) {
   try {
     localStorage.setItem("mathsphere." + key, JSON.stringify(value));
@@ -431,6 +441,7 @@ function emptyState(key, title, description) {
   return `<div class="empty-state"><div class="empty-orb">${icon(TOOLS[key]?.icon || "bookmark")}</div><h3>${title}</h3><p>${description}</p></div>`;
 }
 function aiNotice() {
+  if (healthStatus === "offline") return offlineNotice();
   return health && !health.services.groq && !health.services.gemini
     ? `<div class="ai-notice">${icon("info")}<span>Your AI tools are waiting to be connected. You can still explore graphs, the question bank, and built-in mathematician profiles.</span></div>`
     : "";
@@ -642,9 +653,11 @@ function toolView(key) {
   }
   return (
     pageIntro(key) +
-    (key !== "graph" && key !== "pyqs" && key !== "mathematician"
-      ? aiNotice()
-      : "") +
+    (healthStatus === "offline"
+      ? offlineNotice()
+      : key !== "graph" && key !== "pyqs" && key !== "mathematician"
+        ? aiNotice()
+        : "") +
     `<div class="tool-layout"><form class="panel" id="tool-form" data-tool="${key}"><h2 class="form-title">${icon(t.icon)}${key === "graph" ? "Set the scene" : "Make it yours"}</h2>${fields}${extras}<button class="button primary form-submit" type="submit">${button}${icon("arrow-right")}</button><p class="form-hint">${hint}</p></form><section class="panel results-panel" id="tool-results" aria-live="polite">${emptyState(key, key === "graph" ? "Every function has a story." : key === "pyqs" ? "Find your next good challenge." : key === "mathematician" ? "A great mind. A bigger story." : "An idea is about to take shape.", key === "graph" ? "Enter a function and choose a range. Let’s see what it looks like." : "Choose your preferences on the left, and let your curiosity take it from here.")}</section></div>`
   );
 }
@@ -652,7 +665,7 @@ async function api(path, payload) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 110000);
   try {
-    const response = await fetch("/api/" + path, {
+    const response = await fetch(apiUrl(path), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -662,7 +675,9 @@ async function api(path, payload) {
     try {
       data = await response.json();
     } catch {
-      throw new Error("We couldn’t read the response. Please try again.");
+      throw new Error(
+        "Your learning services are currently unavailable. Please try again later. Your saved work is still here.",
+      );
     }
     if (!response.ok || data.success === false)
       throw new Error(
@@ -674,6 +689,10 @@ async function api(path, payload) {
   } catch (e) {
     if (e.name === "AbortError")
       throw new Error("This is taking longer than expected. Please try again.");
+    if (e instanceof TypeError)
+      throw new Error(
+        "We couldn’t reach your learning services. Please try again shortly.",
+      );
     throw e;
   } finally {
     clearTimeout(timeout);
@@ -1472,19 +1491,21 @@ window.addEventListener("hashchange", () => renderPage(location.hash.slice(1)));
 initNavigation();
 hydrate();
 renderPage(location.hash.slice(1) || "dashboard");
-fetch("/api/health")
+fetch(apiUrl("health"))
   .then((r) => {
     if (!r.ok) throw new Error("unavailable");
     return r.json();
   })
   .then((data) => {
     health = data;
+    healthStatus = "ready";
     $("#service-info").textContent =
       data.services.groq || data.services.gemini
         ? "Your AI learning tools are connected. Graphs and the question bank are also available."
         : "Your local math tools are ready. AI tools need a connected service before they can respond.";
   })
   .catch(() => {
+    healthStatus = "offline";
     $("#service-info").textContent =
       "We couldn’t reach your learning services. Please try refreshing in a moment.";
   });
